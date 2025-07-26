@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>年度人物投票</title>
+    <title>年度最佳员工投票</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -51,6 +52,7 @@
         .subtitle {
             font-size: 1.1rem;
             color: var(--gray-400);
+            margin-bottom: 30px;
         }
         
         .candidates-grid {
@@ -155,14 +157,18 @@
             .candidates-grid {
                 grid-template-columns: 1fr;
             }
+            
+            h1 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>年度人物投票</h1>
-            <p class="subtitle">为您心目中的年度人物投上宝贵的一票</p>
+            <h1>年度最佳员工投票</h1>
+            <p class="subtitle">为您心目中的年度最佳员工投上宝贵的一票</p>
         </header>
         
         <div class="candidates-grid" id="candidatesContainer">
@@ -174,7 +180,7 @@
         </div>
         
         <footer>
-            <p>© <span id="currentYear"></span> 年度人物投票 | 匿名投票系统</p>
+            <p>© <span id="currentYear"></span> 年度员工评选 | 匿名投票系统</p>
         </footer>
     </div>
 
@@ -182,155 +188,198 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
-        // ======================
-        // 配置区域（需要修改）
-        // ======================
-        const SUPABASE_URL = 'https://vwwicvqojtruwmovhbjg.supabase.co';  // 替换为你的Supabase URL
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA';  // 替换为你的Supabase匿名密钥
+        // =================================
+        // 配置区域（必须修改）
+        // =================================
+        const SUPABASE_CONFIG = {
+            url: 'https://vwwicvqojtruwmovhbjg.supabase.co',  // 替换为你的Supabase URL
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA'                         // 替换为你的Supabase匿名密钥
+        };
         
-        // ======================
-        // 应用程序代码（不要修改）
-        // ======================
-        // 1. 初始化Supabase客户端
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // =================================
+        // 应用程序代码（无需修改）
+        // =================================
+        // 1. 安全初始化Supabase客户端
+        const supabase = (function initSupabase() {
+            try {
+                return supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+            } catch (error) {
+                console.error('Supabase初始化失败:', error);
+                alert('系统初始化失败，请刷新页面重试');
+                return null;
+            }
+        })();
         
         // 2. 工具函数
-        function hasVoted() {
-            return localStorage.getItem('hasVoted') === 'true';
-        }
+        const utils = {
+            hasVoted: () => localStorage.getItem('hasVoted') === 'true',
+            markAsVoted: () => localStorage.setItem('hasVoted', 'true'),
+            getCurrentYear: () => new Date().getFullYear()
+        };
         
-        // 3. 数据操作函数
-        async function getCandidates() {
-            try {
-                const { data, error } = await supabase
-                    .from('candidates')
-                    .select('*')
-                    .order('id', { ascending: true });
+        // 3. 数据服务
+        const dataService = {
+            async getCandidates() {
+                if (!supabase) return [];
                 
-                if (error) throw error;
-                return data;
-            } catch (error) {
-                console.error('获取候选人数据失败:', error);
-                return [];
+                try {
+                    const { data, error } = await supabase
+                        .from('candidates')
+                        .select('*')
+                        .order('id', { ascending: true });
+                    
+                    if (error) throw error;
+                    return data || [];
+                } catch (error) {
+                    console.error('获取候选人失败:', error);
+                    return [];
+                }
+            },
+            
+            async getVotes() {
+                if (!supabase) return {};
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('votes')
+                        .select('candidate_id');
+                    
+                    if (error) throw error;
+                    
+                    const counts = {};
+                    (data || []).forEach(v => {
+                        counts[v.candidate_id] = (counts[v.candidate_id] || 0) + 1;
+                    });
+                    return counts;
+                } catch (error) {
+                    console.error('获取票数失败:', error);
+                    return {};
+                }
+            },
+            
+            async submitVote(candidateId) {
+                if (!supabase) return false;
+                if (utils.hasVoted()) return false;
+                
+                try {
+                    const { error } = await supabase
+                        .from('votes')
+                        .insert([{ candidate_id: candidateId }]);
+                    
+                    if (error) throw error;
+                    utils.markAsVoted();
+                    return true;
+                } catch (error) {
+                    console.error('投票失败:', error);
+                    return false;
+                }
             }
-        }
+        };
         
-        async function getVotes() {
-            try {
-                const { data, error } = await supabase
-                    .from('votes')
-                    .select('candidate_id');
+        // 4. UI渲染器
+        const renderer = {
+            async renderCandidates() {
+                const container = document.getElementById('candidatesContainer');
+                if (!container) return;
                 
-                if (error) throw error;
+                const [candidates, votes] = await Promise.all([
+                    dataService.getCandidates(),
+                    dataService.getVotes()
+                ]);
                 
-                const voteCounts = {};
-                data.forEach(vote => {
-                    voteCounts[vote.candidate_id] = (voteCounts[vote.candidate_id] || 0) + 1;
-                });
-                
-                return voteCounts;
-            } catch (error) {
-                console.error('获取投票数据失败:', error);
-                return {};
-            }
-        }
-        
-        async function submitVote(candidateId) {
-            if (hasVoted()) {
-                alert('您已经投过票了！');
-                return;
-            }
-            
-            try {
-                const { error } = await supabase
-                    .from('votes')
-                    .insert([{ candidate_id: candidateId }]);
-                
-                if (error) throw error;
-                
-                localStorage.setItem('hasVoted', 'true');
-                updateUIAfterVote(candidateId);
-                alert('投票成功！感谢您的参与。');
-            } catch (error) {
-                console.error('投票失败:', error);
-                alert('投票失败，请稍后再试。');
-            }
-        }
-        
-        // 4. UI更新函数
-        function updateUIAfterVote() {
-            document.querySelectorAll('.vote-btn').forEach(btn => {
-                btn.disabled = true;
-                btn.textContent = '已投票';
-            });
-            
-            document.querySelectorAll('.voted-message').forEach(msg => {
-                msg.style.display = 'block';
-            });
-            
-            updateVoteCounts();
-        }
-        
-        async function updateVoteCounts() {
-            const voteCounts = await getVotes();
-            const totalVotes = Object.values(voteCounts).reduce((a, b) => a + b, 0);
-            document.getElementById('totalVotes').textContent = `总投票数: ${totalVotes}`;
-            
-            document.querySelectorAll('.vote-count').forEach(element => {
-                const candidateId = parseInt(element.getAttribute('data-candidate'));
-                element.innerHTML = `<i class="fas fa-vote-yea"></i> 票数: ${voteCounts[candidateId] || 0}`;
-            });
-        }
-        
-        // 5. 渲染函数
-        async function renderCandidates() {
-            const candidates = await getCandidates();
-            const voteCounts = await getVotes();
-            const container = document.getElementById('candidatesContainer');
-            
-            container.innerHTML = '';
-            
-            candidates.forEach(candidate => {
-                const card = document.createElement('div');
-                card.className = 'candidate-card';
-                
-                card.innerHTML = `
-                    <img src="${candidate.image_url}" alt="${candidate.name}" class="candidate-image">
-                    <div class="candidate-info">
-                        <h3 class="candidate-name">${candidate.name}</h3>
-                        <p class="candidate-description">${candidate.description || '暂无描述'}</p>
-                        <div class="vote-count" data-candidate="${candidate.id}">
-                            <i class="fas fa-vote-yea"></i> 票数: ${voteCounts[candidate.id] || 0}
+                container.innerHTML = candidates.map(candidate => `
+                    <div class="candidate-card">
+                        <img src="${candidate.image_url}" alt="${candidate.name}" class="candidate-image">
+                        <div class="candidate-info">
+                            <h3 class="candidate-name">${candidate.name}</h3>
+                            <p class="candidate-description">${candidate.description || '暂无描述'}</p>
+                            <div class="vote-count" data-candidate="${candidate.id}">
+                                <i class="fas fa-vote-yea"></i> 票数: ${votes[candidate.id] || 0}
+                            </div>
+                            <button class="vote-btn" onclick="app.voteForCandidate(${candidate.id})" 
+                                ${utils.hasVoted() ? 'disabled' : ''}>
+                                ${utils.hasVoted() ? '已投票' : '投票'}
+                            </button>
+                            <p class="voted-message" ${utils.hasVoted() ? 'style="display: block;"' : ''}>
+                                <i class="fas fa-check-circle"></i> 感谢您的投票
+                            </p>
                         </div>
-                        <button class="vote-btn" onclick="submitVote(${candidate.id})" ${hasVoted() ? 'disabled' : ''}>
-                            ${hasVoted() ? '已投票' : '投票'}
-                        </button>
-                        <p class="voted-message" ${hasVoted() ? 'style="display: block;"' : ''}>
-                            <i class="fas fa-check-circle"></i> 感谢您的投票
-                        </p>
                     </div>
-                `;
+                `).join('');
                 
-                container.appendChild(card);
-            });
+                this.updateTotalVotes(votes);
+            },
             
-            updateVoteCounts();
-        }
+            updateTotalVotes(votes) {
+                const totalElement = document.getElementById('totalVotes');
+                if (totalElement) {
+                    const total = Object.values(votes).reduce((sum, count) => sum + count, 0);
+                    totalElement.textContent = `总投票数: ${total}`;
+                }
+            },
+            
+            disableAllVoteButtons() {
+                document.querySelectorAll('.vote-btn').forEach(btn => {
+                    btn.disabled = true;
+                    btn.textContent = '已投票';
+                });
+            },
+            
+            showAllVotedMessages() {
+                document.querySelectorAll('.voted-message').forEach(msg => {
+                    msg.style.display = 'block';
+                });
+            }
+        };
         
-        // 6. 初始化应用程序
-        document.addEventListener('DOMContentLoaded', () => {
-            // 设置当前年份
-            document.getElementById('currentYear').textContent = new Date().getFullYear();
+        // 5. 应用控制器
+        const app = {
+            async init() {
+                // 设置年份
+                const yearElement = document.getElementById('currentYear');
+                if (yearElement) {
+                    yearElement.textContent = utils.getCurrentYear();
+                }
+                
+                // 初始渲染
+                await renderer.renderCandidates();
+                
+                // 设置定时刷新
+                setInterval(async () => {
+                    const votes = await dataService.getVotes();
+                    renderer.updateTotalVotes(votes);
+                    
+                    document.querySelectorAll('.vote-count').forEach(el => {
+                        const candidateId = parseInt(el.dataset.candidate);
+                        el.innerHTML = `<i class="fas fa-vote-yea"></i> 票数: ${votes[candidateId] || 0}`;
+                    });
+                }, 30000);
+            },
             
-            // 初始化渲染
-            renderCandidates();
-            
-            // 每30秒刷新一次票数
-            setInterval(updateVoteCounts, 30000);
-        });
+            async voteForCandidate(candidateId) {
+                if (utils.hasVoted()) {
+                    alert('您已经投过票了！');
+                    return;
+                }
+                
+                const success = await dataService.submitVote(candidateId);
+                if (success) {
+                    alert('投票成功！');
+                    renderer.disableAllVoteButtons();
+                    renderer.showAllVotedMessages();
+                    
+                    // 刷新票数
+                    const votes = await dataService.getVotes();
+                    renderer.updateTotalVotes(votes);
+                } else {
+                    alert('投票失败，请稍后再试');
+                }
+            }
+        };
         
-        // 7. 暴露函数给全局作用域
-        window.submitVote = submitVote;
+        // 6. 暴露接口并启动应用
+        window.app = app;
+        document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
 </html>
