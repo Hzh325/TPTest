@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>年度人物投票</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --white: #ffffff;
+            --gray-100: #f3f4f6;
+            --gray-400: #9ca3af;
+            --gray-600: #4b5563;
+            --green-500: #10b981;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--white);
+            color: var(--gray-600);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--gray-400);
+        }
+        
+        .candidates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .candidate-card {
+            background: var(--white);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-100);
+        }
+        
+        .candidate-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .candidate-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .candidate-info {
+            padding: 20px;
+        }
+        
+        .candidate-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .candidate-description {
+            color: var(--gray-400);
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        
+        .vote-count {
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .vote-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .vote-btn:hover {
+            background-color: #4338ca;
+        }
+        
+        .vote-btn:disabled {
+            background-color: var(--gray-400);
+            cursor: not-allowed;
+        }
+        
+        .voted-message {
+            color: var(--green-500);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .total-votes {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 1.1rem;
+            color: var(--gray-400);
+            padding: 20px 0;
+            border-top: 1px solid var(--gray-100);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-100);
+            color: var(--gray-400);
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .candidates-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>年度人物投票</h1>
+            <p class="subtitle">为您心目中的年度人物投上宝贵的一票</p>
+        </header>
+        
+        <div class="candidates-grid" id="candidatesContainer">
+            <!-- 候选人卡片将通过JavaScript动态生成 -->
+        </div>
+        
+        <div class="total-votes" id="totalVotes">
+            总投票数: 加载中...
+        </div>
+        
+        <footer>
+            <p>© <span id="currentYear"></span> 年度人物投票 | 匿名投票系统</p>
+        </footer>
+    </div>
+
+    <!-- 先加载Supabase库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // ======================
+        // 配置区域（需要修改）
+        // ======================
+        const SUPABASE_URL = 'https://vwwicvqojtruwmovhbjg.supabase.co';  // 替换为你的Supabase URL
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA';  // 替换为你的Supabase匿名密钥
+        
+        // ======================
+        // 应用程序代码（不要修改）
+        // ======================
+        // 1. 初始化Supabase客户端
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // 2. 工具函数
+        function hasVoted() {
+            return localStorage.getItem('hasVoted') === 'true';
+        }
+        
+        // 3. 数据操作函数
+        async function getCandidates() {
+            try {
+                const { data, error } = await supabase
+                    .from('candidates')
+                    .select('*')
+                    .order('id', { ascending: true });
+                
+                if (error) throw error;
+                return data;
+            } catch (error) {
+                console.error('获取候选人数据失败:', error);
+                return [];
+            }
+        }
+        
+        async function getVotes() {
+            try {
+                const { data, error } = await supabase
+                    .from('votes')
+                    .select('candidate_id');
+                
+                if (error) throw error;
+                
+                const voteCounts = {};
+                data.forEach(vote => {
+                    voteCounts[vote.candidate_id] = (voteCounts[vote.candidate_id] || 0) + 1;
+                });
+                
+                return voteCounts;
+            } catch (error) {
+                console.error('获取投票数据失败:', error);
+                return {};
+            }
+        }
+        
+        async function submitVote(candidateId) {
+            if (hasVoted()) {
+                alert('您已经投过票了！');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase
+                    .from('votes')
+                    .insert([{ candidate_id: candidateId }]);
+                
+                if (error) throw error;
+                
+                localStorage.setItem('hasVoted', 'true');
+                updateUIAfterVote(candidateId);
+                alert('投票成功！感谢您的参与。');
+            } catch (error) {
+                console.error('投票失败:', error);
+                alert('投票失败，请稍后再试。');
+            }
+        }
+        
+        // 4. UI更新函数
+        function updateUIAfterVote() {
+            document.querySelectorAll('.vote-btn').forEach(btn => {
+                btn.disabled = true;
+                btn.textContent = '已投票';
+            });
+            
+            document.querySelectorAll('.voted-message').forEach(msg => {
+                msg.style.display = 'block';
+            });
+            
+            updateVoteCounts();
+        }
+        
+        async function updateVoteCounts() {
+            const voteCounts = await getVotes();
+            const totalVotes = Object.values(voteCounts).reduce((a, b) => a + b, 0);
+            document.getElementById('totalVotes').textContent = `总投票数: ${totalVotes}`;
+            
+            document.querySelectorAll('.vote-count').forEach(element => {
+                const candidateId = parseInt(element.getAttribute('data-candidate'));
+                element.innerHTML = `<i class="fas fa-vote-yea"></i> 票数: ${voteCounts[candidateId] || 0}`;
+            });
+        }
+        
+        // 5. 渲染函数
+        async function renderCandidates() {
+            const candidates = await getCandidates();
+            const voteCounts = await getVotes();
+            const container = document.getElementById('candidatesContainer');
+            
+            container.innerHTML = '';
+            
+            candidates.forEach(candidate => {
+                const card = document.createElement('div');
+                card.className = 'candidate-card';
+                
+                card.innerHTML = `
+                    <img src="${candidate.image_url}" alt="${candidate.name}" class="candidate-image">
+                    <div class="candidate-info">
+                        <h3 class="candidate-name">${candidate.name}</h3>
+                        <p class="candidate-description">${candidate.description || '暂无描述'}</p>
+                        <div class="vote-count" data-candidate="${candidate.id}">
+                            <i class="fas fa-vote-yea"></i> 票数: ${voteCounts[candidate.id] || 0}
+                        </div>
+                        <button class="vote-btn" onclick="submitVote(${candidate.id})" ${hasVoted() ? 'disabled' : ''}>
+                            ${hasVoted() ? '已投票' : '投票'}
+                        </button>
+                        <p class="voted-message" ${hasVoted() ? 'style="display: block;"' : ''}>
+                            <i class="fas fa-check-circle"></i> 感谢您的投票
+                        </p>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+            
+            updateVoteCounts();
+        }
+        
+        // 6. 初始化应用程序
+        document.addEventListener('DOMContentLoaded', () => {
+            // 设置当前年份
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+            
+            // 初始化渲染
+            renderCandidates();
+            
+            // 每30秒刷新一次票数
+            setInterval(updateVoteCounts, 30000);
+        });
+        
+        // 7. 暴露函数给全局作用域
+        window.submitVote = submitVote;
+    </script>
+</body>
+</html>
