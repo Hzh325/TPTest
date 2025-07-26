@@ -57,7 +57,7 @@
         
         .candidates-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 30px;
             margin-top: 30px;
         }
@@ -69,6 +69,9 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             transition: all 0.3s ease;
             border: 1px solid var(--gray-100);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
         
         .candidate-card:hover {
@@ -76,26 +79,76 @@
             box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
         }
         
+        .image-container {
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            position: relative;
+        }
+        
         .candidate-image {
             width: 100%;
-            height: 200px;
+            height: 100%;
             object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .candidate-card:hover .candidate-image {
+            transform: scale(1.05);
         }
         
         .candidate-info {
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
         }
         
         .candidate-name {
             font-size: 1.3rem;
             font-weight: 600;
             margin-bottom: 10px;
+            color: var(--primary);
         }
         
         .candidate-description {
-            color: var(--gray-400);
+            color: var(--gray-600);
             margin-bottom: 15px;
             font-size: 0.95rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .candidate-description.expanded {
+            -webkit-line-clamp: unset;
+            overflow: auto;
+            max-height: 200px;
+        }
+        
+        .toggle-description {
+            color: var(--primary);
+            background: none;
+            border: none;
+            padding: 5px 0;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: left;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-description i {
+            margin-right: 5px;
+            transition: transform 0.3s ease;
+        }
+        
+        .toggle-description.expanded i {
+            transform: rotate(180deg);
         }
         
         .vote-count {
@@ -108,7 +161,7 @@
         
         .vote-btn {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background-color: var(--primary);
             color: white;
             border: none;
@@ -116,6 +169,7 @@
             cursor: pointer;
             font-weight: 500;
             transition: background-color 0.3s;
+            margin-top: auto;
         }
         
         .vote-btn:hover {
@@ -160,6 +214,10 @@
             
             h1 {
                 font-size: 2rem;
+            }
+            
+            .image-container {
+                height: 200px;
             }
         }
     </style>
@@ -319,13 +377,20 @@
                     
                     container.innerHTML = candidates.map(candidate => `
                         <div class="candidate-card">
-                            <img src="${candidate.image_url || 'https://via.placeholder.com/300x200?text=无图片'}" 
-                                 alt="${candidate.name}" 
-                                 class="candidate-image"
-                                 onerror="this.src='https://via.placeholder.com/300x200?text=图片加载失败'">
+                            <div class="image-container">
+                                <img src="${candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片'}" 
+                                     alt="${candidate.name}" 
+                                     class="candidate-image"
+                                     onerror="this.src='https://via.placeholder.com/400x250?text=图片加载失败'">
+                            </div>
                             <div class="candidate-info">
                                 <h3 class="candidate-name">${candidate.name}</h3>
                                 <p class="candidate-description">${candidate.description || '暂无描述'}</p>
+                                ${candidate.description && candidate.description.length > 100 ? `
+                                <button class="toggle-description">
+                                    <i class="fas fa-chevron-down"></i> 展开更多
+                                </button>
+                                ` : ''}
                                 <div class="vote-count" data-candidate="${candidate.id}">
                                     <i class="fas fa-vote-yea"></i> 票数: ${votes[candidate.id] || 0}
                                 </div>
@@ -340,11 +405,26 @@
                         </div>
                     `).join('');
                     
+                    // 添加展开/收起功能
+                    this.addDescriptionToggle();
                     this.updateTotalVotes(votes);
                 } catch (error) {
                     console.error('渲染候选人失败:', error);
                     container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:red;">数据加载失败，请刷新页面</p>';
                 }
+            },
+            
+            addDescriptionToggle() {
+                document.querySelectorAll('.toggle-description').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const description = this.previousElementSibling;
+                        description.classList.toggle('expanded');
+                        this.classList.toggle('expanded');
+                        this.innerHTML = this.classList.contains('expanded') 
+                            ? '<i class="fas fa-chevron-up"></i> 收起' 
+                            : '<i class="fas fa-chevron-down"></i> 展开更多';
+                    });
+                });
             },
             
             updateTotalVotes(votes) {
