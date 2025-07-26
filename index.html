@@ -79,22 +79,25 @@
             box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
         }
         
+        /* 修改后的图片容器样式 - 保持原始比例 */
         .image-container {
             width: 100%;
-            height: 250px;
+            height: 250px; /* 固定高度 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--gray-100);
             overflow: hidden;
             position: relative;
         }
         
+        /* 修改后的图片样式 - 保持原始比例 */
         .candidate-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        
-        .candidate-card:hover .candidate-image {
-            transform: scale(1.05);
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain; /* 关键属性：保持比例完整显示 */
         }
         
         .candidate-info {
@@ -381,7 +384,7 @@
                                 <img src="${candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片'}" 
                                      alt="${candidate.name}" 
                                      class="candidate-image"
-                                     onerror="this.src='https://via.placeholder.com/400x250?text=图片加载失败'">
+                                     onerror="this.onerror=null;this.src='https://via.placeholder.com/400x250?text=图片加载失败'">
                             </div>
                             <div class="candidate-info">
                                 <h3 class="candidate-name">${candidate.name}</h3>
