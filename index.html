@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>年度最佳员工投票</title>
+    <title>给最喜欢的人物投票</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -167,8 +167,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>年度最佳员工投票</h1>
-            <p class="subtitle">为您心目中的年度最佳员工投上宝贵的一票</p>
+            <h1>给最喜欢的人物投票</h1>
+            <p class="subtitle">为你心目中最喜欢的人物投上宝贵的一票</p>
         </header>
         
         <div class="candidates-grid" id="candidatesContainer">
@@ -180,7 +180,7 @@
         </div>
         
         <footer>
-            <p>© <span id="currentYear"></span> 年度员工评选 | 匿名投票系统</p>
+            <p>© <span id="currentYear"></span> 人物投票 | 匿名投票系统</p>
         </footer>
     </div>
 
@@ -200,15 +200,23 @@
         // 应用程序代码（无需修改）
         // =================================
         // 1. 安全初始化Supabase客户端
-        const supabase = (function initSupabase() {
+        let supabaseClient;
+        
+        function initializeSupabase() {
             try {
-                return supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+                // 确保supabase库已加载
+                if (typeof supabase !== 'undefined') {
+                    supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+                    return true;
+                } else {
+                    console.error('Supabase库未加载');
+                    return false;
+                }
             } catch (error) {
                 console.error('Supabase初始化失败:', error);
-                alert('系统初始化失败，请刷新页面重试');
-                return null;
+                return false;
             }
-        })();
+        }
         
         // 2. 工具函数
         const utils = {
@@ -220,10 +228,10 @@
         // 3. 数据服务
         const dataService = {
             async getCandidates() {
-                if (!supabase) return [];
+                if (!supabaseClient) return [];
                 
                 try {
-                    const { data, error } = await supabase
+                    const { data, error } = await supabaseClient
                         .from('candidates')
                         .select('*')
                         .order('id', { ascending: true });
@@ -237,10 +245,10 @@
             },
             
             async getVotes() {
-                if (!supabase) return {};
+                if (!supabaseClient) return {};
                 
                 try {
-                    const { data, error } = await supabase
+                    const { data, error } = await supabaseClient
                         .from('votes')
                         .select('candidate_id');
                     
@@ -258,11 +266,11 @@
             },
             
             async submitVote(candidateId) {
-                if (!supabase) return false;
+                if (!supabaseClient) return false;
                 if (utils.hasVoted()) return false;
                 
                 try {
-                    const { error } = await supabase
+                    const { error } = await supabaseClient
                         .from('votes')
                         .insert([{ candidate_id: candidateId }]);
                     
@@ -335,6 +343,12 @@
         // 5. 应用控制器
         const app = {
             async init() {
+                // 初始化Supabase
+                if (!initializeSupabase()) {
+                    alert('系统初始化失败，请检查控制台日志');
+                    return;
+                }
+                
                 // 设置年份
                 const yearElement = document.getElementById('currentYear');
                 if (yearElement) {
@@ -379,7 +393,13 @@
         
         // 6. 暴露接口并启动应用
         window.app = app;
-        document.addEventListener('DOMContentLoaded', () => app.init());
+        
+        // 确保DOM加载完成后再初始化
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(app.init, 1);
+        } else {
+            document.addEventListener('DOMContentLoaded', app.init);
+        }
     </script>
 </body>
 </html>
