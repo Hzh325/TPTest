@@ -371,12 +371,6 @@
             transition: all 0.3s ease;
         }
         
-        .form-input:focus, .form-textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
-        }
-        
         .form-textarea {
             min-height: 120px;
             resize: vertical;
@@ -437,14 +431,6 @@
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-        
-        .author-badge {
-            background: var(--primary-light);
-            color: white;
-            font-size: 0.8rem;
-            padding: 2px 8px;
-            border-radius: 20px;
         }
         
         .comment-date {
@@ -783,6 +769,51 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
+        /* ========== 头像相关样式 ========== */
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+            border: 2px solid var(--primary-light);
+        }
+
+        .avatar-upload-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .avatar-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px dashed var(--gray-300);
+        }
+
+        .avatar-upload-btn {
+            padding: 8px 15px;
+            background: var(--gray-100);
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .avatar-upload-btn:hover {
+            background: var(--gray-200);
+        }
+
+        .avatar-filename {
+            font-size: 0.8rem;
+            color: var(--gray-500);
+            margin-top: 5px;
+        }
         
         /* 响应式调整 */
         @media (max-width: 768px) {
@@ -977,6 +1008,14 @@
             </div>
             
             <div id="registerForm" class="auth-form" style="display: none;">
+                <div class="avatar-upload-container">
+                    <img id="avatarPreview" src="https://ui-avatars.com/api/?name=U&background=random" class="avatar-preview">
+                    <div>
+                        <label for="avatarUpload" class="avatar-upload-btn">选择头像</label>
+                        <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                        <div id="avatarFilename" class="avatar-filename"></div>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label>用户名</label>
                     <input type="text" id="registerUsername" placeholder="输入用户名">
@@ -1075,12 +1114,51 @@
                     if (callback) callback(false);
                 };
             },
-            setAuthStatus: (username) => {
+            // 图片压缩函数
+            compressImage: async (file, maxWidth = 200, maxHeight = 200, quality = 0.7) => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+                            
+                            // 计算新尺寸
+                            if (width > height) {
+                                if (width > maxWidth) {
+                                    height *= maxWidth / width;
+                                    width = maxWidth;
+                                }
+                            } else {
+                                if (height > maxHeight) {
+                                    width *= maxHeight / height;
+                                    height = maxHeight;
+                                }
+                            }
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            canvas.toBlob((blob) => {
+                                resolve(blob);
+                            }, 'image/jpeg', quality);
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            },
+            setAuthStatus: (user) => {
                 const authStatus = document.getElementById('authStatus');
-                if (username) {
+                if (user) {
                     authStatus.innerHTML = `
                         <div class="logged-in">
-                            <span>欢迎, ${username}</span>
+                            <img src="${user.avatar_url}" class="user-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random'">
+                            <span>${user.username}</span>
                             <button class="logout-btn" id="logoutBtn">登出</button>
                         </div>
                     `;
@@ -1180,7 +1258,10 @@
                 try {
                     let query = supabaseClient
                         .from('comments')
-                        .select('*')
+                        .select(`
+                            *,
+                            user:user_id (username, avatar_url)
+                        `)
                         .order('created_at', { ascending: false });
                     
                     if (candidateId) {
@@ -1192,7 +1273,13 @@
                     const { data, error } = await query;
                     
                     if (error) throw error;
-                    return data || [];
+                    
+                    // 格式化数据，将用户信息合并到评论中
+                    return data.map(comment => ({
+                        ...comment,
+                        user_name: comment.user?.username || '匿名用户',
+                        avatar_url: comment.user?.avatar_url || null
+                    })) || [];
                 } catch (error) {
                     console.error('获取留言失败:', error);
                     return [];
@@ -1203,13 +1290,21 @@
                 try {
                     const { data, error } = await supabaseClient
                         .from('comments')
-                        .select('*')
+                        .select(`
+                            *,
+                            user:user_id (username, avatar_url)
+                        `)
                         .is('candidate_id', null)
                         .order('created_at', { ascending: false })
                         .limit(limit);
                     
                     if (error) throw error;
-                    return data || [];
+                    
+                    return data.map(comment => ({
+                        ...comment,
+                        user_name: comment.user?.username || '匿名用户',
+                        avatar_url: comment.user?.avatar_url || null
+                    })) || [];
                 } catch (error) {
                     console.error('获取最新留言失败:', error);
                     return [];
@@ -1263,13 +1358,12 @@
                         .from('users')
                         .select('*')
                         .eq('username', username)
-                        .eq('password', password) // 注意: 实际应用中应该使用加密密码
+                        .eq('password', password)
                         .single();
                     
                     if (error) throw error;
                     if (!data) throw new Error('用户名或密码错误');
                     
-                    // 在实际应用中，这里应该使用JWT或其他安全令牌
                     const fakeToken = `fake-jwt-token-${Date.now()}`;
                     return { user: data, token: fakeToken };
                 } catch (error) {
@@ -1278,7 +1372,7 @@
                 }
             },
             
-            async register(username, password) {
+            async register(username, password, avatarFile = null) {
                 try {
                     // 检查用户名是否已存在
                     const { data: existingUser, error: checkError } = await supabaseClient
@@ -1289,16 +1383,46 @@
                     
                     if (existingUser) throw new Error('用户名已存在');
                     
+                    let avatarUrl = null;
+                    
+                    // 如果有上传头像
+                    if (avatarFile) {
+                        // 压缩图片
+                        const compressedBlob = await utils.compressImage(avatarFile);
+                        const fileExt = avatarFile.name.split('.').pop();
+                        const fileName = `${username}-${Date.now()}.${fileExt}`;
+                        const filePath = `avatars/${fileName}`;
+                        
+                        // 上传到Supabase存储
+                        const { data: uploadData, error: uploadError } = await supabaseClient
+                            .storage
+                            .from('avatars')
+                            .upload(filePath, compressedBlob);
+                        
+                        if (uploadError) throw uploadError;
+                        
+                        // 获取公开URL
+                        const { data: urlData } = supabaseClient
+                            .storage
+                            .from('avatars')
+                            .getPublicUrl(filePath);
+                        
+                        avatarUrl = urlData.publicUrl;
+                    }
+                    
                     // 创建新用户
                     const { data, error } = await supabaseClient
                         .from('users')
-                        .insert([{ username, password }]) // 注意: 实际应用中应该加密密码
+                        .insert([{ 
+                            username, 
+                            password,
+                            avatar_url: avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`
+                        }])
                         .select()
                         .single();
                     
                     if (error) throw error;
                     
-                    // 在实际应用中，这里应该使用JWT或其他安全令牌
                     const fakeToken = `fake-jwt-token-${Date.now()}`;
                     return { user: data, token: fakeToken };
                 } catch (error) {
@@ -1418,9 +1542,12 @@
                                 <div class="comment-item">
                                     <div class="comment-header">
                                         <div>
+                                            <img src="${comment.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user_name)}&background=random`}" 
+                                                 class="user-avatar" 
+                                                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user_name.charAt(0))}&background=random'">
                                             <span class="comment-author">
                                                 ${comment.user_name}
-                                                <span class="global-comment-label">全局留言</span>
+                                                ${!comment.candidate_id ? '<span class="global-comment-label">全局留言</span>' : ''}
                                             </span>
                                         </div>
                                         <span class="comment-date">${utils.formatDate(comment.created_at)}</span>
@@ -1515,7 +1642,6 @@
             },
             
             async showDetail(candidateId) {
-                // 跳转到详情页
                 window.location.href = `detail.html?id=${candidateId}`;
             },
             
@@ -1569,6 +1695,9 @@
                         if (isDetail) {
                             newElement.innerHTML = `
                                 <div class="detail-comment-header">
+                                    <img src="${utils.getCurrentUser().avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`}" 
+                                         class="user-avatar" 
+                                         onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(username.charAt(0))}&background=random'">
                                     <span class="detail-comment-author">${newComment.user_name}</span>
                                     <span class="detail-comment-date">刚刚</span>
                                 </div>
@@ -1583,6 +1712,9 @@
                             newElement.innerHTML = `
                                 <div class="comment-header">
                                     <div>
+                                        <img src="${utils.getCurrentUser().avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`}" 
+                                             class="user-avatar" 
+                                             onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(username.charAt(0))}&background=random'">
                                         <span class="comment-author">
                                             ${newComment.user_name}
                                             ${!candidateId ? '<span class="global-comment-label">全局留言</span>' : ''}
@@ -1627,6 +1759,10 @@
                 const modal = document.getElementById('authModal');
                 modal.style.display = 'flex';
                 
+                // 重置头像预览
+                document.getElementById('avatarPreview').src = 'https://ui-avatars.com/api/?name=U&background=random';
+                document.getElementById('avatarFilename').textContent = '';
+                
                 document.querySelector('.close-auth').onclick = () => {
                     modal.style.display = 'none';
                 };
@@ -1642,6 +1778,22 @@
                         
                         document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
                     });
+                });
+                
+                // 头像上传处理
+                document.getElementById('avatarUpload').addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    // 显示文件名
+                    document.getElementById('avatarFilename').textContent = file.name;
+                    
+                    // 预览图片
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        document.getElementById('avatarPreview').src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
                 });
                 
                 document.getElementById('loginBtn').onclick = async () => {
@@ -1669,6 +1821,7 @@
                 document.getElementById('registerBtn').onclick = async () => {
                     const username = document.getElementById('registerUsername').value.trim();
                     const password = document.getElementById('registerPassword').value.trim();
+                    const avatarFile = document.getElementById('avatarUpload').files[0];
                     
                     if (!username || !password) {
                         alert('请输入用户名和密码');
@@ -1676,7 +1829,7 @@
                     }
                     
                     try {
-                        const { user, token } = await dataService.register(username, password);
+                        const { user, token } = await dataService.register(username, password, avatarFile);
                         utils.setAuthToken(token);
                         utils.setCurrentUser(user);
                         utils.setAuthStatus(user.username);
@@ -1701,7 +1854,7 @@
                 const user = utils.getCurrentUser();
                 
                 if (token && user) {
-                    utils.setAuthStatus(user.username);
+                    utils.setAuthStatus(user);
                 }
             },
             
