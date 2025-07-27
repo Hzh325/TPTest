@@ -54,7 +54,6 @@
             }
         }
         
-        /* 新增导航栏样式 */
         .navbar {
             grid-column: 1 / -1;
             display: flex;
@@ -84,7 +83,6 @@
             color: white;
         }
         
-        /* 新增账号表单样式 */
         .auth-form {
             background: var(--white);
             padding: 25px;
@@ -456,6 +454,26 @@
             transform: translateY(-2px);
         }
         
+        .cancel-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 1.05rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .cancel-btn:hover {
+            background: var(--gray-200);
+        }
+        
         .comments-list {
             max-height: 600px;
             overflow-y: auto;
@@ -762,7 +780,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- 新增导航栏 -->
+        <!-- 导航栏 -->
         <div class="navbar">
             <h1>人物投票系统</h1>
             <div class="nav-links">
@@ -881,6 +899,9 @@
                             注册账号
                         </button>
                     </div>
+                    <button class="cancel-btn" id="cancelAuthBtn">
+                        <i class="fas fa-times"></i> 取消
+                    </button>
                 </div>
                 
                 <div id="registerForm" style="display:none;">
@@ -899,6 +920,9 @@
                             返回登录
                         </button>
                     </div>
+                    <button class="cancel-btn" id="cancelRegisterBtn">
+                        <i class="fas fa-times"></i> 取消
+                    </button>
                 </div>
             </div>
         </div>
@@ -1392,6 +1416,14 @@
                 document.getElementById('showLoginBtn').addEventListener('click', () => {
                     document.getElementById('registerForm').style.display = 'none';
                     document.getElementById('loginForm').style.display = 'block';
+                });
+                
+                document.getElementById('cancelAuthBtn').addEventListener('click', () => {
+                    utils.showDialog('authModal', false);
+                });
+                
+                document.getElementById('cancelRegisterBtn').addEventListener('click', () => {
+                    utils.showDialog('authModal', false);
                 });
                 
                 document.getElementById('loginBtn').addEventListener('click', async () => {
