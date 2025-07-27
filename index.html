@@ -470,49 +470,6 @@
             padding-top: 15px;
         }
         
-        .comment-likes {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--gray-600);
-            font-size: 0.95rem;
-        }
-        
-        .like-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--gray-500);
-            transition: color 0.3s;
-            font-size: 1.1rem;
-            position: relative;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .like-btn:hover {
-            background: var(--gray-100);
-            color: var(--red-500);
-        }
-        
-        .like-btn.liked {
-            color: var(--red-500);
-        }
-        
-        .like-btn.liked:hover {
-            background: rgba(239, 68, 68, 0.1);
-        }
-        
-        .like-count {
-            font-weight: 600;
-            min-width: 24px;
-            text-align: center;
-        }
-        
         .reply-btn {
             background: var(--gray-100);
             border: none;
@@ -530,24 +487,6 @@
         .reply-btn:hover {
             background: var(--gray-200);
             color: var(--primary);
-        }
-        
-        .comment-reply {
-            background: var(--gray-50);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
-            border-left: 3px solid var(--gray-300);
-        }
-        
-        .reply-to {
-            color: var(--blue-400);
-            font-weight: 600;
-            background: rgba(96, 165, 250, 0.1);
-            padding: 2px 8px;
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 5px;
         }
         
         .global-comment-label {
@@ -826,56 +765,6 @@
             align-items: center;
             border-top: 1px solid var(--gray-200);
             padding-top: 15px;
-        }
-        
-        .detail-comment-likes {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .detail-like-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--gray-500);
-            transition: color 0.3s;
-            font-size: 1.1rem;
-            position: relative;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .detail-like-btn:hover {
-            background: var(--gray-100);
-            color: var(--red-500);
-        }
-        
-        .detail-like-btn.liked {
-            color: var(--red-500);
-        }
-        
-        .detail-like-btn.liked:hover {
-            background: rgba(239, 68, 68, 0.1);
-        }
-        
-        .detail-like-count {
-            font-weight: 600;
-            min-width: 24px;
-            text-align: center;
-        }
-        
-        .hot-comment-label {
-            background: var(--yellow-400);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
         }
         
         footer {
@@ -1319,7 +1208,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
-        // 配置区域
+        // Supabase配置
         const SUPABASE_CONFIG = {
             url: 'https://vwwicvqojtruwmovhbjg.supabase.co',
             key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
@@ -1341,9 +1230,7 @@
         // 应用程序代码
         let supabaseClient;
         let currentDetailId = null;
-        let likedComments = JSON.parse(localStorage.getItem('likedComments') || '{}');
         let pendingComment = null;
-        let replyTarget = null;
         
         function initializeSupabase() {
             try {
@@ -1486,14 +1373,7 @@
                 try {
                     let query = supabaseClient
                         .from('comments')
-                        .select(`
-                            id, 
-                            candidate_id, 
-                            user_name, 
-                            content, 
-                            likes, 
-                            created_at
-                        `)
+                        .select('*')
                         .order('created_at', { ascending: false });
                     
                     if (candidateId) {
@@ -1516,14 +1396,7 @@
                 try {
                     const { data, error } = await supabaseClient
                         .from('comments')
-                        .select(`
-                            id, 
-                            candidate_id, 
-                            user_name, 
-                            content, 
-                            likes, 
-                            created_at
-                        `)
+                        .select('*')
                         .is('candidate_id', null)
                         .order('created_at', { ascending: false })
                         .limit(limit);
@@ -1574,31 +1447,6 @@
                     console.error('提交留言失败:', error);
                     alert('提交留言失败: ' + error.message);
                     return false;
-                }
-            },
-            
-            async likeComment(commentId) {
-                if (!supabaseClient) return false;
-                
-                try {
-                    const isLiked = likedComments[commentId] || false;
-                    const increment = isLiked ? -1 : 1;
-                    
-                    const { data, error } = await supabaseClient
-                        .from('comments')
-                        .update({ likes: (likes) => likes + increment })
-                        .eq('id', commentId)
-                        .select();
-                    
-                    if (error) throw error;
-                    
-                    likedComments[commentId] = !isLiked;
-                    localStorage.setItem('likedComments', JSON.stringify(likedComments));
-                    
-                    return data[0].likes;
-                } catch (error) {
-                    console.error('点赞失败:', error);
-                    return null;
                 }
             },
             
@@ -1709,8 +1557,6 @@
                         `;
                     } else {
                         container.innerHTML = comments.map(comment => {
-                            const isLiked = likedComments[comment.id] || false;
-                            
                             return `
                                 <div class="comment-item">
                                     <div class="comment-header">
@@ -1724,15 +1570,7 @@
                                     </div>
                                     <p class="comment-content">${comment.content}</p>
                                     <div class="comment-actions">
-                                        <div class="comment-likes">
-                                            <button class="like-btn ${isLiked ? 'liked' : ''}" 
-                                                onclick="app.likeComment(${comment.id}, this)" 
-                                                data-likes="${comment.likes}">
-                                                <i class="fas fa-heart"></i>
-                                            </button>
-                                            <span class="like-count">${comment.likes}</span>
-                                        </div>
-                                        <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}', this)">
+                                        <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}')">
                                             <i class="fas fa-reply"></i> 回复
                                         </button>
                                     </div>
@@ -1803,8 +1641,6 @@
                 }
                 
                 container.innerHTML = comments.map(comment => {
-                    const isLiked = likedComments[comment.id] || false;
-                    
                     return `
                         <div class="detail-comment-item">
                             <div class="detail-comment-header">
@@ -1813,15 +1649,7 @@
                             </div>
                             <p class="detail-comment-content">${comment.content}</p>
                             <div class="detail-comment-actions">
-                                <div class="detail-comment-likes">
-                                    <button class="detail-like-btn ${isLiked ? 'liked' : ''}" 
-                                        onclick="app.likeComment(${comment.id}, this)" 
-                                        data-likes="${comment.likes}">
-                                        <i class="fas fa-heart"></i>
-                                    </button>
-                                    <span class="detail-like-count">${comment.likes}</span>
-                                </div>
-                                <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}', this, true)">
+                                <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}', true)">
                                     <i class="fas fa-reply"></i> 回复
                                 </button>
                             </div>
@@ -1953,7 +1781,6 @@
                         id: Date.now(),
                         user_name: userName,
                         content: content,
-                        likes: 0,
                         created_at: new Date().toISOString(),
                         candidate_id: candidateId
                     };
@@ -1982,13 +1809,7 @@
                             </div>
                             <p class="detail-comment-content">${newComment.content}</p>
                             <div class="detail-comment-actions">
-                                <div class="detail-comment-likes">
-                                    <button class="detail-like-btn" onclick="app.likeComment(${newComment.id}, this)">
-                                        <i class="fas fa-heart"></i>
-                                    </button>
-                                    <span class="detail-like-count">0</span>
-                                </div>
-                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}', this, true)">
+                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}', true)">
                                     <i class="fas fa-reply"></i> 回复
                                 </button>
                             </div>
@@ -2004,13 +1825,7 @@
                             </div>
                             <p class="comment-content">${newComment.content}</p>
                             <div class="comment-actions">
-                                <div class="comment-likes">
-                                    <button class="like-btn" onclick="app.likeComment(${newComment.id}, this)">
-                                        <i class="fas fa-heart"></i>
-                                    </button>
-                                    <span class="like-count">0</span>
-                                </div>
-                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}', this)">
+                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}')">
                                     <i class="fas fa-reply"></i> 回复
                                 </button>
                             </div>
@@ -2033,7 +1848,7 @@
                 }
             },
             
-            setReplyTarget(username, button, isDetail = false) {
+            setReplyTarget(username, isDetail = false) {
                 const contentField = isDetail 
                     ? document.getElementById('detailCommentContent') 
                     : document.getElementById('commentContent');
@@ -2045,57 +1860,6 @@
                     if (isDetail) {
                         document.getElementById('detailCommentForm').style.display = 'block';
                     }
-                }
-            },
-            
-            async likeComment(commentId, button) {
-                if (button.getAttribute('data-liking') === 'true') return;
-                button.setAttribute('data-liking', 'true');
-                button.disabled = true;
-                
-                const isLiked = likedComments[commentId] || false;
-                const currentLikes = parseInt(button.getAttribute('data-likes')) || 0;
-                const likeCountElement = button.nextElementSibling || button.querySelector('.like-count') || button.parentNode.querySelector('.like-count');
-                
-                // 立即更新UI
-                if (isLiked) {
-                    button.classList.remove('liked');
-                    likeCountElement.textContent = currentLikes - 1;
-                } else {
-                    button.classList.add('liked');
-                    likeCountElement.textContent = currentLikes + 1;
-                }
-                
-                try {
-                    const newLikes = await dataService.likeComment(commentId);
-                    if (newLikes !== null) {
-                        likedComments[commentId] = !isLiked;
-                        localStorage.setItem('likedComments', JSON.stringify(likedComments));
-                        button.setAttribute('data-likes', newLikes);
-                        likeCountElement.textContent = newLikes;
-                    } else {
-                        // 失败时恢复UI
-                        if (isLiked) {
-                            button.classList.add('liked');
-                            likeCountElement.textContent = currentLikes;
-                        } else {
-                            button.classList.remove('liked');
-                            likeCountElement.textContent = currentLikes;
-                        }
-                    }
-                } catch (error) {
-                    console.error('点赞失败:', error);
-                    // 失败时恢复UI
-                    if (isLiked) {
-                        button.classList.add('liked');
-                        likeCountElement.textContent = currentLikes;
-                    } else {
-                        button.classList.remove('liked');
-                        likeCountElement.textContent = currentLikes;
-                    }
-                } finally {
-                    button.removeAttribute('data-liking');
-                    button.disabled = false;
                 }
             }
         };
