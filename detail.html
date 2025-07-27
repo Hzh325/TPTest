@@ -671,6 +671,45 @@
             color: var(--gray-500);
             margin-top: 5px;
         }
+
+        /* 修改头像模态框 */
+        .edit-avatar-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1002;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .edit-avatar-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 400px;
+            max-width: 90%;
+            position: relative;
+        }
+        
+        .close-edit-avatar {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .edit-avatar-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-weight: 700;
+            text-align: center;
+        }
         
         /* 响应式调整 */
         @media (max-width: 768px) {
@@ -891,6 +930,27 @@
         </div>
     </div>
 
+    <!-- 修改头像模态框 -->
+    <div class="edit-avatar-modal" id="editAvatarModal">
+        <div class="edit-avatar-content">
+            <span class="close-edit-avatar">&times;</span>
+            <h3 class="edit-avatar-title">修改头像</h3>
+            
+            <div class="avatar-upload-container">
+                <img id="editAvatarPreview" src="" class="avatar-preview">
+                <div>
+                    <label for="editAvatarUpload" class="avatar-upload-btn">选择新头像</label>
+                    <input type="file" id="editAvatarUpload" accept="image/*" style="display: none;">
+                    <div id="editAvatarFilename" class="avatar-filename"></div>
+                </div>
+            </div>
+            
+            <button id="saveAvatarBtn" class="submit-btn" style="margin-top: 20px;">
+                <i class="fas fa-save"></i> 保存头像
+            </button>
+        </div>
+    </div>
+
     <!-- 先加载Supabase库 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -1012,7 +1072,8 @@
                 if (user) {
                     authStatus.innerHTML = `
                         <div class="logged-in">
-                            <img src="${user.avatar_url}" class="user-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random'">
+                            <img src="${user.avatar_url}" class="user-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random'" 
+                                 onclick="app.showEditAvatarModal()" style="cursor: pointer;">
                             <span>${user.username}</span>
                             <button class="logout-btn" id="logoutBtn">登出</button>
                         </div>
@@ -1217,6 +1278,49 @@
                     return { user: data, token: fakeToken };
                 } catch (error) {
                     console.error('注册失败:', error);
+                    throw error;
+                }
+            },
+            
+            async updateUserAvatar(userId, avatarFile) {
+                try {
+                    // 压缩图片
+                    const compressedBlob = await utils.compressImage(avatarFile);
+                    const fileExt = avatarFile.name.split('.').pop();
+                    const fileName = `avatar-${userId}-${Date.now()}.${fileExt}`;
+                    const filePath = `avatars/${fileName}`;
+                    
+                    // 上传到Supabase存储
+                    const { data: uploadData, error: uploadError } = await supabaseClient
+                        .storage
+                        .from('avatars')
+                        .upload(filePath, compressedBlob, {
+                            upsert: true
+                        });
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    // 获取公开URL
+                    const { data: urlData } = supabaseClient
+                        .storage
+                        .from('avatars')
+                        .getPublicUrl(filePath);
+                    
+                    const avatarUrl = urlData.publicUrl;
+                    
+                    // 更新用户记录
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .update({ avatar_url: avatarUrl })
+                        .eq('id', userId)
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    return data;
+                } catch (error) {
+                    console.error('更新头像失败:', error);
                     throw error;
                 }
             }
@@ -1534,6 +1638,60 @@
                         alert('注册成功！');
                     } catch (error) {
                         alert(error.message || '注册失败');
+                    }
+                };
+            },
+            
+            showEditAvatarModal() {
+                const modal = document.getElementById('editAvatarModal');
+                const user = utils.getCurrentUser();
+                
+                if (!user) return;
+                
+                // 设置当前头像预览
+                document.getElementById('editAvatarPreview').src = user.avatar_url || 
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random`;
+                document.getElementById('editAvatarFilename').textContent = '';
+                
+                modal.style.display = 'flex';
+                
+                document.querySelector('.close-edit-avatar').onclick = () => {
+                    modal.style.display = 'none';
+                };
+                
+                // 头像上传处理
+                document.getElementById('editAvatarUpload').addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    // 显示文件名
+                    document.getElementById('editAvatarFilename').textContent = file.name;
+                    
+                    // 预览图片
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        document.getElementById('editAvatarPreview').src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+                
+                document.getElementById('saveAvatarBtn').onclick = async () => {
+                    const file = document.getElementById('editAvatarUpload').files[0];
+                    
+                    if (!file) {
+                        alert('请选择新头像');
+                        return;
+                    }
+                    
+                    try {
+                        const updatedUser = await dataService.updateUserAvatar(user.id, file);
+                        utils.setCurrentUser(updatedUser);
+                        utils.setAuthStatus(updatedUser);
+                        
+                        modal.style.display = 'none';
+                        alert('头像更新成功！');
+                    } catch (error) {
+                        alert('头像更新失败: ' + error.message);
                     }
                 };
             },
