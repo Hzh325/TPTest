@@ -507,6 +507,7 @@
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
             grid-column: 1 / -1;
             margin-top: 20px;
+            position: relative;
         }
         
         .detail-header {
@@ -649,12 +650,16 @@
             transform: none;
         }
         
-        /* 详情页留言板样式 - 已移除所有悬浮效果 */
+        /* 详情页留言板样式 - 固定位置 */
         .detail-comments {
             margin-top: 30px;
-            /* 确保没有定位属性 */
             position: static;
             top: auto;
+            width: 100%;
+            padding: 20px;
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
         
         .detail-comments-header {
@@ -1144,7 +1149,7 @@
                 </div>
             </div>
             
-            <!-- 详情页留言板 - 无悬浮效果 -->
+            <!-- 详情页留言板 - 固定位置 -->
             <div class="detail-comments">
                 <div class="detail-comments-header">
                     <i class="fas fa-comment-dots"></i> 全部留言
