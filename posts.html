@@ -482,182 +482,257 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
-        // 等待Supabase库加载完成
-        document.addEventListener('DOMContentLoaded', async () => {
-            // 1. 初始化Supabase客户端
-            const supabaseUrl = 'https://vwwicvqojtruwmovhbjg.supabase.co';
-            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA';
+    // 等待Supabase库加载完成
+    document.addEventListener('DOMContentLoaded', async () => {
+        // 1. 初始化Supabase客户端（使用你的实际项目URL和key）
+        const supabaseUrl = 'https://vwwicvqojtruwmovhbjg.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA';
+        
+        // 关键修复：确保正确初始化Supabase客户端
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true
+            }
+        });
+
+        // 2. 应用程序状态
+        let currentUser = null;
+        
+        // 3. 检查登录状态
+        async function checkAuth() {
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) throw error;
+                currentUser = user;
+                updateAuthUI();
+                
+                // 如果用户已登录，加载帖子
+                if (user) {
+                    loadPosts();
+                }
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+                currentUser = null;
+                updateAuthUI();
+            }
+        }
+        
+        // 4. 更新UI显示
+        function updateAuthUI() {
+            const authLink = document.getElementById('authLink');
+            const postForm = document.getElementById('postForm');
             
-            const supabase = supabase.createClient(supabaseUrl, supabaseKey, {
-                auth: {
-                    persistSession: false,
-                    autoRefreshToken: false
+            if (currentUser) {
+                authLink.textContent = `欢迎，${currentUser.email || '用户'}`;
+                authLink.onclick = null;
+                postForm.style.display = 'block';
+            } else {
+                authLink.textContent = '登录/注册';
+                authLink.onclick = showAuthModal;
+                postForm.style.display = 'none';
+            }
+        }
+        
+        // 5. 显示/隐藏登录模态框
+        function showAuthModal() {
+            document.getElementById('authModal').style.display = 'flex';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            
+            // 清空表单
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('registerUsername').value = '';
+            document.getElementById('registerPassword').value = '';
+        }
+        
+        function hideAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+        
+        // 6. 注册功能（关键修复）
+        async function register(username, password) {
+            try {
+                // 使用固定域名+用户名作为email
+                const email = `${username}@example.com`; 
+                
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            username: username
+                        }
+                    }
+                });
+                
+                if (error) throw error;
+                
+                // 注册成功后自动登录
+                const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (loginError) throw loginError;
+                
+                return loginData;
+            } catch (error) {
+                console.error('注册失败:', error);
+                throw error;
+            }
+        }
+        
+        // 7. 登录功能
+        async function login(username, password) {
+            try {
+                const email = `${username}@example.com`;
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                return data;
+            } catch (error) {
+                console.error('登录失败:', error);
+                throw error;
+            }
+        }
+        
+        // 8. 加载帖子
+        async function loadPosts() {
+            try {
+                document.getElementById('loadingContainer').style.display = 'block';
+                document.getElementById('postsContainer').innerHTML = '';
+                
+                const { data: posts, error } = await supabase
+                    .from('posts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (posts.length === 0) {
+                    document.getElementById('postsContainer').innerHTML = `
+                        <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--gray-500)">
+                            <i class="fas fa-images" style="font-size:2rem; margin-bottom:15px;"></i>
+                            <p>还没有动态，发布第一条吧！</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                document.getElementById('postsContainer').innerHTML = posts.map(post => `
+                    <div class="post-card">
+                        <div class="post-image-container">
+                            <img src="${post.image_url}" class="post-image" 
+                                 onerror="this.onerror=null;this.src='https://via.placeholder.com/600x400?text=图片加载失败'">
+                        </div>
+                        <div class="post-info">
+                            <div class="post-header">
+                                <span class="post-author">
+                                    <i class="fas fa-user"></i> ${post.username || '匿名用户'}
+                                </span>
+                                <span class="post-date">
+                                    ${new Date(post.created_at).toLocaleString()}
+                                </span>
+                            </div>
+                            ${post.content ? `<p class="post-content">${post.content}</p>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('加载动态失败:', error);
+                document.getElementById('postsContainer').innerHTML = `
+                    <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--red-500)">
+                        <i class="fas fa-exclamation-triangle" style="font-size:2rem; margin-bottom:15px;"></i>
+                        <p>加载动态失败，请刷新页面</p>
+                    </div>
+                `;
+            } finally {
+                document.getElementById('loadingContainer').style.display = 'none';
+            }
+        }
+        
+        // 9. 设置事件监听
+        function setupEventListeners() {
+            // 登录/注册切换
+            document.getElementById('showRegisterBtn').addEventListener('click', () => {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+            });
+            
+            document.getElementById('showLoginBtn').addEventListener('click', () => {
+                document.getElementById('registerForm').style.display = 'none';
+                document.getElementById('loginForm').style.display = 'block';
+            });
+            
+            // 取消按钮
+            document.getElementById('cancelAuthBtn').addEventListener('click', hideAuthModal);
+            document.getElementById('cancelRegisterBtn').addEventListener('click', hideAuthModal);
+            
+            // 注册按钮
+            document.getElementById('registerBtn').addEventListener('click', async () => {
+                const username = document.getElementById('registerUsername').value.trim();
+                const password = document.getElementById('registerPassword').value.trim();
+                
+                if (!username || !password) {
+                    alert('请输入用户名和密码');
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    alert('密码至少需要6位');
+                    return;
+                }
+                
+                try {
+                    document.getElementById('loadingContainer').style.display = 'block';
+                    await register(username, password);
+                    alert('注册并登录成功！');
+                    await checkAuth();
+                    hideAuthModal();
+                } catch (error) {
+                    alert(`注册失败: ${error.message}`);
+                } finally {
+                    document.getElementById('loadingContainer').style.display = 'none';
                 }
             });
-
-            // 2. 应用程序状态
-            let currentUser = null;
             
-            // 3. 检查登录状态
-            async function checkAuth() {
+            // 登录按钮
+            document.getElementById('loginBtn').addEventListener('click', async () => {
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value.trim();
+                
+                if (!username || !password) {
+                    alert('请输入用户名和密码');
+                    return;
+                }
+                
                 try {
-                    const { data: { user }, error } = await supabase.auth.getUser();
-                    if (error) throw error;
-                    currentUser = user;
-                    updateAuthUI();
+                    document.getElementById('loadingContainer').style.display = 'block';
+                    await login(username, password);
+                    alert('登录成功！');
+                    await checkAuth();
+                    hideAuthModal();
                 } catch (error) {
-                    console.error('检查登录状态失败:', error);
-                    currentUser = null;
-                    updateAuthUI();
+                    alert(`登录失败: ${error.message}`);
+                } finally {
+                    document.getElementById('loadingContainer').style.display = 'none';
                 }
-            }
-            
-            // 4. 更新UI显示
-            function updateAuthUI() {
-                const authLink = document.getElementById('authLink');
-                const postForm = document.getElementById('postForm');
-                
-                if (currentUser) {
-                    authLink.textContent = `欢迎，${currentUser.email || '用户'}`;
-                    authLink.onclick = null;
-                    postForm.style.display = 'block';
-                } else {
-                    authLink.textContent = '登录/注册';
-                    authLink.onclick = showAuthModal;
-                    postForm.style.display = 'none';
-                }
-            }
-            
-            // 5. 显示/隐藏登录模态框
-            function showAuthModal() {
-                document.getElementById('authModal').style.display = 'flex';
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('registerForm').style.display = 'none';
-            }
-            
-            function hideAuthModal() {
-                document.getElementById('authModal').style.display = 'none';
-            }
-            
-            // 6. 注册功能（修复重点）
-            async function register(username, password) {
-                try {
-                    // 使用固定域名+用户名作为email
-                    const email = `${username}@example.com`; 
-                    
-                    const { data, error } = await supabase.auth.signUp({
-                        email: email,
-                        password: password,
-                        options: {
-                            data: {
-                                username: username
-                            }
-                        }
-                    });
-                    
-                    if (error) throw error;
-                    return data;
-                } catch (error) {
-                    console.error('注册失败:', error);
-                    throw error;
-                }
-            }
-            
-            // 7. 登录功能
-            async function login(username, password) {
-                try {
-                    const email = `${username}@example.com`;
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
-                    
-                    if (error) throw error;
-                    return data;
-                } catch (error) {
-                    console.error('登录失败:', error);
-                    throw error;
-                }
-            }
-            
-            // 8. 设置事件监听
-            function setupEventListeners() {
-                // 登录/注册切换
-                document.getElementById('showRegisterBtn').addEventListener('click', () => {
-                    document.getElementById('loginForm').style.display = 'none';
-                    document.getElementById('registerForm').style.display = 'block';
-                });
-                
-                document.getElementById('showLoginBtn').addEventListener('click', () => {
-                    document.getElementById('registerForm').style.display = 'none';
-                    document.getElementById('loginForm').style.display = 'block';
-                });
-                
-                // 取消按钮
-                document.getElementById('cancelAuthBtn').addEventListener('click', hideAuthModal);
-                document.getElementById('cancelRegisterBtn').addEventListener('click', hideAuthModal);
-                
-                // 注册按钮
-                document.getElementById('registerBtn').addEventListener('click', async () => {
-                    const username = document.getElementById('registerUsername').value.trim();
-                    const password = document.getElementById('registerPassword').value.trim();
-                    
-                    if (!username || !password) {
-                        alert('请输入用户名和密码');
-                        return;
-                    }
-                    
-                    if (password.length < 6) {
-                        alert('密码至少需要6位');
-                        return;
-                    }
-                    
-                    try {
-                        document.getElementById('loadingContainer').style.display = 'block';
-                        await register(username, password);
-                        alert('注册成功！请登录');
-                        document.getElementById('registerForm').style.display = 'none';
-                        document.getElementById('loginForm').style.display = 'block';
-                    } catch (error) {
-                        alert(`注册失败: ${error.message}`);
-                    } finally {
-                        document.getElementById('loadingContainer').style.display = 'none';
-                    }
-                });
-                
-                // 登录按钮
-                document.getElementById('loginBtn').addEventListener('click', async () => {
-                    const username = document.getElementById('loginUsername').value.trim();
-                    const password = document.getElementById('loginPassword').value.trim();
-                    
-                    if (!username || !password) {
-                        alert('请输入用户名和密码');
-                        return;
-                    }
-                    
-                    try {
-                        document.getElementById('loadingContainer').style.display = 'block';
-                        await login(username, password);
-                        alert('登录成功！');
-                        await checkAuth();
-                        hideAuthModal();
-                    } catch (error) {
-                        alert(`登录失败: ${error.message}`);
-                    } finally {
-                        document.getElementById('loadingContainer').style.display = 'none';
-                    }
-                });
-            }
-            
-            // 9. 初始化应用
-            async function init() {
-                await checkAuth();
-                setupEventListeners();
-            }
+            });
+        }
         
+        // 10. 初始化应用
+        async function init() {
+            await checkAuth();
+            setupEventListeners();
+        }
+    
         // 启动应用
         init();
-        });
-    </script>
-</body>
-</html>
+    });
+</script>
