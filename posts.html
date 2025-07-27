@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片动态 - 人物投票系统</title>
+    <!-- 使用相同的样式和Supabase配置 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 复用index.html的样式，并追加以下内容 */
+        
+        .post-form {
+            background: var(--gray-50);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .post-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            display: none;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+        
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .post-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .post-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .post-author {
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .post-date {
+            color: var(--gray-500);
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 相同的导航栏 -->
+        <div class="navbar">
+            <h1>人物投票系统</h1>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">投票首页</a>
+                <a href="posts.html" class="nav-link">图片动态</a>
+                <a id="authLink" class="nav-link">登录/注册</a>
+            </div>
+        </div>
+        
+        <!-- 发帖表单 -->
+        <div class="post-form" id="postForm">
+            <textarea class="post-input" id="postContent" placeholder="分享你的想法..."></textarea>
+            <input type="file" id="imageUpload" accept="image/*" style="display:none;">
+            <button class="submit-btn" onclick="document.getElementById('imageUpload').click()">
+                <i class="fas fa-image"></i> 选择图片
+            </button>
+            <img id="imagePreview" class="image-preview">
+            <button class="submit-btn" id="submitPost" style="margin-top:15px;display:none;">
+                <i class="fas fa-paper-plane"></i> 发布动态
+            </button>
+        </div>
+        
+        <!-- 动态列表 -->
+        <div class="posts-grid" id="postsContainer">
+            <!-- 动态将通过JS加载 -->
+        </div>
+    </div>
+
+    <script>
+        // 复用index.html的Supabase配置和工具函数
+        const app = {
+            currentUser: null,
+            
+            async init() {
+                // 初始化Supabase
+                if (!initializeSupabase()) {
+                    alert('系统初始化失败');
+                    return;
+                }
+                
+                // 检查登录状态
+                const { data } = await supabase.auth.getUser();
+                this.currentUser = data.user;
+                this.updateAuthUI();
+                
+                // 设置事件监听
+                this.setupEventListeners();
+                
+                // 加载动态
+                this.loadPosts();
+            },
+            
+            setupEventListeners() {
+                // 图片上传预览
+                document.getElementById('imageUpload').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const preview = document.getElementById('imagePreview');
+                            preview.src = event.target.result;
+                            preview.style.display = 'block';
+                            document.getElementById('submitPost').style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                // 发布动态
+                document.getElementById('submitPost').addEventListener('click', async () => {
+                    const content = document.getElementById('postContent').value.trim();
+                    const file = document.getElementById('imageUpload').files[0];
+                    
+                    if (!file) {
+                        alert('请选择图片');
+                        return;
+                    }
+                    
+                    try {
+                        // 1. 压缩图片（使用canvas）
+                        const compressedFile = await this.compressImage(file);
+                        
+                        // 2. 上传到Supabase Storage
+                        const filePath = `posts/${this.currentUser.id}/${Date.now()}.jpg`;
+                        const { error: uploadError } = await supabase.storage
+                            .from('post-images')
+                            .upload(filePath, compressedFile);
+                        
+                        if (uploadError) throw uploadError;
+                        
+                        // 3. 获取图片URL
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('post-images')
+                            .getPublicUrl(filePath);
+                        
+                        // 4. 保存到数据库
+                        const { error: dbError } = await supabase
+                            .from('posts')
+                            .insert([{
+                                content,
+                                image_url: publicUrl,
+                                user_id: this.currentUser.id,
+                                username: this.currentUser.user_metadata?.username || '匿名'
+                            }]);
+                        
+                        if (dbError) throw dbError;
+                        
+                        // 5. 清空表单
+                        document.getElementById('postContent').value = '';
+                        document.getElementById('imagePreview').style.display = 'none';
+                        document.getElementById('submitPost').style.display = 'none';
+                        document.getElementById('imageUpload').value = '';
+                        
+                        // 6. 刷新列表
+                        this.loadPosts();
+                        
+                    } catch (error) {
+                        alert('发布失败: ' + error.message);
+                    }
+                });
+            },
+            
+            // 图片压缩函数（质量75%，宽度不超过1200px）
+            compressImage(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.src = event.target.result;
+                        
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            
+                            // 计算新尺寸
+                            const maxWidth = 1200;
+                            const ratio = maxWidth / img.width;
+                            const width = img.width > maxWidth ? maxWidth : img.width;
+                            const height = img.height * ratio;
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            canvas.toBlob((blob) => {
+                                resolve(new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                }));
+                            }, 'image/jpeg', 0.75);
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                });
+            },
+            
+            async loadPosts() {
+                const { data: posts, error } = await supabase
+                    .from('posts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('加载动态失败:', error);
+                    return;
+                }
+                
+                const container = document.getElementById('postsContainer');
+                container.innerHTML = posts.map(post => `
+                    <div class="post-card">
+                        <div class="post-author">${post.username}</div>
+                        <div class="post-date">${new Date(post.created_at).toLocaleString()}</div>
+                        ${post.content ? `<p>${post.content}</p>` : ''}
+                        <img src="${post.image_url}" class="post-image">
+                    </div>
+                `).join('');
+            },
+            
+            updateAuthUI() {
+                const authLink = document.getElementById('authLink');
+                const postForm = document.getElementById('postForm');
+                
+                if (this.currentUser) {
+                    authLink.textContent = `欢迎，${this.currentUser.user_metadata?.username || '用户'}`;
+                    postForm.style.display = 'block';
+                } else {
+                    authLink.textContent = '登录/注册';
+                    postForm.style.display = 'none';
+                    authLink.onclick = () => {
+                        window.location.href = 'index.html#auth';
+                    };
+                }
+            }
+        };
+        
+        // 启动应用
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>

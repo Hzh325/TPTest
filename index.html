@@ -54,6 +54,63 @@
             }
         }
         
+        /* 新增导航栏样式 */
+        .navbar {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav-link {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover {
+            background: var(--primary-light);
+            color: white;
+        }
+        
+        /* 新增账号表单样式 */
+        .auth-form {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 30px auto;
+        }
+        
+        .auth-form h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .auth-switch {
+            text-align: center;
+            margin-top: 15px;
+            color: var(--gray-600);
+        }
+        
+        .auth-switch a {
+            color: var(--primary);
+            cursor: pointer;
+        }
+
         header {
             grid-column: 1 / -1;
             text-align: center;
@@ -97,7 +154,6 @@
             font-weight: 300;
         }
         
-        /* 主内容区样式 */
         .main-content {
             background: var(--white);
             border-radius: 16px;
@@ -319,7 +375,6 @@
             transform: translateY(-2px);
         }
         
-        /* 留言面板样式 */
         .comments-panel {
             background: var(--white);
             border-radius: 16px;
@@ -498,7 +553,6 @@
             font-weight: 500;
         }
         
-        /* 加载状态 */
         .loading-container {
             grid-column: 1 / -1;
             text-align: center;
@@ -536,7 +590,6 @@
             display: block;
         }
         
-        /* 确认对话框 */
         .confirmation-dialog {
             position: fixed;
             top: 0;
@@ -643,7 +696,6 @@
             transform: translateY(-2px);
         }
         
-        /* 响应式调整 */
         @media (max-width: 768px) {
             body {
                 padding: 15px;
@@ -695,11 +747,31 @@
             h1 {
                 font-size: 1.8rem;
             }
+            
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .nav-links {
+                width: 100%;
+                justify-content: space-around;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- 新增导航栏 -->
+        <div class="navbar">
+            <h1>人物投票系统</h1>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">投票首页</a>
+                <a href="posts.html" class="nav-link">图片动态</a>
+                <a id="authLink" class="nav-link">登录/注册</a>
+            </div>
+        </div>
+        
         <header>
             <h1>人物投票与留言系统</h1>
             <p class="subtitle">为您喜爱的人物投票并留下宝贵意见</p>
@@ -790,30 +862,50 @@
             </div>
         </div>
         
+        <!-- 账号登录/注册模态框 -->
+        <div class="confirmation-dialog" id="authModal">
+            <div class="dialog-content">
+                <div id="loginForm">
+                    <h3 class="dialog-header">用户登录</h3>
+                    <div class="form-group">
+                        <input type="text" id="loginUsername" class="form-input" placeholder="用户名">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="loginPassword" class="form-input" placeholder="密码">
+                    </div>
+                    <div class="dialog-buttons">
+                        <button class="dialog-btn dialog-confirm" id="loginBtn">
+                            <i class="fas fa-sign-in-alt"></i> 登录
+                        </button>
+                        <button class="dialog-btn dialog-cancel" id="showRegisterBtn">
+                            注册账号
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="registerForm" style="display:none;">
+                    <h3 class="dialog-header">用户注册</h3>
+                    <div class="form-group">
+                        <input type="text" id="registerUsername" class="form-input" placeholder="用户名">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="registerPassword" class="form-input" placeholder="密码（至少6位）">
+                    </div>
+                    <div class="dialog-buttons">
+                        <button class="dialog-btn dialog-confirm" id="registerBtn">
+                            <i class="fas fa-user-plus"></i> 注册
+                        </button>
+                        <button class="dialog-btn dialog-cancel" id="showLoginBtn">
+                            返回登录
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <footer>
             <p>© <span id="currentYear"></span> 人物投票系统 | 所有留言公开可见</p>
         </footer>
-    </div>
-
-    <!-- 确认对话框 -->
-    <div class="confirmation-dialog" id="confirmationDialog">
-        <div class="dialog-content">
-            <h3 class="dialog-header">确认发布留言</h3>
-            <p class="dialog-message">
-                发布评论后无法修改，您确定要发布吗？
-            </p>
-            <div class="dialog-warning">
-                <i class="fas fa-exclamation-circle"></i> 请注意：发布后无法编辑或删除您的留言
-            </div>
-            <div class="dialog-buttons">
-                <button class="dialog-btn dialog-cancel" id="dialogCancel">
-                    <i class="fas fa-times"></i> 取消
-                </button>
-                <button class="dialog-btn dialog-confirm" id="dialogConfirm">
-                    <i class="fas fa-check"></i> 确定发布
-                </button>
-            </div>
-        </div>
     </div>
 
     <!-- 先加载Supabase库 -->
@@ -888,18 +980,8 @@
                 const element = document.getElementById(elementId);
                 if (element) element.style.display = 'none';
             },
-            showDialog: (callback) => {
-                document.getElementById('confirmationDialog').style.display = 'flex';
-                
-                document.getElementById('dialogConfirm').onclick = () => {
-                    document.getElementById('confirmationDialog').style.display = 'none';
-                    if (callback) callback(true);
-                };
-                
-                document.getElementById('dialogCancel').onclick = () => {
-                    document.getElementById('confirmationDialog').style.display = 'none';
-                    if (callback) callback(false);
-                };
+            showDialog: (elementId, show = true) => {
+                document.getElementById(elementId).style.display = show ? 'flex' : 'none';
             }
         };
         
@@ -1062,6 +1144,51 @@
                 }
             },
             
+            async signUp(username, password) {
+                try {
+                    const { data, error } = await supabase.auth.signUp({
+                        email: `${username}@example.com`, // 使用固定域名+用户名作为email
+                        password: password,
+                        options: {
+                            data: {
+                                username: username
+                            }
+                        }
+                    });
+                    
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('注册失败:', error);
+                    throw error;
+                }
+            },
+            
+            async signIn(username, password) {
+                try {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email: `${username}@example.com`,
+                        password: password
+                    });
+                    
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('登录失败:', error);
+                    throw error;
+                }
+            },
+            
+            async getCurrentUser() {
+                try {
+                    const { data } = await supabase.auth.getUser();
+                    return data.user;
+                } catch (error) {
+                    console.error('获取用户失败:', error);
+                    return null;
+                }
+            },
+            
             getTotalPages() {
                 return Math.ceil(this.totalItems / this.itemsPerPage);
             },
@@ -1203,11 +1330,24 @@
                     btn.disabled = true;
                     btn.textContent = '已投票';
                 });
+            },
+            
+            updateAuthUI(user) {
+                const authLink = document.getElementById('authLink');
+                if (user) {
+                    authLink.textContent = `欢迎，${user.user_metadata?.username || '用户'}`;
+                    authLink.onclick = null;
+                } else {
+                    authLink.textContent = '登录/注册';
+                    authLink.onclick = () => utils.showDialog('authModal');
+                }
             }
         };
         
         // 应用控制器
         const app = {
+            currentUser: null,
+            
             async init() {
                 document.getElementById('currentYear').textContent = utils.getCurrentYear();
                 
@@ -1217,6 +1357,11 @@
                 }
                 
                 this.setupEventListeners();
+                
+                // 检查登录状态
+                this.currentUser = await dataService.getCurrentUser();
+                renderer.updateAuthUI(this.currentUser);
+                
                 await renderer.renderCandidates();
                 await renderer.renderComments();
             },
@@ -1236,6 +1381,61 @@
                 
                 document.getElementById('submitComment').addEventListener('click', () => {
                     this.prepareSubmitComment(false);
+                });
+                
+                // 账号相关事件
+                document.getElementById('showRegisterBtn').addEventListener('click', () => {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('registerForm').style.display = 'block';
+                });
+                
+                document.getElementById('showLoginBtn').addEventListener('click', () => {
+                    document.getElementById('registerForm').style.display = 'none';
+                    document.getElementById('loginForm').style.display = 'block';
+                });
+                
+                document.getElementById('loginBtn').addEventListener('click', async () => {
+                    const username = document.getElementById('loginUsername').value.trim();
+                    const password = document.getElementById('loginPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    try {
+                        const { user } = await dataService.signIn(username, password);
+                        this.currentUser = user;
+                        renderer.updateAuthUI(user);
+                        utils.showDialog('authModal', false);
+                        alert('登录成功！');
+                    } catch (error) {
+                        alert('登录失败: ' + error.message);
+                    }
+                });
+                
+                document.getElementById('registerBtn').addEventListener('click', async () => {
+                    const username = document.getElementById('registerUsername').value.trim();
+                    const password = document.getElementById('registerPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    if (password.length < 6) {
+                        alert('密码至少需要6位');
+                        return;
+                    }
+                    
+                    try {
+                        await dataService.signUp(username, password);
+                        alert('注册成功！请登录');
+                        document.getElementById('registerForm').style.display = 'none';
+                        document.getElementById('loginForm').style.display = 'block';
+                    } catch (error) {
+                        alert('注册失败: ' + error.message);
+                    }
                 });
             },
             
@@ -1264,8 +1464,7 @@
                 }
             },
             
-            async showDetail(candidateId) {
-                // 跳转到详情页
+            showDetail(candidateId) {
                 window.location.href = `detail.html?id=${candidateId}`;
             },
             
@@ -1283,69 +1482,14 @@
                 
                 pendingComment = { isDetail, userName, content };
                 
-                utils.showDialog((confirmed) => {
-                    if (confirmed) {
-                        this.submitComment(isDetail, userName, content);
-                    }
-                });
-            },
-            
-            async submitComment(isDetail, userName, content) {
-                const success = await dataService.submitComment(null, userName, content);
-                
-                if (success) {
-                    const newComment = {
-                        id: Date.now(),
-                        user_name: userName,
-                        content: content,
-                        created_at: new Date().toISOString(),
-                        candidate_id: null
-                    };
-                    
-                    const container = document.getElementById('commentsList');
-                    
-                    if (container) {
-                        const newElement = document.createElement('div');
-                        newElement.className = 'comment-item';
-                        newElement.innerHTML = `
-                            <div class="comment-header">
-                                <div>
-                                    <span class="comment-author">
-                                        ${newComment.user_name}
-                                        <span class="global-comment-label">全局留言</span>
-                                    </span>
-                                </div>
-                                <span class="comment-date">刚刚</span>
-                            </div>
-                            <p class="comment-content">${newComment.content}</p>
-                            <div class="comment-actions">
-                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}')">
-                                    <i class="fas fa-reply"></i> 回复
-                                </button>
-                            </div>
-                        `;
-                        
-                        if (container.firstChild) {
-                            container.insertBefore(newElement, container.firstChild);
-                        } else {
-                            container.appendChild(newElement);
-                        }
-                    }
-                    
-                    document.getElementById('commentName').value = '';
-                    document.getElementById('commentContent').value = '';
-                    
-                    setTimeout(async () => {
-                        await renderer.renderComments();
-                    }, 2000);
-                }
+                utils.showDialog('confirmationDialog');
             },
             
             setReplyTarget(username) {
                 const contentField = document.getElementById('commentContent');
                 
                 if (contentField) {
-                    contentField.value = `@${username} `;
+                    contentField.value = `@${username} ` + (contentField.value || '');
                     contentField.focus();
                 }
             }
