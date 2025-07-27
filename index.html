@@ -43,14 +43,8 @@
             margin: 0 auto;
             padding: 20px;
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 25px;
-        }
-        
-        @media (max-width: 992px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
+            grid-template-columns: 1fr;
+            gap: 20px;
         }
         
         header {
@@ -284,72 +278,6 @@
             background-color: var(--gray-200);
         }
         
-        .hot-comment {
-            background: var(--gray-50);
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 12px;
-            border-left: 3px solid var(--yellow-400);
-            font-size: 0.9rem;
-        }
-        
-        .hot-comment-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-            font-size: 0.85rem;
-        }
-        
-        .comment-author {
-            font-weight: 600;
-            color: var(--primary);
-        }
-        
-        .comment-content {
-            color: var(--gray-600);
-            line-height: 1.5;
-            font-size: 0.9rem;
-        }
-        
-        .hot-comment-label {
-            background: var(--yellow-400);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        
-        .no-results {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 40px;
-            background: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-        
-        .loading-container {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 50px;
-        }
-        
-        .loading-spinner {
-            border: 5px solid var(--gray-200);
-            border-top: 5px solid var(--primary);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
         /* 留言面板样式 */
         .comments-panel {
             background: var(--white);
@@ -357,8 +285,7 @@
             padding: 25px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             height: fit-content;
-            position: sticky;
-            top: 20px;
+            margin-top: 20px;
         }
         
         .panel-header {
@@ -807,6 +734,37 @@
             font-size: 0.9rem;
         }
         
+        /* 加载状态 */
+        .loading-container {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px;
+        }
+        
+        .loading-spinner {
+            border: 5px solid var(--gray-200);
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            background: var(--white);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
         /* 响应式调整 */
         @media (max-width: 768px) {
             header {
@@ -837,6 +795,14 @@
             .detail-image {
                 height: 250px;
             }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .vote-btn, .detail-btn {
+                width: 100%;
+            }
         }
         
         @media (max-width: 480px) {
@@ -856,12 +822,24 @@
                 flex-direction: column;
             }
             
-            .action-buttons {
-                flex-direction: column;
+            .back-btn {
+                width: 100%;
+                justify-content: center;
             }
             
-            .vote-btn, .detail-btn {
+            .detail-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .detail-comments-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .add-comment-btn {
                 width: 100%;
+                justify-content: center;
             }
         }
     </style>
@@ -917,7 +895,7 @@
             </div>
         </div>
         
-        <!-- 留言面板 -->
+        <!-- 留言面板 (在角色信息下方) -->
         <div class="comments-panel">
             <div class="panel-header">
                 <i class="fas fa-comments"></i> 留言板
@@ -1229,7 +1207,7 @@
                 }
             },
             
-            async getHotComments() {
+            async getLatestComments(limit = 10) {
                 try {
                     const { data, error } = await supabaseClient
                         .from('comments')
@@ -1242,13 +1220,13 @@
                             created_at,
                             candidates (name)
                         `)
-                        .order('likes', { ascending: false })
-                        .limit(5);
+                        .order('created_at', { ascending: false })
+                        .limit(limit);
                     
                     if (error) throw error;
                     return data || [];
                 } catch (error) {
-                    console.error('获取热门留言失败:', error);
+                    console.error('获取最新留言失败:', error);
                     return [];
                 }
             },
@@ -1348,10 +1326,9 @@
                 try {
                     utils.showLoading('loadingContainer');
                     
-                    const [candidates, votes, allComments] = await Promise.all([
+                    const [candidates, votes] = await Promise.all([
                         dataService.getCandidates(dataService.currentPage),
                         dataService.getVotes(),
-                        dataService.getComments()
                     ]);
                     
                     // 更新分页信息
@@ -1367,14 +1344,6 @@
                         `;
                     } else {
                         container.innerHTML = candidates.map(candidate => {
-                            // 获取该候选人的留言
-                            const candidateComments = allComments.filter(c => c.candidate_id === candidate.id);
-                            // 获取点赞数最高的留言
-                            const hotComment = candidateComments.length > 0 
-                                ? candidateComments.reduce((prev, current) => 
-                                    (prev.likes > current.likes) ? prev : current) 
-                                : null;
-                            
                             return `
                                 <div class="candidate-card" data-id="${candidate.id}">
                                     <div class="image-container">
@@ -1390,16 +1359,6 @@
                                         <div class="vote-count">
                                             <i class="fas fa-vote-yea"></i> 票数: ${votes[candidate.id] || 0}
                                         </div>
-                                        
-                                        ${hotComment ? `
-                                        <div class="hot-comment">
-                                            <div class="hot-comment-header">
-                                                <span class="comment-author">${hotComment.user_name}</span>
-                                                <span class="hot-comment-label">最热留言</span>
-                                            </div>
-                                            <p class="comment-content">${hotComment.content}</p>
-                                        </div>
-                                        ` : ''}
                                         
                                         <div class="action-buttons">
                                             <button class="vote-btn" onclick="app.voteForCandidate(${candidate.id})" 
@@ -1435,7 +1394,8 @@
                 try {
                     utils.showLoading('commentsLoading');
                     
-                    const comments = await dataService.getHotComments();
+                    // 获取最新留言
+                    const comments = await dataService.getLatestComments(10);
                     
                     if (comments.length === 0) {
                         container.innerHTML = `
@@ -1452,7 +1412,7 @@
                             const candidateName = comment.candidates ? comment.candidates.name : null;
                             
                             return `
-                                <div class="comment-item ${comment.likes > 2 ? 'hot' : ''}">
+                                <div class="comment-item">
                                     <div class="comment-header">
                                         <span class="comment-author">${comment.user_name}</span>
                                         <span class="comment-date">${utils.formatDate(comment.created_at)}</span>
@@ -1519,6 +1479,9 @@
                     document.getElementById('listView').style.display = 'none';
                     document.getElementById('detailView').style.display = 'block';
                     currentDetailId = candidateId;
+                    
+                    // 隐藏全局留言板
+                    document.querySelector('.comments-panel').style.display = 'none';
                 } catch (error) {
                     console.error('加载详情失败:', error);
                     alert('加载详情失败: ' + error.message);
@@ -1542,16 +1505,11 @@
                     return;
                 }
                 
-                // 按点赞数排序
-                comments.sort((a, b) => b.likes - a.likes);
-                
                 container.innerHTML = comments.map(comment => {
                     const isLiked = likedComments.includes(comment.id);
-                    const isHot = comment.likes > 2;
-                    const candidateName = comment.candidates ? comment.candidates.name : null;
                     
                     return `
-                        <div class="detail-comment-item ${isHot ? 'hot' : ''}">
+                        <div class="detail-comment-item">
                             <div class="detail-comment-header">
                                 <span class="detail-comment-author">${comment.user_name}</span>
                                 <span class="detail-comment-date">${utils.formatDate(comment.created_at)}</span>
@@ -1566,8 +1524,6 @@
                                         <span class="detail-like-count">${comment.likes}</span>
                                     </button>
                                 </div>
-                                ${candidateName ? `<span class="comment-target">给: ${candidateName}</span>` : ''}
-                                ${isHot ? '<span class="hot-comment-label">热门留言</span>' : ''}
                             </div>
                         </div>
                     `;
@@ -1684,6 +1640,7 @@
             showList() {
                 document.getElementById('detailView').style.display = 'none';
                 document.getElementById('listView').style.display = 'block';
+                document.querySelector('.comments-panel').style.display = 'block';
                 currentDetailId = null;
             },
             
@@ -1698,10 +1655,55 @@
                 
                 const success = await dataService.submitComment(null, userName, content);
                 if (success) {
-                    alert('留言发布成功！');
+                    // 创建临时留言项
+                    const newComment = {
+                        id: Date.now(), // 临时ID
+                        user_name: userName,
+                        content: content,
+                        likes: 0,
+                        created_at: new Date().toISOString(),
+                        candidate_id: null,
+                        candidates: null
+                    };
+                    
+                    // 添加到列表顶部
+                    const container = document.getElementById('commentsList');
+                    if (container) {
+                        const newElement = document.createElement('div');
+                        newElement.className = 'comment-item';
+                        newElement.innerHTML = `
+                            <div class="comment-header">
+                                <span class="comment-author">${newComment.user_name}</span>
+                                <span class="comment-date">刚刚</span>
+                            </div>
+                            <p class="comment-content">${newComment.content}</p>
+                            <div class="comment-actions">
+                                <div class="comment-likes">
+                                    <button class="like-btn" onclick="app.likeComment(${newComment.id}, this)">
+                                        <i class="fas fa-heart"></i>
+                                    </button>
+                                    <span class="like-count">0</span>
+                                </div>
+                                <span class="global-comment-label">全局留言</span>
+                            </div>
+                        `;
+                        
+                        // 插入到列表顶部
+                        if (container.firstChild) {
+                            container.insertBefore(newElement, container.firstChild);
+                        } else {
+                            container.appendChild(newElement);
+                        }
+                    }
+                    
+                    // 清空表单
                     document.getElementById('commentName').value = '';
                     document.getElementById('commentContent').value = '';
-                    await renderer.renderComments();
+                    
+                    // 2秒后刷新确保数据一致性
+                    setTimeout(async () => {
+                        await renderer.renderComments();
+                    }, 2000);
                 }
             },
             
@@ -1718,15 +1720,59 @@
                 
                 const success = await dataService.submitComment(currentDetailId, userName, content);
                 if (success) {
-                    alert('留言发布成功！');
+                    // 创建临时留言项
+                    const newComment = {
+                        id: Date.now(), // 临时ID
+                        user_name: userName,
+                        content: content,
+                        likes: 0,
+                        created_at: new Date().toISOString(),
+                        candidate_id: currentDetailId,
+                        candidates: { name: document.getElementById('detailTitle').textContent }
+                    };
+                    
+                    // 添加到列表顶部
+                    const container = document.getElementById('detailCommentsContainer');
+                    if (container) {
+                        const newElement = document.createElement('div');
+                        newElement.className = 'detail-comment-item';
+                        newElement.innerHTML = `
+                            <div class="detail-comment-header">
+                                <span class="detail-comment-author">${newComment.user_name}</span>
+                                <span class="detail-comment-date">刚刚</span>
+                            </div>
+                            <p class="detail-comment-content">${newComment.content}</p>
+                            <div class="detail-comment-actions">
+                                <div class="detail-comment-likes">
+                                    <button class="detail-like-btn" onclick="app.likeComment(${newComment.id}, this)">
+                                        <i class="fas fa-heart"></i>
+                                        <span class="detail-like-count">0</span>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // 插入到列表顶部
+                        if (container.firstChild) {
+                            container.insertBefore(newElement, container.firstChild);
+                        } else {
+                            container.appendChild(newElement);
+                        }
+                    }
+                    
+                    // 更新留言计数
+                    const commentCountElement = document.getElementById('commentCount');
+                    commentCountElement.textContent = parseInt(commentCountElement.textContent) + 1;
+                    
+                    // 清空表单并隐藏
                     document.getElementById('detailCommentName').value = '';
                     document.getElementById('detailCommentContent').value = '';
                     document.getElementById('detailCommentForm').style.display = 'none';
                     
-                    // 刷新详情页留言
-                    await renderer.renderDetail(currentDetailId);
-                    // 刷新侧边栏留言
-                    await renderer.renderComments();
+                    // 2秒后刷新确保数据一致性
+                    setTimeout(async () => {
+                        await renderer.renderDetail(currentDetailId);
+                    }, 2000);
                 }
             },
             
@@ -1736,11 +1782,21 @@
                     button.classList.add('liked');
                     button.disabled = true;
                     
+                    // 更新点赞数显示
+                    const likeCountElement = button.nextElementSibling;
+                    if (likeCountElement) {
+                        likeCountElement.textContent = parseInt(likeCountElement.textContent) + 1;
+                    }
+                    
                     // 刷新留言显示
                     if (currentDetailId) {
-                        await renderer.renderDetail(currentDetailId);
+                        setTimeout(async () => {
+                            await renderer.renderDetail(currentDetailId);
+                        }, 2000);
                     }
-                    await renderer.renderComments();
+                    setTimeout(async () => {
+                        await renderer.renderComments();
+                    }, 2000);
                 }
             }
         };
