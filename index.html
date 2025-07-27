@@ -650,129 +650,6 @@
             transform: none;
         }
         
-        /* 详情页留言板样式 - 无悬浮效果 */
-        .detail-comments {
-            margin-top: 30px;
-            position: static;
-            top: auto;
-            width: 100%;
-            padding: 20px;
-            background: var(--white);
-            border-radius: 16px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-        
-        .detail-comments-header {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--gray-200);
-            color: var(--primary);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            align-items: center;
-        }
-        
-        .add-comment-btn {
-            padding: 12px 20px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1rem;
-            box-shadow: 0 3px 8px rgba(79, 70, 229, 0.3);
-        }
-        
-        .add-comment-btn:hover {
-            background: #4338ca;
-            transform: translateY(-2px);
-        }
-        
-        .detail-comment-form {
-            background: var(--gray-50);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 25px;
-            display: none;
-        }
-        
-        .comment-form-header {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            color: var(--primary);
-            font-weight: 700;
-        }
-        
-        .comments-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        
-        @media (max-width: 480px) {
-            .comments-container {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .detail-comment-item {
-            background: var(--white);
-            border-radius: 12px;
-            padding: 20px;
-            border-left: 4px solid var(--primary-light);
-            box-shadow: 0 3px 8px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-        }
-        
-        .detail-comment-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .detail-comment-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        
-        .detail-comment-author {
-            font-weight: 700;
-            color: var(--primary);
-            font-size: 1.05rem;
-        }
-        
-        .detail-comment-date {
-            color: var(--gray-500);
-            font-size: 0.9rem;
-        }
-        
-        .detail-comment-content {
-            color: var(--gray-700);
-            line-height: 1.6;
-            margin-bottom: 18px;
-            font-size: 1.05rem;
-            position: relative;
-            padding-left: 10px;
-            border-left: 2px solid var(--gray-200);
-        }
-        
-        .detail-comment-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid var(--gray-200);
-            padding-top: 15px;
-        }
-        
         footer {
             grid-column: 1 / -1;
             text-align: center;
@@ -1006,16 +883,6 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
-            .detail-comments-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .add-comment-btn {
-                width: 100%;
-                justify-content: center;
-            }
         }
     </style>
 </head>
@@ -1143,44 +1010,6 @@
                     <button class="detail-vote-btn" id="detailVoteBtn">
                         投票支持
                     </button>
-                </div>
-            </div>
-            
-            <!-- 详情页留言板 - 无悬浮效果 -->
-            <div class="detail-comments">
-                <div class="detail-comments-header">
-                    <i class="fas fa-comment-dots"></i> 全部留言
-                    <button class="add-comment-btn" id="addCommentBtn">
-                        <i class="fas fa-plus"></i> 添加留言
-                    </button>
-                </div>
-                
-                <div class="detail-comment-form" id="detailCommentForm">
-                    <h3 class="comment-form-header">发表留言</h3>
-                    <div class="form-group">
-                        <input 
-                            type="text" 
-                            class="form-input" 
-                            id="detailCommentName" 
-                            placeholder="您的昵称"
-                        >
-                    </div>
-                    
-                    <div class="form-group">
-                        <textarea 
-                            class="form-textarea" 
-                            id="detailCommentContent" 
-                            placeholder="写下您的留言..."
-                        ></textarea>
-                    </div>
-                    
-                    <button class="submit-btn" id="submitDetailComment">
-                        <i class="fas fa-paper-plane"></i> 发布留言
-                    </button>
-                </div>
-                
-                <div class="comments-container" id="detailCommentsContainer">
-                    <!-- 详情页留言将通过JavaScript动态生成 -->
                 </div>
             </div>
         </div>
@@ -1598,10 +1427,9 @@
                 if (loading) loading.style.display = 'block';
                 
                 try {
-                    const [candidate, votes, comments] = await Promise.all([
+                    const [candidate, votes] = await Promise.all([
                         dataService.getCandidateDetail(candidateId),
-                        dataService.getVotes(),
-                        dataService.getComments(candidateId)
+                        dataService.getVotes()
                     ]);
                     
                     if (!candidate) {
@@ -1616,10 +1444,7 @@
                     };
                     document.getElementById('detailDescription').textContent = candidate.description || '暂无描述';
                     document.getElementById('voteCount').textContent = votes[candidateId] || 0;
-                    document.getElementById('commentCount').textContent = comments.length;
                     document.getElementById('detailVoteBtn').disabled = utils.hasVoted();
-                    
-                    this.renderDetailComments(comments);
                     
                     document.getElementById('listView').style.display = 'none';
                     document.getElementById('detailView').style.display = 'block';
@@ -1630,39 +1455,6 @@
                 } finally {
                     if (loading) loading.style.display = 'none';
                 }
-            },
-            
-            renderDetailComments(comments) {
-                const container = document.getElementById('detailCommentsContainer');
-                if (!container) return;
-                
-                if (comments.length === 0) {
-                    container.innerHTML = `
-                        <div class="detail-comment-item">
-                            <p style="text-align: center; padding: 20px; color: var(--gray-500);">
-                                暂无留言，成为第一个留言的人吧！
-                            </p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                container.innerHTML = comments.map(comment => {
-                    return `
-                        <div class="detail-comment-item">
-                            <div class="detail-comment-header">
-                                <span class="detail-comment-author">${comment.user_name}</span>
-                                <span class="detail-comment-date">${utils.formatDate(comment.created_at)}</span>
-                            </div>
-                            <p class="detail-comment-content">${comment.content}</p>
-                            <div class="detail-comment-actions">
-                                <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}', true)">
-                                    <i class="fas fa-reply"></i> 回复
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
             },
             
             disableAllVoteButtons() {
@@ -1703,12 +1495,6 @@
                 
                 document.getElementById('submitComment').addEventListener('click', () => {
                     this.prepareSubmitComment(false);
-                });
-                document.getElementById('submitDetailComment').addEventListener('click', () => {
-                    this.prepareSubmitComment(true);
-                });
-                document.getElementById('addCommentBtn').addEventListener('click', () => {
-                    document.getElementById('detailCommentForm').style.display = 'block';
                 });
                 
                 document.getElementById('backToList').addEventListener('click', this.showList);
@@ -1754,13 +1540,8 @@
             },
             
             prepareSubmitComment(isDetail) {
-                const userNameField = isDetail 
-                    ? document.getElementById('detailCommentName') 
-                    : document.getElementById('commentName');
-                
-                const contentField = isDetail 
-                    ? document.getElementById('detailCommentContent') 
-                    : document.getElementById('commentContent');
+                const userNameField = document.getElementById('commentName');
+                const contentField = document.getElementById('commentContent');
                 
                 const userName = userNameField.value.trim();
                 const content = contentField.value.trim();
@@ -1770,18 +1551,17 @@
                     return;
                 }
                 
-                pendingComment = { isDetail, userName, content };
+                pendingComment = { isDetail: false, userName, content };
                 
                 utils.showDialog((confirmed) => {
                     if (confirmed) {
-                        this.submitComment(isDetail, userName, content);
+                        this.submitComment(false, userName, content);
                     }
                 });
             },
             
             async submitComment(isDetail, userName, content) {
-                const candidateId = isDetail ? currentDetailId : null;
-                const success = await dataService.submitComment(candidateId, userName, content);
+                const success = await dataService.submitComment(null, userName, content);
                 
                 if (success) {
                     const newComment = {
@@ -1789,38 +1569,15 @@
                         user_name: userName,
                         content: content,
                         created_at: new Date().toISOString(),
-                        candidate_id: candidateId
+                        candidate_id: null
                     };
                     
-                    let container;
-                    if (isDetail) {
-                        container = document.getElementById('detailCommentsContainer');
-                        const commentCount = document.getElementById('commentCount');
-                        commentCount.textContent = parseInt(commentCount.textContent) + 1;
-                        document.getElementById('detailCommentName').value = '';
-                        document.getElementById('detailCommentContent').value = '';
-                        document.getElementById('detailCommentForm').style.display = 'none';
-                    } else {
-                        container = document.getElementById('commentsList');
-                        document.getElementById('commentName').value = '';
-                        document.getElementById('commentContent').value = '';
-                    }
+                    const container = document.getElementById('commentsList');
                     
                     if (container) {
                         const newElement = document.createElement('div');
-                        newElement.className = isDetail ? 'detail-comment-item' : 'comment-item';
-                        newElement.innerHTML = isDetail ? `
-                            <div class="detail-comment-header">
-                                <span class="detail-comment-author">${newComment.user_name}</span>
-                                <span class="detail-comment-date">刚刚</span>
-                            </div>
-                            <p class="detail-comment-content">${newComment.content}</p>
-                            <div class="detail-comment-actions">
-                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}', true)">
-                                    <i class="fas fa-reply"></i> 回复
-                                </button>
-                            </div>
-                        ` : `
+                        newElement.className = 'comment-item';
+                        newElement.innerHTML = `
                             <div class="comment-header">
                                 <div>
                                     <span class="comment-author">
@@ -1845,28 +1602,21 @@
                         }
                     }
                     
+                    document.getElementById('commentName').value = '';
+                    document.getElementById('commentContent').value = '';
+                    
                     setTimeout(async () => {
-                        if (isDetail) {
-                            await renderer.renderDetail(currentDetailId);
-                        } else {
-                            await renderer.renderComments();
-                        }
+                        await renderer.renderComments();
                     }, 2000);
                 }
             },
             
-            setReplyTarget(username, isDetail = false) {
-                const contentField = isDetail 
-                    ? document.getElementById('detailCommentContent') 
-                    : document.getElementById('commentContent');
+            setReplyTarget(username) {
+                const contentField = document.getElementById('commentContent');
                 
                 if (contentField) {
                     contentField.value = `@${username} `;
                     contentField.focus();
-                    
-                    if (isDetail) {
-                        document.getElementById('detailCommentForm').style.display = 'block';
-                    }
                 }
             }
         };
