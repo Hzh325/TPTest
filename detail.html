@@ -485,6 +485,147 @@
             background: var(--gray-200);
             transform: translateY(-2px);
         }
+
+        /* 登录/注册样式 */
+        .auth-btn {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+        
+        .auth-btn:hover {
+            background: var(--gray-100);
+            transform: translateY(-2px);
+        }
+        
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .auth-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 400px;
+            max-width: 90%;
+            position: relative;
+        }
+        
+        .close-auth {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .auth-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--gray-500);
+            position: relative;
+        }
+        
+        .auth-tab.active {
+            color: var(--primary);
+        }
+        
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+        }
+        
+        .auth-form .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .auth-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .auth-form input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+        }
+        
+        .auth-submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .auth-submit-btn:hover {
+            background: #4338ca;
+        }
+        
+        .logged-in {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+        
+        .logged-in span {
+            font-weight: 600;
+        }
+        
+        .logout-btn {
+            background: var(--red-500);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
         
         /* 响应式调整 */
         @media (max-width: 768px) {
@@ -515,6 +656,11 @@
             
             .dialog-btn {
                 width: 100%;
+            }
+
+            .auth-btn, .logged-in {
+                top: 10px;
+                right: 10px;
             }
         }
         
@@ -561,6 +707,9 @@
     <div class="container">
         <header>
             <h1>人物投票与留言系统</h1>
+            <div id="authStatus">
+                <button id="authBtn" class="auth-btn">登录/注册</button>
+            </div>
         </header>
         
         <!-- 详情页视图 -->
@@ -610,15 +759,6 @@
                 <div class="detail-comment-form" id="detailCommentForm">
                     <h3 class="comment-form-header">发表留言</h3>
                     <div class="form-group">
-                        <input 
-                            type="text" 
-                            class="form-input" 
-                            id="detailCommentName" 
-                            placeholder="您的昵称"
-                        >
-                    </div>
-                    
-                    <div class="form-group">
                         <textarea 
                             class="form-textarea" 
                             id="detailCommentContent" 
@@ -659,6 +799,41 @@
                 <button class="dialog-btn dialog-confirm" id="dialogConfirm">
                     <i class="fas fa-check"></i> 确定发布
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录/注册模态框 -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-content">
+            <span class="close-auth">&times;</span>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">登录</button>
+                <button class="auth-tab" data-tab="register">注册</button>
+            </div>
+            
+            <div id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="loginUsername" placeholder="输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="输入密码">
+                </div>
+                <button id="loginBtn" class="auth-submit-btn">登录</button>
+            </div>
+            
+            <div id="registerForm" class="auth-form" style="display: none;">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="registerUsername" placeholder="输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="registerPassword" placeholder="输入密码">
+                </div>
+                <button id="registerBtn" class="auth-submit-btn">注册</button>
             </div>
         </div>
     </div>
@@ -740,7 +915,28 @@
                     document.getElementById('confirmationDialog').style.display = 'none';
                     if (callback) callback(false);
                 };
-            }
+            },
+            setAuthStatus: (username) => {
+                const authStatus = document.getElementById('authStatus');
+                if (username) {
+                    authStatus.innerHTML = `
+                        <div class="logged-in">
+                            <span>欢迎, ${username}</span>
+                            <button class="logout-btn" id="logoutBtn">登出</button>
+                        </div>
+                    `;
+                    document.getElementById('logoutBtn').addEventListener('click', app.logout);
+                } else {
+                    authStatus.innerHTML = '<button id="authBtn" class="auth-btn">登录/注册</button>';
+                    document.getElementById('authBtn').addEventListener('click', app.showAuthModal);
+                }
+            },
+            getAuthToken: () => localStorage.getItem('authToken'),
+            setAuthToken: (token) => localStorage.setItem('authToken', token),
+            removeAuthToken: () => localStorage.removeItem('authToken'),
+            getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
+            setCurrentUser: (user) => localStorage.setItem('currentUser', JSON.stringify(user)),
+            removeCurrentUser: () => localStorage.removeItem('currentUser')
         };
         
         // 数据服务
@@ -841,6 +1037,56 @@
                     alert('提交留言失败: ' + error.message);
                     return false;
                 }
+            },
+            
+            async login(username, password) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select('*')
+                        .eq('username', username)
+                        .eq('password', password) // 注意: 实际应用中应该使用加密密码
+                        .single();
+                    
+                    if (error) throw error;
+                    if (!data) throw new Error('用户名或密码错误');
+                    
+                    // 在实际应用中，这里应该使用JWT或其他安全令牌
+                    const fakeToken = `fake-jwt-token-${Date.now()}`;
+                    return { user: data, token: fakeToken };
+                } catch (error) {
+                    console.error('登录失败:', error);
+                    throw error;
+                }
+            },
+            
+            async register(username, password) {
+                try {
+                    // 检查用户名是否已存在
+                    const { data: existingUser, error: checkError } = await supabaseClient
+                        .from('users')
+                        .select('username')
+                        .eq('username', username)
+                        .single();
+                    
+                    if (existingUser) throw new Error('用户名已存在');
+                    
+                    // 创建新用户
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .insert([{ username, password }]) // 注意: 实际应用中应该加密密码
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    // 在实际应用中，这里应该使用JWT或其他安全令牌
+                    const fakeToken = `fake-jwt-token-${Date.now()}`;
+                    return { user: data, token: fakeToken };
+                } catch (error) {
+                    console.error('注册失败:', error);
+                    throw error;
+                }
             }
         };
         
@@ -935,6 +1181,7 @@
                 }
                 
                 this.setupEventListeners();
+                this.checkAuth();
                 
                 // 从URL获取ID参数
                 const urlParams = new URLSearchParams(window.location.search);
@@ -954,15 +1201,25 @@
                 });
                 
                 document.getElementById('submitDetailComment').addEventListener('click', () => {
-                    this.prepareSubmitComment();
+                    this.prepareSubmitComment(true);
                 });
                 
                 document.getElementById('addCommentBtn').addEventListener('click', () => {
+                    const user = utils.getCurrentUser();
+                    if (!user) {
+                        alert('请先登录后再发表评论');
+                        this.showAuthModal();
+                        return;
+                    }
                     document.getElementById('detailCommentForm').style.display = 'block';
                 });
                 
                 document.getElementById('detailVoteBtn').addEventListener('click', () => {
                     if (currentDetailId) this.voteForCandidate(currentDetailId);
+                });
+
+                document.getElementById('authBtn')?.addEventListener('click', () => {
+                    this.showAuthModal();
                 });
             },
             
@@ -981,34 +1238,38 @@
                 }
             },
             
-            prepareSubmitComment() {
-                const userNameField = document.getElementById('detailCommentName');
-                const contentField = document.getElementById('detailCommentContent');
-                
-                const userName = userNameField.value.trim();
-                const content = contentField.value.trim();
-                
-                if (!userName || !content) {
-                    alert('请填写昵称和留言内容');
+            prepareSubmitComment(isDetail) {
+                const user = utils.getCurrentUser();
+                if (!user) {
+                    alert('请先登录后再发表评论');
+                    this.showAuthModal();
                     return;
                 }
                 
-                pendingComment = { userName, content };
+                const contentField = document.getElementById('detailCommentContent');
+                const content = contentField.value.trim();
+                
+                if (!content) {
+                    alert('请输入留言内容');
+                    return;
+                }
+                
+                pendingComment = { isDetail, content };
                 
                 utils.showDialog((confirmed) => {
                     if (confirmed) {
-                        this.submitComment(userName, content);
+                        this.submitComment(isDetail, user.username, content);
                     }
                 });
             },
             
-            async submitComment(userName, content) {
-                const success = await dataService.submitComment(currentDetailId, userName, content);
+            async submitComment(isDetail, username, content) {
+                const success = await dataService.submitComment(currentDetailId, username, content);
                 
                 if (success) {
                     const newComment = {
                         id: Date.now(),
-                        user_name: userName,
+                        user_name: username,
                         content: content,
                         created_at: new Date().toISOString(),
                         candidate_id: currentDetailId
@@ -1041,7 +1302,6 @@
                         }
                     }
                     
-                    document.getElementById('detailCommentName').value = '';
                     document.getElementById('detailCommentContent').value = '';
                     document.getElementById('detailCommentForm').style.display = 'none';
                     
@@ -1049,6 +1309,88 @@
                         const comments = await dataService.getComments(currentDetailId);
                         renderer.renderDetailComments(comments);
                     }, 2000);
+                }
+            },
+            
+            showAuthModal() {
+                const modal = document.getElementById('authModal');
+                modal.style.display = 'flex';
+                
+                document.querySelector('.close-auth').onclick = () => {
+                    modal.style.display = 'none';
+                };
+                
+                document.querySelectorAll('.auth-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        document.querySelectorAll('.auth-form').forEach(form => {
+                            form.style.display = 'none';
+                        });
+                        
+                        document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
+                    });
+                });
+                
+                document.getElementById('loginBtn').onclick = async () => {
+                    const username = document.getElementById('loginUsername').value.trim();
+                    const password = document.getElementById('loginPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    try {
+                        const { user, token } = await dataService.login(username, password);
+                        utils.setAuthToken(token);
+                        utils.setCurrentUser(user);
+                        utils.setAuthStatus(user.username);
+                        
+                        document.getElementById('authModal').style.display = 'none';
+                        alert('登录成功！');
+                    } catch (error) {
+                        alert(error.message || '登录失败');
+                    }
+                };
+                
+                document.getElementById('registerBtn').onclick = async () => {
+                    const username = document.getElementById('registerUsername').value.trim();
+                    const password = document.getElementById('registerPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    try {
+                        const { user, token } = await dataService.register(username, password);
+                        utils.setAuthToken(token);
+                        utils.setCurrentUser(user);
+                        utils.setAuthStatus(user.username);
+                        
+                        document.getElementById('authModal').style.display = 'none';
+                        alert('注册成功！');
+                    } catch (error) {
+                        alert(error.message || '注册失败');
+                    }
+                };
+            },
+            
+            logout() {
+                utils.removeAuthToken();
+                utils.removeCurrentUser();
+                utils.setAuthStatus(null);
+                alert('已登出');
+            },
+            
+            checkAuth() {
+                const token = utils.getAuthToken();
+                const user = utils.getCurrentUser();
+                
+                if (token && user) {
+                    utils.setAuthStatus(user.username);
                 }
             },
             
