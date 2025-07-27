@@ -783,6 +783,50 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
+        /* 签到按钮样式 */
+        .checkin-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: var(--green-500);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkin-btn:hover {
+            background: #0d9f6e;
+            transform: translateY(-2px);
+        }
+        
+        .checkin-btn:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .vote-count-badge {
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
         
         /* 响应式调整 */
         @media (max-width: 768px) {
@@ -835,6 +879,11 @@
                 top: 10px;
                 right: 10px;
             }
+
+            .checkin-btn {
+                top: 10px;
+                left: 10px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -847,6 +896,10 @@
 <body>
     <div class="container">
         <header>
+            <button id="checkinBtn" class="checkin-btn" style="display: none;">
+                <i class="fas fa-calendar-check"></i> 签到
+                <span id="voteCountBadge" class="vote-count-badge" style="display: none;">0</span>
+            </button>
             <h1>人物投票与留言系统</h1>
             <p class="subtitle">为您喜爱的人物投票并留下宝贵意见</p>
             <div id="authStatus">
@@ -1017,6 +1070,7 @@
         let supabaseClient;
         let currentDetailId = null;
         let pendingComment = null;
+        let isCheckingIn = false; // 防止重复签到
         
         function initializeSupabase() {
             try {
@@ -1085,9 +1139,19 @@
                         </div>
                     `;
                     document.getElementById('logoutBtn').addEventListener('click', app.logout);
+                    
+                    // 显示签到按钮
+                    document.getElementById('checkinBtn').style.display = 'flex';
+                    
+                    // 检查签到状态
+                    app.checkCheckinStatus();
                 } else {
                     authStatus.innerHTML = '<button id="authBtn" class="auth-btn">登录/注册</button>';
                     document.getElementById('authBtn').addEventListener('click', app.showAuthModal);
+                    
+                    // 隐藏签到按钮
+                    document.getElementById('checkinBtn').style.display = 'none';
+                    document.getElementById('voteCountBadge').style.display = 'none';
                 }
             },
             getAuthToken: () => localStorage.getItem('authToken'),
@@ -1095,7 +1159,23 @@
             removeAuthToken: () => localStorage.removeItem('authToken'),
             getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
             setCurrentUser: (user) => localStorage.setItem('currentUser', JSON.stringify(user)),
-            removeCurrentUser: () => localStorage.removeItem('currentUser')
+            removeCurrentUser: () => localStorage.removeItem('currentUser'),
+            getLastCheckinDate: () => localStorage.getItem('lastCheckinDate'),
+            setLastCheckinDate: (date) => localStorage.setItem('lastCheckinDate', date),
+            getVoteCount: () => parseInt(localStorage.getItem('voteCount') || '0'),
+            setVoteCount: (count) => localStorage.setItem('voteCount', count.toString()),
+            incrementVoteCount: () => {
+                const count = utils.getVoteCount() + 1;
+                utils.setVoteCount(count);
+                return count;
+            },
+            isSameDay: (date1, date2) => {
+                const d1 = new Date(date1);
+                const d2 = new Date(date2);
+                return d1.getFullYear() === d2.getFullYear() &&
+                       d1.getMonth() === d2.getMonth() &&
+                       d1.getDate() === d2.getDate();
+            }
         };
         
         // 数据服务
@@ -1218,7 +1298,6 @@
             
             async submitVote(candidateId) {
                 if (!supabaseClient) return false;
-                if (utils.hasVoted()) return false;
                 
                 try {
                     const { error } = await supabaseClient
@@ -1226,7 +1305,6 @@
                         .insert([{ candidate_id: candidateId }]);
                     
                     if (error) throw error;
-                    utils.markAsVoted();
                     return true;
                 } catch (error) {
                     console.error('投票失败:', error);
@@ -1370,8 +1448,8 @@
                                         
                                         <div class="action-buttons">
                                             <button class="vote-btn" onclick="app.voteForCandidate(${candidate.id})" 
-                                                ${utils.hasVoted() ? 'disabled' : ''}>
-                                                ${utils.hasVoted() ? '已投票' : '投票'}
+                                                ${utils.getVoteCount() <= 0 ? 'disabled' : ''}>
+                                                ${utils.getVoteCount() <= 0 ? '无投票机会' : '投票'}
                                             </button>
                                             <button class="detail-btn" onclick="app.showDetail(${candidate.id})">
                                                 详情 <i class="fas fa-chevron-right"></i>
@@ -1443,11 +1521,20 @@
                 }
             },
             
-            disableAllVoteButtons() {
+            updateVoteButtons() {
+                const voteCount = utils.getVoteCount();
                 document.querySelectorAll('.vote-btn').forEach(btn => {
-                    btn.disabled = true;
-                    btn.textContent = '已投票';
+                    btn.disabled = voteCount <= 0;
+                    btn.textContent = voteCount <= 0 ? '无投票机会' : '投票';
                 });
+                
+                const badge = document.getElementById('voteCountBadge');
+                if (voteCount > 0) {
+                    badge.textContent = voteCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
             }
         };
         
@@ -1487,6 +1574,10 @@
                 document.getElementById('authBtn')?.addEventListener('click', () => {
                     this.showAuthModal();
                 });
+                
+                document.getElementById('checkinBtn').addEventListener('click', () => {
+                    this.checkin();
+                });
             },
             
             async changePage(direction) {
@@ -1501,15 +1592,25 @@
             },
             
             async voteForCandidate(candidateId) {
-                if (utils.hasVoted()) {
-                    alert('您已经投过票了！');
+                const user = utils.getCurrentUser();
+                if (!user) {
+                    alert('请先登录后再投票');
+                    this.showAuthModal();
+                    return;
+                }
+                
+                if (utils.getVoteCount() <= 0) {
+                    alert('您没有投票机会，请先签到获取投票机会');
                     return;
                 }
                 
                 const success = await dataService.submitVote(candidateId);
                 if (success) {
+                    const newCount = utils.getVoteCount() - 1;
+                    utils.setVoteCount(newCount);
+                    
                     alert('投票成功！');
-                    renderer.disableAllVoteButtons();
+                    renderer.updateVoteButtons();
                     await renderer.renderCandidates();
                 }
             },
@@ -1661,6 +1762,9 @@
                         
                         document.getElementById('authModal').style.display = 'none';
                         alert('登录成功！');
+                        
+                        // 检查签到状态
+                        this.checkCheckinStatus();
                     } catch (error) {
                         alert(error.message || '登录失败');
                     }
@@ -1681,8 +1785,15 @@
                         utils.setCurrentUser(user);
                         utils.setAuthStatus(user.username);
                         
+                        // 新注册用户初始获得1次投票机会
+                        utils.setVoteCount(1);
+                        renderer.updateVoteButtons();
+                        
                         document.getElementById('authModal').style.display = 'none';
-                        alert('注册成功！');
+                        alert('注册成功！您获得了1次初始投票机会');
+                        
+                        // 设置签到状态
+                        utils.setLastCheckinDate(new Date().toISOString());
                     } catch (error) {
                         alert(error.message || '注册失败');
                     }
@@ -1713,6 +1824,68 @@
                     contentField.value = `@${username} `;
                     contentField.focus();
                 }
+            },
+            
+            async checkin() {
+                if (isCheckingIn) return;
+                isCheckingIn = true;
+                
+                const user = utils.getCurrentUser();
+                if (!user) {
+                    alert('请先登录后再签到');
+                    this.showAuthModal();
+                    isCheckingIn = false;
+                    return;
+                }
+                
+                const lastCheckinDate = utils.getLastCheckinDate();
+                const today = new Date().toISOString();
+                
+                if (lastCheckinDate && utils.isSameDay(lastCheckinDate, today)) {
+                    alert('您今天已经签到过了，明天再来吧！');
+                    isCheckingIn = false;
+                    return;
+                }
+                
+                // 更新签到日期
+                utils.setLastCheckinDate(today);
+                
+                // 增加投票机会
+                const newCount = utils.incrementVoteCount();
+                
+                // 更新UI
+                renderer.updateVoteButtons();
+                
+                // 禁用签到按钮
+                document.getElementById('checkinBtn').disabled = true;
+                
+                alert(`签到成功！您获得了1次投票机会，当前共有${newCount}次投票机会`);
+                
+                // 防止重复签到
+                setTimeout(() => {
+                    document.getElementById('checkinBtn').disabled = false;
+                    isCheckingIn = false;
+                }, 1000);
+            },
+            
+            checkCheckinStatus() {
+                const user = utils.getCurrentUser();
+                if (!user) return;
+                
+                const lastCheckinDate = utils.getLastCheckinDate();
+                const today = new Date().toISOString();
+                
+                // 如果没有签到记录，或者上次签到不是今天
+                if (!lastCheckinDate || !utils.isSameDay(lastCheckinDate, today)) {
+                    // 启用签到按钮
+                    document.getElementById('checkinBtn').disabled = false;
+                } else {
+                    // 禁用签到按钮
+                    document.getElementById('checkinBtn').disabled = true;
+                }
+                
+                // 更新投票机会显示
+                renderer.updateVoteButtons();
             }
         };
         
