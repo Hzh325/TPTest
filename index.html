@@ -326,8 +326,6 @@
             padding: 30px;
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
             height: fit-content;
-            position: sticky;
-            top: 30px;
         }
         
         .panel-header {
@@ -651,6 +649,10 @@
         
         .detail-comments {
             margin-top: 30px;
+            background: var(--white);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
         }
         
         .detail-comments-header {
@@ -1009,6 +1011,11 @@
             .add-comment-btn {
                 width: 100%;
                 justify-content: center;
+                margin-top: 10px;
+            }
+            
+            .detail-comments {
+                padding: 20px;
             }
         }
     </style>
@@ -1204,47 +1211,10 @@
         </div>
     </div>
 
-    <!-- 先加载Supabase库 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script>
-        // Supabase配置
-        const SUPABASE_CONFIG = {
-            url: 'https://vwwicvqojtruwmovhbjg.supabase.co',
-            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
-            options: {
-                headers: {
-                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
-                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA'
-                },
-                db: {
-                    schema: 'public'
-                },
-                auth: {
-                    persistSession: false,
-                    autoRefreshToken: false
-                }
-            }
-        };
-        
         // 应用程序代码
-        let supabaseClient;
         let currentDetailId = null;
         let pendingComment = null;
-        
-        function initializeSupabase() {
-            try {
-                supabaseClient = supabase.createClient(
-                    SUPABASE_CONFIG.url,
-                    SUPABASE_CONFIG.key,
-                    SUPABASE_CONFIG.options
-                );
-                return true;
-            } catch (error) {
-                console.error('Supabase初始化失败:', error);
-                return false;
-            }
-        }
         
         // 工具函数
         const utils = {
@@ -1291,163 +1261,159 @@
             }
         };
         
-        // 数据服务
+        // 模拟数据服务
         const dataService = {
+            candidates: [
+                {
+                    id: 1,
+                    name: "张明",
+                    image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&q=80",
+                    description: "资深产品经理，拥有10年互联网产品设计经验，擅长用户需求挖掘和产品创新。"
+                },
+                {
+                    id: 2,
+                    name: "李华",
+                    image_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&q=80",
+                    description: "前端开发专家，精通React、Vue等现代前端框架，对用户体验有深入理解。"
+                },
+                {
+                    id: 3,
+                    name: "王芳",
+                    image_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&q=80",
+                    description: "用户体验设计师，曾获多个设计奖项，擅长将复杂需求转化为简洁优雅的界面。"
+                },
+                {
+                    id: 4,
+                    name: "赵伟",
+                    image_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&q=80",
+                    description: "后端架构师，精通分布式系统设计，拥有大规模高并发系统开发经验。"
+                },
+                {
+                    id: 5,
+                    name: "陈静",
+                    image_url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&q=80",
+                    description: "数据科学家，擅长机器学习算法应用，在用户行为预测方面有深入研究。"
+                },
+                {
+                    id: 6,
+                    name: "刘强",
+                    image_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&q=80",
+                    description: "全栈工程师，精通前后端技术栈，能够独立完成从设计到部署的全过程。"
+                }
+            ],
+            votes: {
+                1: 42,
+                2: 35,
+                3: 28,
+                4: 19,
+                5: 24,
+                6: 31
+            },
+            comments: [
+                {
+                    id: 1,
+                    user_name: "热心网友",
+                    content: "这个投票系统设计得很棒！用户体验非常好。",
+                    created_at: "2023-06-15T10:30:00Z"
+                },
+                {
+                    id: 2,
+                    user_name: "技术达人",
+                    content: "希望添加更多候选人信息，比如工作经历和项目经验。",
+                    created_at: "2023-06-16T14:45:00Z"
+                },
+                {
+                    id: 3,
+                    user_name: "设计师小王",
+                    content: "界面美观大方，响应式设计做得很好，在手机上体验也很流畅。",
+                    created_at: "2023-06-17T09:15:00Z"
+                }
+            ],
+            candidateComments: {
+                1: [
+                    {
+                        id: 101,
+                        user_name: "产品爱好者",
+                        content: "张明的产品思维非常出色，我特别喜欢他设计的用户流程！",
+                        created_at: "2023-06-18T11:20:00Z"
+                    },
+                    {
+                        id: 102,
+                        user_name: "PM小张",
+                        content: "张经理在需求分析方面有独到见解，值得学习。",
+                        created_at: "2023-06-19T16:30:00Z"
+                    }
+                ],
+                2: [
+                    {
+                        id: 201,
+                        user_name: "前端开发者",
+                        content: "李华的技术分享对我帮助很大，感谢！",
+                        created_at: "2023-06-20T10:15:00Z"
+                    }
+                ]
+            },
+            
             currentPage: 1,
-            itemsPerPage: 9,
-            totalItems: 0,
+            itemsPerPage: 6,
+            totalItems: 6,
             searchTerm: '',
             
-            async getCandidates(page = 1) {
-                if (!supabaseClient) return [];
+            getCandidates(page = 1) {
+                const filtered = this.candidates.filter(candidate => 
+                    candidate.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    candidate.description.toLowerCase().includes(this.searchTerm.toLowerCase())
+                );
                 
-                try {
-                    const offset = (page - 1) * this.itemsPerPage;
-                    
-                    let query = supabaseClient
-                        .from('candidates')
-                        .select('*', { count: 'exact' })
-                        .order('id', { ascending: true })
-                        .range(offset, offset + this.itemsPerPage - 1);
-                    
-                    if (this.searchTerm) {
-                        query = query.or(`name.ilike.%${this.searchTerm}%,description.ilike.%${this.searchTerm}%`);
-                    }
-                    
-                    const { data, count, error } = await query;
-                    
-                    if (error) throw error;
-                    
-                    this.totalItems = count;
-                    this.currentPage = page;
-                    
-                    return data || [];
-                } catch (error) {
-                    console.error('获取候选人失败:', error);
-                    return [];
-                }
-            },
-            
-            async getCandidateDetail(id) {
-                if (!supabaseClient) return null;
+                this.totalItems = filtered.length;
+                this.currentPage = page;
                 
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('candidates')
-                        .select('*')
-                        .eq('id', id)
-                        .single();
-                    
-                    if (error) throw error;
-                    return data;
-                } catch (error) {
-                    console.error('获取候选人详情失败:', error);
-                    return null;
-                }
+                const start = (page - 1) * this.itemsPerPage;
+                return filtered.slice(start, start + this.itemsPerPage);
             },
             
-            async getVotes() {
-                if (!supabaseClient) return {};
-                
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('votes')
-                        .select('candidate_id');
-                    
-                    if (error) throw error;
-                    
-                    const counts = {};
-                    (data || []).forEach(v => {
-                        counts[v.candidate_id] = (counts[v.candidate_id] || 0) + 1;
-                    });
-                    return counts;
-                } catch (error) {
-                    console.error('获取票数失败:', error);
-                    return {};
-                }
+            getCandidateDetail(id) {
+                return this.candidates.find(c => c.id === id) || null;
             },
             
-            async getComments(candidateId = null) {
-                if (!supabaseClient) return [];
-                
-                try {
-                    let query = supabaseClient
-                        .from('comments')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-                    
-                    if (candidateId) {
-                        query = query.eq('candidate_id', candidateId);
-                    } else {
-                        query = query.is('candidate_id', null);
-                    }
-                    
-                    const { data, error } = await query;
-                    
-                    if (error) throw error;
-                    return data || [];
-                } catch (error) {
-                    console.error('获取留言失败:', error);
-                    return [];
-                }
+            getVotes() {
+                return this.votes;
             },
             
-            async getLatestComments(limit = 10) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('comments')
-                        .select('*')
-                        .is('candidate_id', null)
-                        .order('created_at', { ascending: false })
-                        .limit(limit);
-                    
-                    if (error) throw error;
-                    return data || [];
-                } catch (error) {
-                    console.error('获取最新留言失败:', error);
-                    return [];
-                }
+            getComments() {
+                return this.comments;
             },
             
-            async submitVote(candidateId) {
-                if (!supabaseClient) return false;
+            getCandidateComments(candidateId) {
+                return this.candidateComments[candidateId] || [];
+            },
+            
+            submitVote(candidateId) {
                 if (utils.hasVoted()) return false;
                 
-                try {
-                    const { error } = await supabaseClient
-                        .from('votes')
-                        .insert([{ candidate_id: candidateId }]);
-                    
-                    if (error) throw error;
-                    utils.markAsVoted();
-                    return true;
-                } catch (error) {
-                    console.error('投票失败:', error);
-                    alert('投票失败: ' + error.message);
-                    return false;
-                }
+                this.votes[candidateId] = (this.votes[candidateId] || 0) + 1;
+                utils.markAsVoted();
+                return true;
             },
             
-            async submitComment(candidateId, userName, content) {
-                if (!supabaseClient) return false;
-                if (!userName || !content) return false;
+            submitComment(candidateId, userName, content) {
+                const newComment = {
+                    id: Date.now(),
+                    user_name: userName,
+                    content: content,
+                    created_at: new Date().toISOString()
+                };
                 
-                try {
-                    const { error } = await supabaseClient
-                        .from('comments')
-                        .insert([{
-                            candidate_id: candidateId,
-                            user_name: userName,
-                            content: content
-                        }]);
-                    
-                    if (error) throw error;
-                    return true;
-                } catch (error) {
-                    console.error('提交留言失败:', error);
-                    alert('提交留言失败: ' + error.message);
-                    return false;
+                if (candidateId) {
+                    if (!this.candidateComments[candidateId]) {
+                        this.candidateComments[candidateId] = [];
+                    }
+                    this.candidateComments[candidateId].push(newComment);
+                } else {
+                    this.comments.unshift(newComment);
                 }
+                
+                return true;
             },
             
             getTotalPages() {
@@ -1478,10 +1444,11 @@
                 try {
                     utils.showLoading('loadingContainer');
                     
-                    const [candidates, votes] = await Promise.all([
-                        dataService.getCandidates(dataService.currentPage),
-                        dataService.getVotes(),
-                    ]);
+                    // 模拟网络延迟
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    
+                    const candidates = dataService.getCandidates(dataService.currentPage);
+                    const votes = dataService.getVotes();
                     
                     dataService.updatePagination();
                     
@@ -1498,14 +1465,13 @@
                             return `
                                 <div class="candidate-card" data-id="${candidate.id}">
                                     <div class="image-container">
-                                        <img src="${candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片'}" 
+                                        <img src="${candidate.image_url}" 
                                              alt="${candidate.name}" 
-                                             class="candidate-image"
-                                             onerror="this.onerror=null;this.src='https://via.placeholder.com/400x250?text=图片加载失败'">
+                                             class="candidate-image">
                                     </div>
                                     <div class="candidate-info">
                                         <h3 class="candidate-name">${candidate.name}</h3>
-                                        <p class="candidate-description">${candidate.description || '暂无描述'}</p>
+                                        <p class="candidate-description">${candidate.description}</p>
                                         
                                         <div class="vote-count">
                                             <i class="fas fa-vote-yea"></i> 票数: ${votes[candidate.id] || 0}
@@ -1545,7 +1511,10 @@
                 try {
                     utils.showLoading('commentsLoading');
                     
-                    const comments = await dataService.getLatestComments(10);
+                    // 模拟网络延迟
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                    
+                    const comments = dataService.getComments();
                     
                     if (comments.length === 0) {
                         container.innerHTML = `
@@ -1591,11 +1560,12 @@
                 if (loading) loading.style.display = 'block';
                 
                 try {
-                    const [candidate, votes, comments] = await Promise.all([
-                        dataService.getCandidateDetail(candidateId),
-                        dataService.getVotes(),
-                        dataService.getComments(candidateId)
-                    ]);
+                    // 模拟网络延迟
+                    await new Promise(resolve => setTimeout(resolve, 700));
+                    
+                    const candidate = dataService.getCandidateDetail(candidateId);
+                    const votes = dataService.getVotes();
+                    const comments = dataService.getCandidateComments(candidateId);
                     
                     if (!candidate) {
                         alert('无法加载人物详情');
@@ -1603,11 +1573,8 @@
                     }
                     
                     document.getElementById('detailTitle').textContent = candidate.name;
-                    document.getElementById('detailImage').src = candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片';
-                    document.getElementById('detailImage').onerror = function() {
-                        this.src = 'https://via.placeholder.com/400x250?text=图片加载失败';
-                    };
-                    document.getElementById('detailDescription').textContent = candidate.description || '暂无描述';
+                    document.getElementById('detailImage').src = candidate.image_url;
+                    document.getElementById('detailDescription').textContent = candidate.description;
                     document.getElementById('voteCount').textContent = votes[candidateId] || 0;
                     document.getElementById('commentCount').textContent = comments.length;
                     document.getElementById('detailVoteBtn').disabled = utils.hasVoted();
@@ -1617,6 +1584,9 @@
                     document.getElementById('listView').style.display = 'none';
                     document.getElementById('detailView').style.display = 'block';
                     currentDetailId = candidateId;
+                    
+                    // 滚动到页面顶部
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 } catch (error) {
                     console.error('加载详情失败:', error);
                     alert('加载详情失败: ' + error.message);
@@ -1671,11 +1641,6 @@
             async init() {
                 document.getElementById('currentYear').textContent = utils.getCurrentYear();
                 
-                if (!initializeSupabase()) {
-                    alert('系统初始化失败，请刷新页面');
-                    return;
-                }
-                
                 this.setupEventListeners();
                 await renderer.renderCandidates();
                 await renderer.renderComments();
@@ -1702,6 +1667,7 @@
                 });
                 document.getElementById('addCommentBtn').addEventListener('click', () => {
                     document.getElementById('detailCommentForm').style.display = 'block';
+                    document.getElementById('detailCommentForm').scrollIntoView({ behavior: 'smooth' });
                 });
                 
                 document.getElementById('backToList').addEventListener('click', this.showList);
@@ -1727,7 +1693,7 @@
                     return;
                 }
                 
-                const success = await dataService.submitVote(candidateId);
+                const success = dataService.submitVote(candidateId);
                 if (success) {
                     alert('投票成功！');
                     renderer.disableAllVoteButtons();
@@ -1744,6 +1710,12 @@
                 document.getElementById('detailView').style.display = 'none';
                 document.getElementById('listView').style.display = 'block';
                 currentDetailId = null;
+                
+                // 重置搜索和分页
+                dataService.searchTerm = '';
+                document.getElementById('searchInput').value = '';
+                dataService.currentPage = 1;
+                renderer.renderCandidates();
             },
             
             prepareSubmitComment(isDetail) {
@@ -1774,7 +1746,7 @@
             
             async submitComment(isDetail, userName, content) {
                 const candidateId = isDetail ? currentDetailId : null;
-                const success = await dataService.submitComment(candidateId, userName, content);
+                const success = dataService.submitComment(candidateId, userName, content);
                 
                 if (success) {
                     const newComment = {
@@ -1838,13 +1810,9 @@
                         }
                     }
                     
-                    setTimeout(async () => {
-                        if (isDetail) {
-                            await renderer.renderDetail(currentDetailId);
-                        } else {
-                            await renderer.renderComments();
-                        }
-                    }, 2000);
+                    // 显示成功消息
+                    const message = isDetail ? '留言已发布！' : '全局留言已发布！';
+                    alert(message);
                 }
             },
             
@@ -1859,6 +1827,7 @@
                     
                     if (isDetail) {
                         document.getElementById('detailCommentForm').style.display = 'block';
+                        document.getElementById('detailCommentForm').scrollIntoView({ behavior: 'smooth' });
                     }
                 }
             }
