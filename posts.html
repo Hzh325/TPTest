@@ -391,7 +391,7 @@
             </div>
             
             <!-- 发帖表单 -->
-            <div class="post-form" id="postForm">
+            <div class="post-form" id="postForm" style="display:none;">
                 <div class="form-group">
                     <textarea class="form-textarea" id="postContent" placeholder="分享你的想法..."></textarea>
                 </div>
@@ -443,7 +443,7 @@
                     <button class="cancel-btn" id="showRegisterBtn">
                         注册账号
                     </button>
-                    <button class="cancel-btn" onclick="app.hideAuthModal()">
+                    <button class="cancel-btn" id="cancelAuthBtn">
                         取消
                     </button>
                 </div>
@@ -464,7 +464,7 @@
                     <button class="cancel-btn" id="showLoginBtn">
                         返回登录
                     </button>
-                    <button class="cancel-btn" onclick="app.hideAuthModal()">
+                    <button class="cancel-btn" id="cancelRegisterBtn">
                         取消
                     </button>
                 </div>
@@ -482,116 +482,106 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
-        // Supabase配置
-        const SUPABASE_CONFIG = {
-            url: 'https://vwwicvqojtruwmovhbjg.supabase.co',
-            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
-            options: {
-                headers: {
-                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
-                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA'
-                },
-                db: {
-                    schema: 'public'
-                },
+        // 等待Supabase库加载完成
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. 初始化Supabase客户端
+            const supabaseUrl = 'https://vwwicvqojtruwmovhbjg.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA';
+            
+            const supabase = supabase.createClient(supabaseUrl, supabaseKey, {
                 auth: {
                     persistSession: false,
                     autoRefreshToken: false
                 }
-            }
-        };
-        
-        // 应用程序代码
-        const app = {
-            currentUser: null,
-            supabase: null,
+            });
+
+            // 2. 应用程序状态
+            let currentUser = null;
             
-            async init() {
-                // 初始化Supabase
-                this.supabase = supabase.createClient(
-                    SUPABASE_CONFIG.url,
-                    SUPABASE_CONFIG.key,
-                    SUPABASE_CONFIG.options
-                );
-                
-                // 检查登录状态
-                await this.checkAuth();
-                
-                // 设置事件监听
-                this.setupEventListeners();
-                
-                // 加载动态
-                this.loadPosts();
-            },
-            
-            async checkAuth() {
+            // 3. 检查登录状态
+            async function checkAuth() {
                 try {
-                    const { data, error } = await this.supabase.auth.getUser();
+                    const { data: { user }, error } = await supabase.auth.getUser();
                     if (error) throw error;
-                    this.currentUser = data.user;
-                    this.updateAuthUI();
+                    currentUser = user;
+                    updateAuthUI();
                 } catch (error) {
                     console.error('检查登录状态失败:', error);
-                    this.currentUser = null;
-                    this.updateAuthUI();
+                    currentUser = null;
+                    updateAuthUI();
                 }
-            },
+            }
             
-            updateAuthUI() {
+            // 4. 更新UI显示
+            function updateAuthUI() {
                 const authLink = document.getElementById('authLink');
                 const postForm = document.getElementById('postForm');
                 
-                if (this.currentUser) {
-                    authLink.textContent = `欢迎，${this.currentUser.user_metadata?.username || '用户'}`;
+                if (currentUser) {
+                    authLink.textContent = `欢迎，${currentUser.email || '用户'}`;
+                    authLink.onclick = null;
                     postForm.style.display = 'block';
                 } else {
                     authLink.textContent = '登录/注册';
+                    authLink.onclick = showAuthModal;
                     postForm.style.display = 'none';
                 }
-            },
+            }
             
-            showAuthModal() {
+            // 5. 显示/隐藏登录模态框
+            function showAuthModal() {
                 document.getElementById('authModal').style.display = 'flex';
                 document.getElementById('loginForm').style.display = 'block';
                 document.getElementById('registerForm').style.display = 'none';
-            },
+            }
             
-            hideAuthModal() {
+            function hideAuthModal() {
                 document.getElementById('authModal').style.display = 'none';
-            },
+            }
             
-            setupEventListeners() {
-                // 导航栏登录按钮
-                document.getElementById('authLink').addEventListener('click', (e) => {
-                    if (!this.currentUser) {
-                        e.preventDefault();
-                        this.showAuthModal();
-                    }
-                });
-                
-                // 图片上传预览
-                document.getElementById('imageUpload').addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            document.getElementById('imagePreview').src = event.target.result;
-                            document.getElementById('imagePreviewContainer').style.display = 'block';
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-                
-                // 移除图片
-                document.getElementById('cancelPost').addEventListener('click', () => {
-                    this.resetPostForm();
-                });
-                
-                // 发布动态
-                document.getElementById('submitPost').addEventListener('click', () => {
-                    this.submitPost();
-                });
-                
+            // 6. 注册功能（修复重点）
+            async function register(username, password) {
+                try {
+                    // 使用固定域名+用户名作为email
+                    const email = `${username}@example.com`; 
+                    
+                    const { data, error } = await supabase.auth.signUp({
+                        email: email,
+                        password: password,
+                        options: {
+                            data: {
+                                username: username
+                            }
+                        }
+                    });
+                    
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('注册失败:', error);
+                    throw error;
+                }
+            }
+            
+            // 7. 登录功能
+            async function login(username, password) {
+                try {
+                    const email = `${username}@example.com`;
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+                    
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('登录失败:', error);
+                    throw error;
+                }
+            }
+            
+            // 8. 设置事件监听
+            function setupEventListeners() {
                 // 登录/注册切换
                 document.getElementById('showRegisterBtn').addEventListener('click', () => {
                     document.getElementById('loginForm').style.display = 'none';
@@ -603,33 +593,9 @@
                     document.getElementById('loginForm').style.display = 'block';
                 });
                 
-                // 登录按钮
-                document.getElementById('loginBtn').addEventListener('click', async () => {
-                    const username = document.getElementById('loginUsername').value.trim();
-                    const password = document.getElementById('loginPassword').value.trim();
-                    
-                    if (!username || !password) {
-                        alert('请输入用户名和密码');
-                        return;
-                    }
-                    
-                    try {
-                        const { data, error } = await this.supabase.auth.signInWithPassword({
-                            email: `${username}@example.com`,
-                            password: password
-                        });
-                        
-                        if (error) throw error;
-                        
-                        this.currentUser = data.user;
-                        this.updateAuthUI();
-                        this.hideAuthModal();
-                        this.loadPosts();
-                        alert('登录成功！');
-                    } catch (error) {
-                        alert('登录失败: ' + error.message);
-                    }
-                });
+                // 取消按钮
+                document.getElementById('cancelAuthBtn').addEventListener('click', hideAuthModal);
+                document.getElementById('cancelRegisterBtn').addEventListener('click', hideAuthModal);
                 
                 // 注册按钮
                 document.getElementById('registerBtn').addEventListener('click', async () => {
@@ -647,184 +613,51 @@
                     }
                     
                     try {
-                        const { data, error } = await this.supabase.auth.signUp({
-                            email: `${username}@example.com`,
-                            password: password,
-                            options: {
-                                data: {
-                                    username: username
-                                }
-                            }
-                        });
-                        
-                        if (error) throw error;
-                        
+                        document.getElementById('loadingContainer').style.display = 'block';
+                        await register(username, password);
                         alert('注册成功！请登录');
                         document.getElementById('registerForm').style.display = 'none';
                         document.getElementById('loginForm').style.display = 'block';
                     } catch (error) {
-                        alert('注册失败: ' + error.message);
+                        alert(`注册失败: ${error.message}`);
+                    } finally {
+                        document.getElementById('loadingContainer').style.display = 'none';
                     }
                 });
-            },
-            
-            removeImage() {
-                document.getElementById('imageUpload').value = '';
-                document.getElementById('imagePreviewContainer').style.display = 'none';
-            },
-            
-            resetPostForm() {
-                document.getElementById('postContent').value = '';
-                this.removeImage();
-            },
-            
-            async compressImage(file) {
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        const img = new Image();
-                        img.src = event.target.result;
-                        
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            
-                            // 设置最大宽度为1200px
-                            const maxWidth = 1200;
-                            const ratio = maxWidth / img.width;
-                            const width = img.width > maxWidth ? maxWidth : img.width;
-                            const height = img.height * ratio;
-                            
-                            canvas.width = width;
-                            canvas.height = height;
-                            ctx.drawImage(img, 0, 0, width, height);
-                            
-                            canvas.toBlob((blob) => {
-                                resolve(new File([blob], file.name, {
-                                    type: 'image/jpeg',
-                                    lastModified: Date.now()
-                                }));
-                            }, 'image/jpeg', 0.75); // 75%质量
-                        };
-                    };
-                    reader.readAsDataURL(file);
-                });
-            },
-            
-            async submitPost() {
-                const content = document.getElementById('postContent').value.trim();
-                const fileInput = document.getElementById('imageUpload');
                 
-                if (!fileInput.files[0]) {
-                    alert('请选择一张图片');
-                    return;
-                }
-                
-                try {
-                    // 显示加载中
-                    document.getElementById('loadingContainer').style.display = 'block';
+                // 登录按钮
+                document.getElementById('loginBtn').addEventListener('click', async () => {
+                    const username = document.getElementById('loginUsername').value.trim();
+                    const password = document.getElementById('loginPassword').value.trim();
                     
-                    // 1. 压缩图片
-                    const compressedFile = await this.compressImage(fileInput.files[0]);
-                    
-                    // 2. 上传图片到Supabase Storage
-                    const filePath = `posts/${this.currentUser.id}/${Date.now()}.jpg`;
-                    const { error: uploadError } = await this.supabase.storage
-                        .from('post-images')
-                        .upload(filePath, compressedFile);
-                    
-                    if (uploadError) throw uploadError;
-                    
-                    // 3. 获取图片公开URL
-                    const { data: { publicUrl } } = this.supabase.storage
-                        .from('post-images')
-                        .getPublicUrl(filePath);
-                    
-                    // 4. 保存动态到数据库
-                    const { error: dbError } = await this.supabase
-                        .from('posts')
-                        .insert([{
-                            content: content,
-                            image_url: publicUrl,
-                            user_id: this.currentUser.id,
-                            username: this.currentUser.user_metadata?.username || '匿名'
-                        }]);
-                    
-                    if (dbError) throw dbError;
-                    
-                    // 5. 重置表单
-                    this.resetPostForm();
-                    
-                    // 6. 重新加载动态
-                    await this.loadPosts();
-                    
-                    alert('动态发布成功！');
-                } catch (error) {
-                    console.error('发布动态失败:', error);
-                    alert('发布失败: ' + error.message);
-                } finally {
-                    document.getElementById('loadingContainer').style.display = 'none';
-                }
-            },
-            
-            async loadPosts() {
-                try {
-                    document.getElementById('loadingContainer').style.display = 'block';
-                    document.getElementById('postsContainer').innerHTML = '';
-                    
-                    const { data: posts, error } = await this.supabase
-                        .from('posts')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-                    
-                    if (error) throw error;
-                    
-                    if (posts.length === 0) {
-                        document.getElementById('postsContainer').innerHTML = `
-                            <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--gray-500)">
-                                <i class="fas fa-images" style="font-size:2rem; margin-bottom:15px;"></i>
-                                <p>还没有动态，发布第一条吧！</p>
-                            </div>
-                        `;
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
                         return;
                     }
                     
-                    document.getElementById('postsContainer').innerHTML = posts.map(post => `
-                        <div class="post-card">
-                            <div class="post-image-container">
-                                <img src="${post.image_url}" class="post-image" 
-                                     onerror="this.onerror=null;this.src='https://via.placeholder.com/600x400?text=图片加载失败'">
-                            </div>
-                            <div class="post-info">
-                                <div class="post-header">
-                                    <span class="post-author">
-                                        <i class="fas fa-user"></i> ${post.username}
-                                    </span>
-                                    <span class="post-date">
-                                        ${new Date(post.created_at).toLocaleString()}
-                                    </span>
-                                </div>
-                                ${post.content ? `<p class="post-content">${post.content}</p>` : ''}
-                            </div>
-                        </div>
-                    `).join('');
-                    
-                } catch (error) {
-                    console.error('加载动态失败:', error);
-                    document.getElementById('postsContainer').innerHTML = `
-                        <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--red-500)">
-                            <i class="fas fa-exclamation-triangle" style="font-size:2rem; margin-bottom:15px;"></i>
-                            <p>加载动态失败，请刷新页面</p>
-                        </div>
-                    `;
-                } finally {
-                    document.getElementById('loadingContainer').style.display = 'none';
-                }
+                    try {
+                        document.getElementById('loadingContainer').style.display = 'block';
+                        await login(username, password);
+                        alert('登录成功！');
+                        await checkAuth();
+                        hideAuthModal();
+                    } catch (error) {
+                        alert(`登录失败: ${error.message}`);
+                    } finally {
+                        document.getElementById('loadingContainer').style.display = 'none';
+                    }
+                });
             }
-        };
+            
+            // 9. 初始化应用
+            async function init() {
+                await checkAuth();
+                setupEventListeners();
+            }
         
         // 启动应用
-        document.addEventListener('DOMContentLoaded', () => app.init());
+        init();
+        });
     </script>
 </body>
 </html>
