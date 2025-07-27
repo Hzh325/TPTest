@@ -504,13 +504,15 @@
         // 应用程序代码
         const app = {
             currentUser: null,
+            supabase: null,
             
             async init() {
                 // 初始化Supabase
-                if (!this.initializeSupabase()) {
-                    alert('系统初始化失败');
-                    return;
-                }
+                this.supabase = supabase.createClient(
+                    SUPABASE_CONFIG.url,
+                    SUPABASE_CONFIG.key,
+                    SUPABASE_CONFIG.options
+                );
                 
                 // 检查登录状态
                 await this.checkAuth();
@@ -522,24 +524,17 @@
                 this.loadPosts();
             },
             
-            initializeSupabase() {
-                try {
-                    this.supabase = supabase.createClient(
-                        SUPABASE_CONFIG.url,
-                        SUPABASE_CONFIG.key,
-                        SUPABASE_CONFIG.options
-                    );
-                    return true;
-                } catch (error) {
-                    console.error('Supabase初始化失败:', error);
-                    return false;
-                }
-            },
-            
             async checkAuth() {
-                const { data } = await this.supabase.auth.getUser();
-                this.currentUser = data.user;
-                this.updateAuthUI();
+                try {
+                    const { data, error } = await this.supabase.auth.getUser();
+                    if (error) throw error;
+                    this.currentUser = data.user;
+                    this.updateAuthUI();
+                } catch (error) {
+                    console.error('检查登录状态失败:', error);
+                    this.currentUser = null;
+                    this.updateAuthUI();
+                }
             },
             
             updateAuthUI() {
