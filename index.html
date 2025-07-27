@@ -1166,7 +1166,7 @@
         // 1. 安全初始化Supabase客户端
         let supabaseClient;
         let currentDetailId = null;
-        let likedComments = JSON.parse(localStorage.getItem('likedComments') || '{}');
+        let likedComments = JSON.parse(localStorage.getItem('likedComments') || {};
         let pendingComment = null;
         let replyTarget = null;
         
@@ -1431,9 +1431,9 @@
                 
                 try {
                     // 检查是否已经点赞
-                    const isLiked = likedComments[commentId];
+                    const isLiked = likedComments[commentId] || false;
                     
-                    // 调用存储过程增加或减少点赞数
+                    // 调用存储过程增加点赞数
                     const { error } = await supabaseClient
                         .rpc(isLiked ? 'decrement_comment_like' : 'increment_comment_like', { 
                             comment_id: commentId 
@@ -1576,10 +1576,10 @@
                                         <div class="comment-likes">
                                             <button class="like-btn ${isLiked ? 'liked' : ''}" 
                                                 onclick="app.likeComment(${comment.id}, this)" 
-                                                ${isLiked ? 'data-liked="true"' : ''}>
+                                                data-likes="${comment.likes}">
                                                 <i class="fas fa-heart"></i>
                                             </button>
-                                            <span class="like-count">${comment.likes}</span>
+                                            <span class="like-count">${isLiked ? comment.likes + 1 : comment.likes}</span>
                                         </div>
                                         <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}', ${comment.id})">
                                             <i class="fas fa-reply"></i> 回复
@@ -1588,20 +1588,111 @@
                                     
                                     ${comment.replies && comment.replies.length > 0 ? `
                                         <div class="comment-replies">
-                                            ${comment.replies.map(reply => `
+                                            ${comment.replies.map(reply => {
+                                                const isReplyLiked = likedComments[reply.id] || false;
+                                                return `
                                                 <div class="comment-reply">
                                                     <div class="comment-header">
                                                         <span class="comment-author">${reply.user_name}</span>
                                                         <span class="comment-date">${utils.formatDate(reply.created_at)}</span>
                                                     </div>
                                                     <p class="comment-content">${reply.content}</p>
+                                                    <div class="comment-actions">
+                                                        <div class="comment-likes">
+                                                            <button class="like-btn ${isReplyLiked ? 'liked' : ''}" 
+                                                                onclick="app.likeComment(${reply.id}, this)" 
+                                                                data-likes="${reply.likes}">
+                                                                <i class="fas fa-heart"></i>
+                                                            </button>
+                                                            <span class="like-count">${isReplyLiked ? reply.likes + 1 : reply.likes}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            `).join('')}
+                                                `;
+                                            }).join('')}
                                         </div>
                                     ` : ''}
                                 </div>
                             `;
                         }).join('');
+                    }
+                } catch (error) {
+                    console.error('渲染留言失败:', error);
+                    container.innerHTML = '<p style="text-align:center;color:red;padding:10px;">留言加载失败</p>';
+                } finally {
+                    utils.hideLoading('commentsLoading');
+                }
+            },
+            
+            renderDetailComments(comments) {
+                const container = document.getElementById('detailCommentsContainer');
+                if (!container) return;
+                
+                if (comments.length === 0) {
+                    container.innerHTML = `
+                        <div class="detail-comment-item">
+                            <p style="text-align: center; padding: 20px; color: var(--gray-500);">
+                                暂无留言，成为第一个留言的人吧！
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = comments.map(comment => {
+                    const isLiked = likedComments[comment.id] || false;
+                    
+                    return `
+                        <div class="detail-comment-item">
+                            <div class="detail-comment-header">
+                                <span class="detail-comment-author">${comment.user_name}</span>
+                                <span class="detail-comment-date">${utils.formatDate(comment.created_at)}</span>
+                            </div>
+                            <p class="detail-comment-content">${comment.content}</p>
+                            <div class="detail-comment-actions">
+                                <div class="detail-comment-likes">
+                                    <button class="detail-like-btn ${isLiked ? 'liked' : ''}" 
+                                        onclick="app.likeComment(${comment.id}, this)" 
+                                        data-likes="${comment.likes}">
+                                        <i class="fas fa-heart"></i>
+                                        <span class="detail-like-count">${isLiked ? comment.likes + 1 : comment.likes}</span>
+                                    </button>
+                                </div>
+                                <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}', ${comment.id}, true)">
+                                    <i class="fas fa-reply"></i> 回复
+                                </button>
+                            </div>
+                            
+                            ${comment.replies && comment.replies.length > 0 ? `
+                                <div class="comment-replies">
+                                    ${comment.replies.map(reply => {
+                                        const isReplyLiked = likedComments[reply.id] || false;
+                                        return `
+                                        <div class="comment-reply">
+                                            <div class="comment-header">
+                                                <span class="comment-author">${reply.user_name}</span>
+                                                <span class="comment-date">${utils.formatDate(reply.created_at)}</span>
+                                            </div>
+                                            <p class="comment-content">${reply.content}</p>
+                                            <div class="comment-actions">
+                                                <div class="comment-likes">
+                                                    <button class="like-btn ${isReplyLiked ? 'liked' : ''}" 
+                                                        onclick="app.likeComment(${reply.id}, this)" 
+                                                        data-likes="${reply.likes}">
+                                                        <i class="fas fa-heart"></i>
+                                                    </button>
+                                                    <span class="like-count">${isReplyLiked ? reply.likes + 1 : reply.likes}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            },
                     }
                 } catch (error) {
                     console.error('渲染留言失败:', error);
@@ -2024,35 +2115,68 @@
                 button.setAttribute('data-liking', 'true');
                 button.disabled = true;
                 
-                const success = await dataService.likeComment(commentId);
-                if (success) {
-                    // 更新点赞状态
-                    const isLiked = likedComments[commentId] || false;
-                    const newLiked = !isLiked;
-                    
-                    // 更新UI
-                    if (newLiked) {
+                // 获取当前点赞状态
+                const isLiked = likedComments[commentId] || false;
+                const currentLikes = parseInt(button.getAttribute('data-likes')) || 0;
+                
+                // 立即更新UI（临时）
+                if (isLiked) {
+                    button.classList.remove('liked');
+                } else {
+                    button.classList.add('liked');
+                }
+                
+                // 更新点赞数显示（临时）
+                const likeCountElement = button.querySelector('.like-count') || 
+                                      button.nextElementSibling || 
+                                      button.closest('.comment-likes').querySelector('.like-count');
+                
+                if (likeCountElement) {
+                    likeCountElement.textContent = isLiked ? currentLikes : currentLikes + 1;
+                }
+                
+                try {
+                    const success = await dataService.likeComment(commentId);
+                    if (success) {
+                        // 更新本地点赞状态
+                        likedComments[commentId] = !isLiked;
+                        localStorage.setItem('likedComments', JSON.stringify(likedComments));
+                        
+                        // 更新点赞数显示（正式）
+                        if (likeCountElement) {
+                            likeCountElement.textContent = !isLiked ? currentLikes + 1 : currentLikes;
+                        }
+                        
+                        // 更新按钮属性
+                        button.setAttribute('data-likes', !isLiked ? currentLikes + 1 : currentLikes);
+                    } else {
+                        // 失败时回滚UI
+                        if (isLiked) {
+                            button.classList.add('liked');
+                        } else {
+                            button.classList.remove('liked');
+                        }
+                        
+                        if (likeCountElement) {
+                            likeCountElement.textContent = isLiked ? currentLikes + 1 : currentLikes;
+                        }
+                    }
+                } catch (error) {
+                    console.error('点赞失败:', error);
+                    // 失败时回滚UI
+                    if (isLiked) {
                         button.classList.add('liked');
                     } else {
                         button.classList.remove('liked');
                     }
                     
-                    // 更新点赞数
-                    const likeCountElement = button.querySelector('.like-count') || 
-                                            button.nextElementSibling.querySelector('.like-count') ||
-                                            button.closest('.comment-likes').querySelector('.like-count');
-                    
                     if (likeCountElement) {
-                        const currentCount = parseInt(likeCountElement.textContent) || 0;
-                        likeCountElement.textContent = newLiked ? currentCount + 1 : currentCount - 1;
+                        likeCountElement.textContent = isLiked ? currentLikes + 1 : currentLikes;
                     }
-                }
-                
-                // 重置按钮状态
-                setTimeout(() => {
+                } finally {
                     button.removeAttribute('data-liking');
                     button.disabled = false;
-                }, 1000);
+                }
             }
         };
         
