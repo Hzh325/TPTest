@@ -3,20 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人物投票系统</title>
+    <title>人物投票与留言系统</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary: #4f46e5;
             --primary-light: #818cf8;
+            --secondary: #10b981;
             --white: #ffffff;
+            --gray-50: #f9fafb;
             --gray-100: #f3f4f6;
             --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
             --gray-400: #9ca3af;
+            --gray-500: #6b7280;
             --gray-600: #4b5563;
-            --green-500: #10b981;
+            --gray-700: #374151;
             --red-500: #ef4444;
+            --yellow-400: #fbbf24;
         }
         
         * {
@@ -27,53 +32,69 @@
         }
         
         body {
-            background-color: var(--gray-100);
-            color: var(--gray-600);
+            background-color: var(--gray-50);
+            color: var(--gray-700);
             line-height: 1.6;
-            padding: 20px;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+        }
+        
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
         }
         
         header {
+            grid-column: 1 / -1;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             padding: 20px 0;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 6px 15px rgba(79, 70, 229, 0.25);
         }
         
         h1 {
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             margin-bottom: 10px;
-            color: var(--primary);
-            background: linear-gradient(90deg, var(--primary), var(--primary-light));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-weight: 700;
         }
         
         .subtitle {
-            font-size: 1.1rem;
-            color: var(--gray-400);
-            margin-bottom: 20px;
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        /* 主内容区样式 */
+        .main-content {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            height: fit-content;
         }
         
         .controls {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 30px;
-            padding: 15px;
-            background: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            gap: 15px;
+            margin-bottom: 25px;
         }
         
         .search-container {
             flex: 1;
-            min-width: 300px;
+            min-width: 250px;
             position: relative;
         }
         
@@ -84,6 +105,7 @@
             border-radius: 50px;
             font-size: 1rem;
             transition: all 0.3s ease;
+            background: var(--gray-50);
         }
         
         .search-input:focus {
@@ -97,7 +119,7 @@
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--gray-400);
+            color: var(--gray-500);
             font-size: 1.2rem;
         }
         
@@ -105,17 +127,18 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-top: 30px;
+            margin-top: 25px;
             justify-content: center;
         }
         
         .page-btn {
             padding: 8px 16px;
             background: var(--white);
-            border: 1px solid var(--gray-200);
-            border-radius: 5px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
+            font-weight: 500;
         }
         
         .page-btn:hover {
@@ -127,24 +150,24 @@
         .page-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            background: var(--gray-200);
+            background: var(--gray-100);
         }
         
         .page-info {
             margin: 0 15px;
             font-size: 0.95rem;
+            color: var(--gray-600);
         }
         
         .candidates-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 25px;
-            margin-top: 20px;
         }
         
         .candidate-card {
             background: var(--white);
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
             transition: all 0.3s ease;
@@ -152,11 +175,12 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            position: relative;
         }
         
         .candidate-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
         }
         
         .image-container {
@@ -187,73 +211,49 @@
         }
         
         .candidate-name {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
             color: var(--primary);
         }
         
         .candidate-description {
             color: var(--gray-600);
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             font-size: 0.95rem;
-            line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            transition: all 0.3s ease;
+            line-height: 1.6;
             flex-grow: 1;
-        }
-        
-        .candidate-description.expanded {
-            -webkit-line-clamp: unset;
-            overflow: auto;
-            max-height: 200px;
-        }
-        
-        .toggle-description {
-            color: var(--primary);
-            background: none;
-            border: none;
-            padding: 5px 0;
-            font-size: 0.9rem;
-            cursor: pointer;
-            text-align: left;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .toggle-description i {
-            margin-right: 5px;
-            transition: transform 0.3s ease;
-        }
-        
-        .toggle-description.expanded i {
-            transform: rotate(180deg);
         }
         
         .vote-count {
             display: flex;
             align-items: center;
-            font-size: 1rem;
-            color: var(--primary);
+            font-size: 1.1rem;
+            color: var(--gray-700);
             margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .vote-btn, .detail-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
             font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
         }
         
         .vote-btn {
-            width: 100%;
-            padding: 12px;
             background-color: var(--primary);
             color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.3s;
-            margin-top: 10px;
         }
         
         .vote-btn:hover {
@@ -265,25 +265,56 @@
             cursor: not-allowed;
         }
         
+        .detail-btn {
+            background-color: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+        
+        .detail-btn:hover {
+            background-color: var(--gray-200);
+        }
+        
         .voted-message {
-            color: var(--green-500);
+            color: var(--secondary);
             font-size: 0.9rem;
             text-align: center;
             margin-top: 10px;
             display: none;
         }
         
-        .total-votes {
-            text-align: center;
-            margin-top: 40px;
-            font-size: 1.1rem;
+        .hot-comment {
+            background: var(--gray-50);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border-left: 3px solid var(--yellow-400);
+        }
+        
+        .hot-comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .comment-author {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .comment-content {
             color: var(--gray-600);
-            padding: 20px 0;
-            border-top: 1px solid var(--gray-200);
+            line-height: 1.5;
+        }
+        
+        .hot-comment-label {
+            background: var(--yellow-400);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
             font-weight: 500;
-            background: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
         
         .no-results {
@@ -295,54 +326,420 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
         
+        /* 留言面板样式 */
+        .comments-panel {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .panel-header {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--gray-200);
+            color: var(--primary);
+        }
+        
+        .comment-form {
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+        
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: var(--gray-50);
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background: #4338ca;
+        }
+        
+        .comments-list {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .comment-item {
+            background: var(--gray-50);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--gray-300);
+        }
+        
+        .comment-item.hot {
+            border-left: 3px solid var(--yellow-400);
+        }
+        
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .comment-author {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .comment-date {
+            color: var(--gray-500);
+            font-size: 0.85rem;
+        }
+        
+        .comment-content {
+            color: var(--gray-700);
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        
+        .comment-likes {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+        
+        .like-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--gray-500);
+            transition: color 0.3s;
+        }
+        
+        .like-btn:hover {
+            color: var(--red-500);
+        }
+        
+        .like-btn.liked {
+            color: var(--red-500);
+        }
+        
+        /* 详情页样式 */
+        .detail-page {
+            display: none;
+            background: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            grid-column: 1 / -1;
+        }
+        
+        .detail-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .back-btn {
+            background: var(--gray-100);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            transition: background 0.3s;
+            margin-right: 20px;
+        }
+        
+        .back-btn:hover {
+            background: var(--gray-200);
+        }
+        
+        .detail-title {
+            font-size: 2rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        
+        .detail-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .detail-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .detail-image {
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--gray-100);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 350px;
+        }
+        
+        .detail-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .detail-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-description {
+            line-height: 1.7;
+            color: var(--gray-700);
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+        }
+        
+        .detail-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            background: var(--gray-50);
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            color: var(--gray-600);
+            font-size: 0.95rem;
+        }
+        
+        .detail-vote-btn {
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+            margin-top: auto;
+        }
+        
+        .detail-vote-btn:hover {
+            background: #4338ca;
+        }
+        
+        .detail-vote-btn:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+        }
+        
+        .detail-comments {
+            margin-top: 30px;
+        }
+        
+        .detail-comments-header {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--gray-200);
+            color: var(--primary);
+        }
+        
+        .add-comment-btn {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .add-comment-btn:hover {
+            background: #4338ca;
+        }
+        
+        .detail-comment-form {
+            background: var(--gray-50);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .comment-form-header {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .comments-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .detail-comment-item {
+            background: var(--gray-50);
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid var(--gray-300);
+        }
+        
+        .detail-comment-item.hot {
+            border-left: 4px solid var(--yellow-400);
+        }
+        
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .comment-author {
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .comment-date {
+            color: var(--gray-500);
+            font-size: 0.85rem;
+        }
+        
+        .comment-content {
+            color: var(--gray-700);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .comment-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .comment-likes {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .like-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--gray-500);
+            transition: color 0.3s;
+        }
+        
+        .like-btn:hover {
+            color: var(--red-500);
+        }
+        
+        .like-btn.liked {
+            color: var(--red-500);
+        }
+        
+        .like-count {
+            font-weight: 500;
+        }
+        
         footer {
+            grid-column: 1 / -1;
             text-align: center;
             margin-top: 50px;
             padding-top: 20px;
             border-top: 1px solid var(--gray-200);
-            color: var(--gray-400);
+            color: var(--gray-500);
             font-size: 0.9rem;
-        }
-        
-        @media (max-width: 768px) {
-            .candidates-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .image-container {
-                height: 200px;
-            }
-            
-            .controls {
-                flex-direction: column;
-                gap: 15px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>人物投票系统</h1>
-            <p class="subtitle">为您喜爱的人物投上宝贵的一票</p>
+            <h1>人物投票与留言系统</h1>
+            <p class="subtitle">为您喜爱的人物投票并留下宝贵意见</p>
         </header>
         
-        <div class="controls">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input 
-                    type="text" 
-                    class="search-input" 
-                    id="searchInput" 
-                    placeholder="搜索人物名称或描述..."
-                >
-            </div>
-            
-            <div>
+        <!-- 主列表视图 -->
+        <div class="main-content" id="listView">
+            <div class="controls">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        id="searchInput" 
+                        placeholder="搜索人物名称或描述..."
+                    >
+                </div>
+                
                 <div class="pagination">
                     <button class="page-btn" id="prevPage" disabled>
                         <i class="fas fa-chevron-left"></i> 上一页
@@ -353,28 +750,133 @@
                     </button>
                 </div>
             </div>
+            
+            <div class="candidates-grid" id="candidatesContainer">
+                <!-- 候选人卡片将通过JavaScript动态生成 -->
+            </div>
+            
+            <div class="pagination">
+                <button class="page-btn" id="prevPageBottom" disabled>
+                    <i class="fas fa-chevron-left"></i> 上一页
+                </button>
+                <span class="page-info" id="pageInfoBottom">第 1 页，共 1 页</span>
+                <button class="page-btn" id="nextPageBottom" disabled>
+                    下一页 <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
         </div>
         
-        <div class="candidates-grid" id="candidatesContainer">
-            <!-- 候选人卡片将通过JavaScript动态生成 -->
+        <!-- 留言面板 -->
+        <div class="comments-panel">
+            <div class="panel-header">
+                <i class="fas fa-comments"></i> 留言板
+            </div>
+            
+            <div class="comment-form">
+                <div class="form-group">
+                    <label class="form-label" for="commentName">您的昵称</label>
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        id="commentName" 
+                        placeholder="输入昵称"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="commentContent">留言内容</label>
+                    <textarea 
+                        class="form-textarea" 
+                        id="commentContent" 
+                        placeholder="写下您的留言..."
+                    ></textarea>
+                </div>
+                
+                <button class="submit-btn" id="submitComment">
+                    <i class="fas fa-paper-plane"></i> 发布留言
+                </button>
+            </div>
+            
+            <div class="comments-list" id="commentsList">
+                <!-- 留言将通过JavaScript动态生成 -->
+            </div>
         </div>
         
-        <div class="pagination">
-            <button class="page-btn" id="prevPageBottom" disabled>
-                <i class="fas fa-chevron-left"></i> 上一页
-            </button>
-            <span class="page-info" id="pageInfoBottom">第 1 页，共 1 页</span>
-            <button class="page-btn" id="nextPageBottom" disabled>
-                下一页 <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-        
-        <div class="total-votes" id="totalVotes">
-            总投票数: 加载中...
+        <!-- 详情页视图 -->
+        <div class="detail-page" id="detailView">
+            <div class="detail-header">
+                <button class="back-btn" id="backToList">
+                    <i class="fas fa-arrow-left"></i> 返回列表
+                </button>
+                <h2 class="detail-title" id="detailTitle">人物详情</h2>
+            </div>
+            
+            <div class="detail-content">
+                <div class="detail-image">
+                    <img id="detailImage" src="" alt="人物图片">
+                </div>
+                
+                <div class="detail-info">
+                    <p class="detail-description" id="detailDescription"></p>
+                    
+                    <div class="detail-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="voteCount">0</div>
+                            <div class="stat-label">总票数</div>
+                        </div>
+                        
+                        <div class="stat-item">
+                            <div class="stat-value" id="commentCount">0</div>
+                            <div class="stat-label">留言数</div>
+                        </div>
+                    </div>
+                    
+                    <button class="detail-vote-btn" id="detailVoteBtn">
+                        投票支持
+                    </button>
+                </div>
+            </div>
+            
+            <div class="detail-comments">
+                <div class="detail-comments-header">
+                    <i class="fas fa-comment-dots"></i> 全部留言
+                    <button class="add-comment-btn" id="addCommentBtn">
+                        <i class="fas fa-plus"></i> 添加留言
+                    </button>
+                </div>
+                
+                <div class="detail-comment-form" id="detailCommentForm">
+                    <h3 class="comment-form-header">发表留言</h3>
+                    <div class="form-group">
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="detailCommentName" 
+                            placeholder="您的昵称"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <textarea 
+                            class="form-textarea" 
+                            id="detailCommentContent" 
+                            placeholder="写下您的留言..."
+                        ></textarea>
+                    </div>
+                    
+                    <button class="submit-btn" id="submitDetailComment">
+                        <i class="fas fa-paper-plane"></i> 发布留言
+                    </button>
+                </div>
+                
+                <div class="comments-container" id="detailCommentsContainer">
+                    <!-- 详情页留言将通过JavaScript动态生成 -->
+                </div>
+            </div>
         </div>
         
         <footer>
-            <p>© <span id="currentYear"></span> 人物投票系统 | 匿名投票平台</p>
+            <p>© <span id="currentYear"></span> 人物投票系统 | 所有留言公开可见</p>
         </footer>
     </div>
 
@@ -408,6 +910,8 @@
         // =================================
         // 1. 安全初始化Supabase客户端
         let supabaseClient;
+        let currentDetailId = null;
+        const likedComments = JSON.parse(localStorage.getItem('likedComments') || '[]');
         
         function initializeSupabase() {
             try {
@@ -434,13 +938,23 @@
                     clearTimeout(timeout);
                     timeout = setTimeout(() => func.apply(this, args), wait);
                 };
+            },
+            formatDate: (dateString) => {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
             }
         };
         
         // 3. 数据服务
         const dataService = {
             currentPage: 1,
-            itemsPerPage: 12,
+            itemsPerPage: 9,
             totalItems: 0,
             searchTerm: '',
             
@@ -477,6 +991,24 @@
                 }
             },
             
+            async getCandidateDetail(id) {
+                if (!supabaseClient) return null;
+                
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('candidates')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
+                    
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('获取候选人详情失败:', error);
+                    return null;
+                }
+            },
+            
             async getVotes() {
                 if (!supabaseClient) return {};
                 
@@ -498,6 +1030,45 @@
                 }
             },
             
+            async getComments(candidateId = null) {
+                if (!supabaseClient) return [];
+                
+                try {
+                    let query = supabaseClient
+                        .from('comments')
+                        .select('*')
+                        .order('likes', { ascending: false });
+                    
+                    if (candidateId) {
+                        query = query.eq('candidate_id', candidateId);
+                    }
+                    
+                    const { data, error } = await query;
+                    
+                    if (error) throw error;
+                    return data || [];
+                } catch (error) {
+                    console.error('获取留言失败:', error);
+                    return [];
+                }
+            },
+            
+            async getHotComments() {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('comments')
+                        .select('*')
+                        .order('likes', { ascending: false })
+                        .limit(5);
+                    
+                    if (error) throw error;
+                    return data || [];
+                } catch (error) {
+                    console.error('获取热门留言失败:', error);
+                    return [];
+                }
+            },
+            
             async submitVote(candidateId) {
                 if (!supabaseClient) return false;
                 if (utils.hasVoted()) return false;
@@ -513,6 +1084,52 @@
                 } catch (error) {
                     console.error('投票失败:', error);
                     alert('投票失败: ' + error.message);
+                    return false;
+                }
+            },
+            
+            async submitComment(candidateId, userName, content) {
+                if (!supabaseClient) return false;
+                if (!userName || !content) return false;
+                
+                try {
+                    const { error } = await supabaseClient
+                        .from('comments')
+                        .insert([{
+                            candidate_id: candidateId,
+                            user_name: userName,
+                            content: content
+                        }]);
+                    
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('提交留言失败:', error);
+                    alert('提交留言失败: ' + error.message);
+                    return false;
+                }
+            },
+            
+            async likeComment(commentId) {
+                if (!supabaseClient) return false;
+                
+                try {
+                    // 检查是否已经点赞
+                    if (likedComments.includes(commentId)) return false;
+                    
+                    // 调用存储过程增加点赞数
+                    const { error } = await supabaseClient
+                        .rpc('increment_comment_like', { comment_id: commentId });
+                    
+                    if (error) throw error;
+                    
+                    // 记录已点赞
+                    likedComments.push(commentId);
+                    localStorage.setItem('likedComments', JSON.stringify(likedComments));
+                    
+                    return true;
+                } catch (error) {
+                    console.error('点赞失败:', error);
                     return false;
                 }
             },
@@ -544,9 +1161,10 @@
                 if (!container) return;
                 
                 try {
-                    const [candidates, votes] = await Promise.all([
+                    const [candidates, votes, allComments] = await Promise.all([
                         dataService.getCandidates(dataService.currentPage),
-                        dataService.getVotes()
+                        dataService.getVotes(),
+                        dataService.getComments()
                     ]);
                     
                     // 更新分页信息
@@ -563,38 +1181,55 @@
                         return;
                     }
                     
-                    container.innerHTML = candidates.map(candidate => `
-                        <div class="candidate-card">
-                            <div class="image-container">
-                                <img src="${candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片'}" 
-                                     alt="${candidate.name}" 
-                                     class="candidate-image"
-                                     onerror="this.onerror=null;this.src='https://via.placeholder.com/400x250?text=图片加载失败'">
-                            </div>
-                            <div class="candidate-info">
-                                <h3 class="candidate-name">${candidate.name}</h3>
-                                <p class="candidate-description">${candidate.description || '暂无描述'}</p>
-                                ${candidate.description && candidate.description.length > 100 ? `
-                                <button class="toggle-description">
-                                    <i class="fas fa-chevron-down"></i> 展开更多
-                                </button>
-                                ` : ''}
-                                <div class="vote-count" data-candidate="${candidate.id}">
-                                    <i class="fas fa-vote-yea"></i> 票数: ${votes[candidate.id] || 0}
+                    container.innerHTML = candidates.map(candidate => {
+                        // 获取该候选人的留言
+                        const candidateComments = allComments.filter(c => c.candidate_id === candidate.id);
+                        // 获取点赞数最高的留言
+                        const hotComment = candidateComments.length > 0 
+                            ? candidateComments.reduce((prev, current) => 
+                                (prev.likes > current.likes) ? prev : current) 
+                            : null;
+                        
+                        return `
+                            <div class="candidate-card" data-id="${candidate.id}">
+                                <div class="image-container">
+                                    <img src="${candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片'}" 
+                                         alt="${candidate.name}" 
+                                         class="candidate-image"
+                                         onerror="this.onerror=null;this.src='https://via.placeholder.com/400x250?text=图片加载失败'">
                                 </div>
-                                <button class="vote-btn" onclick="app.voteForCandidate(${candidate.id})" 
-                                    ${utils.hasVoted() ? 'disabled' : ''}>
-                                    ${utils.hasVoted() ? '已投票' : '投票'}
-                                </button>
-                                <p class="voted-message" ${utils.hasVoted() ? 'style="display: block;"' : ''}>
-                                    <i class="fas fa-check-circle"></i> 感谢您的投票
-                                </p>
+                                <div class="candidate-info">
+                                    <h3 class="candidate-name">${candidate.name}</h3>
+                                    <p class="candidate-description">${candidate.description || '暂无描述'}</p>
+                                    
+                                    <div class="vote-count">
+                                        <i class="fas fa-vote-yea"></i> 票数: ${votes[candidate.id] || 0}
+                                    </div>
+                                    
+                                    ${hotComment ? `
+                                    <div class="hot-comment">
+                                        <div class="hot-comment-header">
+                                            <span class="comment-author">${hotComment.user_name}</span>
+                                            <span class="hot-comment-label">最热留言</span>
+                                        </div>
+                                        <p class="comment-content">${hotComment.content}</p>
+                                    </div>
+                                    ` : ''}
+                                    
+                                    <div class="action-buttons">
+                                        <button class="vote-btn" onclick="app.voteForCandidate(${candidate.id})" 
+                                            ${utils.hasVoted() ? 'disabled' : ''}>
+                                            ${utils.hasVoted() ? '已投票' : '投票'}
+                                        </button>
+                                        <button class="detail-btn" onclick="app.showDetail(${candidate.id})">
+                                            详情 <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    `).join('');
+                        `;
+                    }).join('');
                     
-                    // 添加展开/收起功能
-                    this.addDescriptionToggle();
                     this.updateTotalVotes(votes);
                 } catch (error) {
                     console.error('渲染候选人失败:', error);
@@ -602,25 +1237,133 @@
                 }
             },
             
-            addDescriptionToggle() {
-                document.querySelectorAll('.toggle-description').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const description = this.previousElementSibling;
-                        description.classList.toggle('expanded');
-                        this.classList.toggle('expanded');
-                        this.innerHTML = this.classList.contains('expanded') 
-                            ? '<i class="fas fa-chevron-up"></i> 收起' 
-                            : '<i class="fas fa-chevron-down"></i> 展开更多';
-                    });
-                });
+            async renderComments() {
+                const container = document.getElementById('commentsList');
+                if (!container) return;
+                
+                try {
+                    const comments = await dataService.getHotComments();
+                    
+                    if (comments.length === 0) {
+                        container.innerHTML = `
+                            <div class="comment-item">
+                                <p style="text-align: center; color: var(--gray-500);">
+                                    暂无留言，成为第一个留言的人吧！
+                                </p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = comments.map(comment => {
+                        const isLiked = likedComments.includes(comment.id);
+                        
+                        return `
+                            <div class="comment-item ${comment.likes > 2 ? 'hot' : ''}">
+                                <div class="comment-header">
+                                    <span class="comment-author">${comment.user_name}</span>
+                                    <span class="comment-date">${utils.formatDate(comment.created_at)}</span>
+                                </div>
+                                <p class="comment-content">${comment.content}</p>
+                                <div class="comment-actions">
+                                    <div class="comment-likes">
+                                        <button class="like-btn ${isLiked ? 'liked' : ''}" 
+                                            onclick="app.likeComment(${comment.id}, this)" 
+                                            ${isLiked ? 'disabled' : ''}>
+                                            <i class="fas fa-heart"></i>
+                                        </button>
+                                        <span class="like-count">${comment.likes}</span>
+                                    </div>
+                                    <span class="comment-target">给: ${comment.candidate_id}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } catch (error) {
+                    console.error('渲染留言失败:', error);
+                }
+            },
+            
+            async renderDetail(candidateId) {
+                const [candidate, votes, comments] = await Promise.all([
+                    dataService.getCandidateDetail(candidateId),
+                    dataService.getVotes(),
+                    dataService.getComments(candidateId)
+                ]);
+                
+                if (!candidate) {
+                    alert('无法加载人物详情');
+                    return;
+                }
+                
+                // 更新详情信息
+                document.getElementById('detailTitle').textContent = candidate.name;
+                document.getElementById('detailImage').src = candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片';
+                document.getElementById('detailImage').onerror = function() {
+                    this.src = 'https://via.placeholder.com/400x250?text=图片加载失败';
+                };
+                document.getElementById('detailDescription').textContent = candidate.description || '暂无描述';
+                document.getElementById('voteCount').textContent = votes[candidateId] || 0;
+                document.getElementById('commentCount').textContent = comments.length;
+                document.getElementById('detailVoteBtn').disabled = utils.hasVoted();
+                
+                // 渲染留言
+                this.renderDetailComments(comments);
+                
+                // 显示详情页
+                document.getElementById('listView').style.display = 'none';
+                document.getElementById('detailView').style.display = 'block';
+                currentDetailId = candidateId;
+            },
+            
+            renderDetailComments(comments) {
+                const container = document.getElementById('detailCommentsContainer');
+                if (!container) return;
+                
+                if (comments.length === 0) {
+                    container.innerHTML = `
+                        <div class="detail-comment-item">
+                            <p style="text-align: center; padding: 20px; color: var(--gray-500);">
+                                暂无留言，成为第一个留言的人吧！
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // 按点赞数排序
+                comments.sort((a, b) => b.likes - a.likes);
+                
+                container.innerHTML = comments.map(comment => {
+                    const isLiked = likedComments.includes(comment.id);
+                    const isHot = comment.likes > 2;
+                    
+                    return `
+                        <div class="detail-comment-item ${isHot ? 'hot' : ''}">
+                            <div class="comment-header">
+                                <span class="comment-author">${comment.user_name}</span>
+                                <span class="comment-date">${utils.formatDate(comment.created_at)}</span>
+                            </div>
+                            <p class="comment-content">${comment.content}</p>
+                            <div class="comment-actions">
+                                <div class="comment-likes">
+                                    <button class="like-btn ${isLiked ? 'liked' : ''}" 
+                                        onclick="app.likeComment(${comment.id}, this)" 
+                                        ${isLiked ? 'disabled' : ''}>
+                                        <i class="fas fa-heart"></i>
+                                        <span class="like-count">${comment.likes}</span>
+                                    </button>
+                                </div>
+                                ${isHot ? '<span class="hot-comment-label">热门留言</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             },
             
             updateTotalVotes(votes) {
-                const totalElement = document.getElementById('totalVotes');
-                if (totalElement) {
-                    const total = Object.values(votes).reduce((sum, count) => sum + count, 0);
-                    totalElement.textContent = `总投票数: ${total} | 当前显示: ${dataService.totalItems} 位候选人`;
-                }
+                const total = Object.values(votes).reduce((sum, count) => sum + count, 0);
+                document.getElementById('currentYear').textContent = utils.getCurrentYear();
             },
             
             disableAllVoteButtons() {
@@ -645,8 +1388,7 @@
                 
                 // 初始化Supabase
                 if (!initializeSupabase()) {
-                    document.getElementById('candidatesContainer').innerHTML = 
-                        '<p style="grid-column:1/-1;text-align:center;color:red;">系统初始化失败，请刷新页面</p>';
+                    alert('系统初始化失败，请刷新页面');
                     return;
                 }
                 
@@ -655,6 +1397,7 @@
                 
                 // 初始渲染
                 await renderer.renderCandidates();
+                await renderer.renderComments();
             },
             
             setupEventListeners() {
@@ -671,6 +1414,16 @@
                 document.getElementById('prevPageBottom').addEventListener('click', () => this.changePage(-1));
                 document.getElementById('nextPage').addEventListener('click', () => this.changePage(1));
                 document.getElementById('nextPageBottom').addEventListener('click', () => this.changePage(1));
+                
+                // 留言功能
+                document.getElementById('submitComment').addEventListener('click', this.submitComment);
+                document.getElementById('submitDetailComment').addEventListener('click', this.submitDetailComment);
+                document.getElementById('addCommentBtn').addEventListener('click', () => {
+                    document.getElementById('detailCommentForm').style.display = 'block';
+                });
+                
+                // 返回列表按钮
+                document.getElementById('backToList').addEventListener('click', this.showList);
             },
             
             async changePage(direction) {
@@ -699,11 +1452,75 @@
                 if (success) {
                     alert('投票成功！');
                     renderer.disableAllVoteButtons();
-                    renderer.showAllVotedMessages();
                     
-                    // 刷新票数
-                    const votes = await dataService.getVotes();
-                    renderer.updateTotalVotes(votes);
+                    // 刷新数据
+                    await renderer.renderCandidates();
+                }
+            },
+            
+            async showDetail(candidateId) {
+                await renderer.renderDetail(candidateId);
+            },
+            
+            showList() {
+                document.getElementById('detailView').style.display = 'none';
+                document.getElementById('listView').style.display = 'block';
+                currentDetailId = null;
+            },
+            
+            async submitComment() {
+                const userName = document.getElementById('commentName').value.trim();
+                const content = document.getElementById('commentContent').value.trim();
+                
+                if (!userName || !content) {
+                    alert('请填写昵称和留言内容');
+                    return;
+                }
+                
+                const success = await dataService.submitComment(null, userName, content);
+                if (success) {
+                    alert('留言发布成功！');
+                    document.getElementById('commentName').value = '';
+                    document.getElementById('commentContent').value = '';
+                    await renderer.renderComments();
+                }
+            },
+            
+            async submitDetailComment() {
+                if (!currentDetailId) return;
+                
+                const userName = document.getElementById('detailCommentName').value.trim();
+                const content = document.getElementById('detailCommentContent').value.trim();
+                
+                if (!userName || !content) {
+                    alert('请填写昵称和留言内容');
+                    return;
+                }
+                
+                const success = await dataService.submitComment(currentDetailId, userName, content);
+                if (success) {
+                    alert('留言发布成功！');
+                    document.getElementById('detailCommentName').value = '';
+                    document.getElementById('detailCommentContent').value = '';
+                    
+                    // 刷新详情页留言
+                    await renderer.renderDetail(currentDetailId);
+                    // 刷新侧边栏留言
+                    await renderer.renderComments();
+                }
+            },
+            
+            async likeComment(commentId, button) {
+                const success = await dataService.likeComment(commentId);
+                if (success) {
+                    button.classList.add('liked');
+                    button.disabled = true;
+                    
+                    // 刷新留言显示
+                    if (currentDetailId) {
+                        await renderer.renderDetail(currentDetailId);
+                    }
+                    await renderer.renderComments();
                 }
             }
         };
