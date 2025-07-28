@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论坛 - 人物投票系统</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #10b981;
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --red-500: #ef4444;
+            --yellow-400: #fbbf24;
+            --blue-400: #60a5fa;
+            --green-500: #10b981;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--gray-50);
+            color: var(--gray-700);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 25px 0;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 16px;
+            color: white;
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 800;
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+            font-weight: 300;
+        }
+        
+        /* 论坛主内容区 */
+        .forum-content {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+        
+        .forum-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .forum-title {
+            font-size: 1.8rem;
+            color: var(--primary);
+            font-weight: 800;
+        }
+        
+        .create-post-btn {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            box-shadow: 0 3px 8px rgba(79, 70, 229, 0.3);
+        }
+        
+        .create-post-btn:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+        }
+        
+        /* 帖子列表 */
+        .posts-list {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .post-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-200);
+        }
+        
+        .post-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .post-author {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .author-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .author-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .author-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .author-name {
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .post-date {
+            color: var(--gray-500);
+            font-size: 0.9rem;
+        }
+        
+        .post-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--gray-800);
+        }
+        
+        .post-content {
+            color: var(--gray-700);
+            line-height: 1.7;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+        
+        .post-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .post-image {
+            border-radius: 10px;
+            overflow: hidden;
+            height: 150px;
+            background: var(--gray-100);
+            position: relative;
+        }
+        
+        .post-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+        
+        .post-image:hover img {
+            transform: scale(1.05);
+        }
+        
+        .post-stats {
+            display: flex;
+            gap: 20px;
+            color: var(--gray-500);
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+        }
+        
+        .post-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .post-actions {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid var(--gray-200);
+            padding-top: 15px;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--gray-600);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            background: var(--gray-100);
+            color: var(--primary);
+        }
+        
+        /* 发帖表单 */
+        .post-form {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+        
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--gray-300);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: var(--white);
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
+        }
+        
+        .form-textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .image-upload {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .upload-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .preview-item {
+            position: relative;
+            height: 120px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--gray-100);
+        }
+        
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--red-500);
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-btn:hover {
+            background: var(--gray-200);
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .submit-btn, .cancel-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .submit-btn {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+        }
+        
+        .submit-btn:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+        }
+        
+        .cancel-btn {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+        
+        .cancel-btn:hover {
+            background: var(--gray-200);
+        }
+        
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .page-btn {
+            padding: 10px 18px;
+            background: var(--white);
+            border: 1px solid var(--gray-300);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        
+        .page-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--gray-100);
+        }
+        
+        .page-info {
+            margin: 0 15px;
+            color: var(--gray-600);
+        }
+        
+        /* 加载状态 */
+        .loading-container {
+            text-align: center;
+            padding: 60px;
+        }
+        
+        .loading-spinner {
+            border: 6px solid var(--gray-200);
+            border-top: 6px solid var(--primary);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 登录/注册样式 */
+        .auth-btn {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+        
+        .auth-btn:hover {
+            background: var(--gray-100);
+            transform: translateY(-2px);
+        }
+        
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .auth-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 400px;
+            max-width: 90%;
+            position: relative;
+        }
+        
+        .close-auth {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .auth-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--gray-500);
+            position: relative;
+        }
+        
+        .auth-tab.active {
+            color: var(--primary);
+        }
+        
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+        }
+        
+        .auth-form .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .auth-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .auth-form input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+        }
+        
+        .auth-submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .auth-submit-btn:hover {
+            background: #4338ca;
+        }
+        
+        .logged-in {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+        
+        .logged-in span {
+            font-weight: 600;
+        }
+        
+        .logout-btn {
+            background: var(--red-500);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            header {
+                padding: 20px 0;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1.05rem;
+            }
+            
+            .forum-content, .post-form {
+                padding: 20px;
+            }
+            
+            .post-images {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+            
+            .upload-preview {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .submit-btn, .cancel-btn {
+                width: 100%;
+            }
+            
+            .auth-btn, .logged-in {
+                top: 10px;
+                right: 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .forum-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .create-post-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .post-header {
+                flex-direction: column;
+            }
+            
+            .post-images {
+                grid-template-columns: 1fr;
+            }
+            
+            .post-image {
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>论坛讨论区</h1>
+            <p class="subtitle">分享您的想法，与其他用户交流互动</p>
+            <div id="authStatus">
+                <button id="authBtn" class="auth-btn">登录/注册</button>
+            </div>
+        </header>
+        
+        <!-- 发帖表单 -->
+        <div class="post-form" id="postForm">
+            <h2 class="forum-title">发表新帖子</h2>
+            <form id="newPostForm">
+                <div class="form-group">
+                    <label for="postTitle" class="form-label">标题</label>
+                    <input type="text" id="postTitle" class="form-input" placeholder="输入帖子标题" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="postContent" class="form-label">内容</label>
+                    <textarea id="postContent" class="form-textarea" placeholder="写下您的想法..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">图片上传 (最多5张)</label>
+                    <div class="image-upload">
+                        <input type="file" id="imageUpload" accept="image/*" multiple style="display: none;">
+                        <button type="button" class="upload-btn" id="uploadBtn">
+                            <i class="fas fa-image"></i> 选择图片
+                        </button>
+                        <div class="upload-preview" id="imagePreview"></div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancelPost">取消</button>
+                    <button type="submit" class="submit-btn">发布帖子</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 帖子列表 -->
+        <div class="forum-content">
+            <div class="forum-header">
+                <h2 class="forum-title">最新讨论</h2>
+                <button class="create-post-btn" id="createPostBtn">
+                    <i class="fas fa-plus"></i> 发表新帖
+                </button>
+            </div>
+            
+            <div id="loadingContainer" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>正在加载帖子，请稍候...</p>
+            </div>
+            
+            <div class="posts-list" id="postsList" style="display: none;">
+                <!-- 帖子将通过JavaScript动态生成 -->
+            </div>
+            
+            <div class="pagination">
+                <button class="page-btn" id="prevPage" disabled>
+                    <i class="fas fa-chevron-left"></i> 上一页
+                </button>
+                <span class="page-info" id="pageInfo">第 1 页，共 1 页</span>
+                <button class="page-btn" id="nextPage" disabled>
+                    下一页 <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© <span id="currentYear"></span> 人物投票系统论坛 | 所有内容公开可见</p>
+        </footer>
+    </div>
+
+    <!-- 登录/注册模态框 -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-content">
+            <span class="close-auth">&times;</span>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">登录</button>
+                <button class="auth-tab" data-tab="register">注册</button>
+            </div>
+            
+            <div id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="loginUsername" placeholder="输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="输入密码">
+                </div>
+                <button id="loginBtn" class="auth-submit-btn">登录</button>
+            </div>
+            
+            <div id="registerForm" class="auth-form" style="display: none;">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="registerUsername" placeholder="输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="registerPassword" placeholder="输入密码">
+                </div>
+                <button id="registerBtn" class="auth-submit-btn">注册</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 先加载Supabase库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 图片压缩库 -->
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.0/dist/browser-image-compression.min.js"></script>
+    
+    <script>
+        // Supabase配置
+        const SUPABASE_CONFIG = {
+            url: 'https://vwwicvqojtruwmovhbjg.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
+            options: {
+                headers: {
+                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
+                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA'
+                },
+                db: {
+                    schema: 'public'
+                },
+                auth: {
+                    persistSession: false,
+                    autoRefreshToken: false
+                }
+            }
+        };
+        
+        // 应用程序代码
+        let supabaseClient;
+        let currentUser = null;
+        let selectedImages = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        
+        // 工具函数
+        const utils = {
+            getCurrentYear: () => new Date().getFullYear(),
+            formatDate: (dateString) => {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            },
+            showLoading: (elementId) => {
+                const element = document.getElementById(elementId);
+                if (element) element.style.display = 'block';
+            },
+            hideLoading: (elementId) => {
+                const element = document.getElementById(elementId);
+                if (element) element.style.display = 'none';
+            },
+            setAuthStatus: (username) => {
+                const authStatus = document.getElementById('authStatus');
+                if (username) {
+                    authStatus.innerHTML = `
+                        <div class="logged-in">
+                            <span>欢迎, ${username}</span>
+                            <button class="logout-btn" id="logoutBtn">登出</button>
+                        </div>
+                    `;
+                    document.getElementById('logoutBtn').addEventListener('click', app.logout);
+                } else {
+                    authStatus.innerHTML = '<button id="authBtn" class="auth-btn">登录/注册</button>';
+                    document.getElementById('authBtn').addEventListener('click', app.showAuthModal);
+                }
+            },
+            getAuthToken: () => localStorage.getItem('authToken'),
+            setAuthToken: (token) => localStorage.setItem('authToken', token),
+            removeAuthToken: () => localStorage.removeItem('authToken'),
+            getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
+            setCurrentUser: (user) => {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                currentUser = user;
+            },
+            removeCurrentUser: () => {
+                localStorage.removeItem('currentUser');
+                currentUser = null;
+            },
+            debounce: (func, wait) => {
+                let timeout;
+                return function(...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            },
+            // 图片压缩函数
+            compressImage: async (file) => {
+                const options = {
+                    maxSizeMB: 0.5,          // 最大文件大小 (MB)
+                    maxWidthOrHeight: 1024,   // 最大宽度或高度
+                    useWebWorker: true,       // 使用Web Worker加速
+                    fileType: 'image/jpeg'    // 输出格式
+                };
+                
+                try {
+                    const compressedFile = await imageCompression(file, options);
+                    return compressedFile;
+                } catch (error) {
+                    console.error('图片压缩失败:', error);
+                    return file; // 如果压缩失败，返回原文件
+                }
+            }
+        };
+        
+        // 数据服务
+        const dataService = {
+            async getPosts(page = 1) {
+                if (!supabaseClient) return { posts: [], total: 0 };
+                
+                try {
+                    const offset = (page - 1) * itemsPerPage;
+                    
+                    // 获取帖子总数
+                    const { count: total } = await supabaseClient
+                        .from('forum_posts')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    // 获取分页帖子数据
+                    const { data: posts, error } = await supabaseClient
+                        .from('forum_posts')
+                        .select(`
+                            *,
+                            forum_comments(count),
+                            user:users(username)
+                        `)
+                        .order('created_at', { ascending: false })
+                        .range(offset, offset + itemsPerPage - 1);
+                    
+                    if (error) throw error;
+                    
+                    return { posts: posts || [], total: total || 0 };
+                } catch (error) {
+                    console.error('获取帖子失败:', error);
+                    return { posts: [], total: 0 };
+                }
+            },
+            
+            async getPostImages(postId) {
+                if (!supabaseClient) return [];
+                
+                try {
+                    const { data: images, error } = await supabaseClient
+                        .from('forum_images')
+                        .select('*')
+                        .eq('post_id', postId);
+                    
+                    if (error) throw error;
+                    return images || [];
+                } catch (error) {
+                    console.error('获取帖子图片失败:', error);
+                    return [];
+                }
+            },
+            
+            async createPost(title, content, userId) {
+                if (!supabaseClient || !userId) return null;
+                
+                try {
+                    const { data: post, error } = await supabaseClient
+                        .from('forum_posts')
+                        .insert([{
+                            title,
+                            content,
+                            user_id: userId
+                        }])
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    return post;
+                } catch (error) {
+                    console.error('创建帖子失败:', error);
+                    alert('创建帖子失败: ' + error.message);
+                    return null;
+                }
+            },
+            
+            async uploadImages(postId, images) {
+                if (!supabaseClient || !postId || !images.length) return [];
+                
+                const uploadedImages = [];
+                
+                try {
+                    for (const image of images) {
+                        // 生成唯一文件名
+                        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.jpg`;
+                        const filePath = `forum/${postId}/${fileName}`;
+                        
+                        // 上传到Supabase存储
+                        const { data, error } = await supabaseClient
+                            .storage
+                            .from('forum-images')
+                            .upload(filePath, image.file);
+                        
+                        if (error) throw error;
+                        
+                        // 获取公开URL
+                        const { data: { publicUrl } } = supabaseClient
+                            .storage
+                            .from('forum-images')
+                            .getPublicUrl(filePath);
+                        
+                        // 保存图片记录到数据库
+                        const { data: imageRecord, error: dbError } = await supabaseClient
+                            .from('forum_images')
+                            .insert([{
+                                post_id: postId,
+                                url: publicUrl,
+                                file_name: fileName
+                            }])
+                            .select()
+                            .single();
+                        
+                        if (dbError) throw dbError;
+                        
+                        uploadedImages.push(imageRecord);
+                    }
+                    
+                    return uploadedImages;
+                } catch (error) {
+                    console.error('上传图片失败:', error);
+                    
+                    // 尝试删除已上传的图片
+                    if (uploadedImages.length > 0) {
+                        try {
+                            const filePaths = uploadedImages.map(img => `forum/${postId}/${img.file_name}`);
+                            await supabaseClient
+                                .storage
+                                .from('forum-images')
+                                .remove(filePaths);
+                        } catch (cleanupError) {
+                            console.error('清理上传的图片失败:', cleanupError);
+                        }
+                    }
+                    
+                    return [];
+                }
+            },
+            
+            async login(username, password) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select('*')
+                        .eq('username', username)
+                        .eq('password', password) // 注意: 实际应用中应该使用加密密码
+                        .single();
+                    
+                    if (error) throw error;
+                    if (!data) throw new Error('用户名或密码错误');
+                    
+                    // 在实际应用中，这里应该使用JWT或其他安全令牌
+                    const fakeToken = `fake-jwt-token-${Date.now()}`;
+                    return { user: data, token: fakeToken };
+                } catch (error) {
+                    console.error('登录失败:', error);
+                    throw error;
+                }
+            },
+            
+            async register(username, password) {
+                try {
+                    // 检查用户名是否已存在
+                    const { data: existingUser, error: checkError } = await supabaseClient
+                        .from('users')
+                        .select('username')
+                        .eq('username', username)
+                        .single();
+                    
+                    if (existingUser) throw new Error('用户名已存在');
+                    
+                    // 创建新用户
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .insert([{ username, password }]) // 注意: 实际应用中应该加密密码
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    // 在实际应用中，这里应该使用JWT或其他安全令牌
+                    const fakeToken = `fake-jwt-token-${Date.now()}`;
+                    return { user: data, token: fakeToken };
+                } catch (error) {
+                    console.error('注册失败:', error);
+                    throw error;
+                }
+            },
+            
+            getTotalPages(totalItems) {
+                return Math.ceil(totalItems / itemsPerPage);
+            },
+            
+            updatePagination(totalItems, currentPage) {
+                const totalPages = this.getTotalPages(totalItems);
+                document.getElementById('pageInfo').textContent = `第 ${currentPage} 页，共 ${totalPages} 页`;
+                
+                document.getElementById('prevPage').disabled = currentPage <= 1;
+                document.getElementById('nextPage').disabled = currentPage >= totalPages;
+            }
+        };
+        
+        // UI渲染器
+        const renderer = {
+            async renderPosts() {
+                const container = document.getElementById('postsList');
+                const loading = document.getElementById('loadingContainer');
+                
+                if (!container || !loading) return;
+                
+                try {
+                    utils.showLoading('loadingContainer');
+                    container.style.display = 'none';
+                    
+                    const { posts, total } = await dataService.getPosts(currentPage);
+                    
+                    dataService.updatePagination(total, currentPage);
+                    
+                    if (posts.length === 0) {
+                        container.innerHTML = `
+                            <div class="post-card">
+                                <p style="text-align: center; padding: 30px; color: var(--gray-500);">
+                                    暂无帖子，成为第一个发帖的人吧！
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        // 为每个帖子获取图片
+                        const postsWithImages = await Promise.all(
+                            posts.map(async post => {
+                                const images = await dataService.getPostImages(post.id);
+                                return { ...post, images };
+                            })
+                        );
+                        
+                        container.innerHTML = postsWithImages.map(post => {
+                            return `
+                                <div class="post-card" data-id="${post.id}">
+                                    <div class="post-header">
+                                        <div class="post-author">
+                                            <div class="author-avatar">
+                                                <img src="https://ui-avatars.com/api/?name=${post.user.username}&background=${encodeURIComponent('#4f46e5')}&color=fff" alt="${post.user.username}">
+                                            </div>
+                                            <div class="author-info">
+                                                <span class="author-name">${post.user.username}</span>
+                                                <span class="post-date">${utils.formatDate(post.created_at)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <h3 class="post-title">${post.title}</h3>
+                                    <p class="post-content">${post.content}</p>
+                                    
+                                    ${post.images.length > 0 ? `
+                                        <div class="post-images">
+                                            ${post.images.slice(0, 5).map(image => `
+                                                <div class="post-image">
+                                                    <img src="${image.url}" alt="帖子图片" loading="lazy">
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                    
+                                    <div class="post-stats">
+                                        <div class="post-stat">
+                                            <i class="fas fa-comment"></i>
+                                            <span>${post.forum_comments[0].count || 0} 条评论</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="post-actions">
+                                        <button class="action-btn">
+                                            <i class="fas fa-comment"></i> 评论
+                                        </button>
+                                        <button class="action-btn">
+                                            <i class="fas fa-share"></i> 分享
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                    
+                    container.style.display = 'grid';
+                } catch (error) {
+                    console.error('渲染帖子失败:', error);
+                    container.innerHTML = `
+                        <div class="post-card">
+                            <p style="text-align: center; padding: 30px; color: var(--red-500);">
+                                加载帖子失败，请刷新页面
+                            </p>
+                        </div>
+                    `;
+                    container.style.display = 'block';
+                } finally {
+                    utils.hideLoading('loadingContainer');
+                }
+            },
+            
+            clearPostForm() {
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postContent').value = '';
+                document.getElementById('imagePreview').innerHTML = '';
+                selectedImages = [];
+            },
+            
+            showImagePreviews(files) {
+                const previewContainer = document.getElementById('imagePreview');
+                
+                for (let i = 0; i < Math.min(files.length, 5); i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        previewItem.innerHTML = `
+                            <img src="${e.target.result}" alt="预览">
+                            <button class="remove-image" data-index="${i}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        previewContainer.appendChild(previewItem);
+                        
+                        // 添加删除按钮事件
+                        previewItem.querySelector('.remove-image').addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            const index = parseInt(event.target.closest('.remove-image').dataset.index);
+                            selectedImages.splice(index, 1);
+                            previewContainer.removeChild(previewItem);
+                            
+                            // 更新剩余图片的索引
+                            const removeButtons = previewContainer.querySelectorAll('.remove-image');
+                            removeButtons.forEach((btn, idx) => {
+                                btn.dataset.index = idx;
+                            });
+                        });
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+            }
+        };
+        
+        // 应用控制器
+        const app = {
+            async init() {
+                document.getElementById('currentYear').textContent = utils.getCurrentYear();
+                
+                if (!initializeSupabase()) {
+                    alert('系统初始化失败，请刷新页面');
+                    return;
+                }
+                
+                this.setupEventListeners();
+                await this.renderPosts();
+                this.checkAuth();
+            },
+            
+            setupEventListeners() {
+                // 发帖按钮
+                document.getElementById('createPostBtn').addEventListener('click', () => {
+                    if (!currentUser) {
+                        alert('请先登录后再发帖');
+                        this.showAuthModal();
+                        return;
+                    }
+                    
+                    document.getElementById('postForm').style.display = 'block';
+                    document.getElementById('createPostBtn').style.display = 'none';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                
+                // 取消发帖
+                document.getElementById('cancelPost').addEventListener('click', () => {
+                    document.getElementById('postForm').style.display = 'none';
+                    document.getElementById('createPostBtn').style.display = 'flex';
+                    renderer.clearPostForm();
+                });
+                
+                // 图片上传
+                document.getElementById('uploadBtn').addEventListener('click', () => {
+                    document.getElementById('imageUpload').click();
+                });
+                
+                document.getElementById('imageUpload').addEventListener('change', async (event) => {
+                    const files = Array.from(event.target.files);
+                    
+                    if (files.length + selectedImages.length > 5) {
+                        alert('最多只能上传5张图片');
+                        return;
+                    }
+                    
+                    // 压缩图片并添加到选择列表
+                    for (const file of files) {
+                        try {
+                            const compressedFile = await utils.compressImage(file);
+                            selectedImages.push({
+                                file: compressedFile,
+                                originalName: file.name
+                            });
+                        } catch (error) {
+                            console.error('图片处理失败:', error);
+                            selectedImages.push({
+                                file: file,
+                                originalName: file.name
+                            });
+                        }
+                    }
+                    
+                    // 显示预览
+                    renderer.showImagePreviews(files);
+                    event.target.value = ''; // 重置文件输入
+                });
+                
+                // 提交帖子表单
+                document.getElementById('newPostForm').addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    
+                    const title = document.getElementById('postTitle').value.trim();
+                    const content = document.getElementById('postContent').value.trim();
+                    
+                    if (!title || !content) {
+                        alert('请填写标题和内容');
+                        return;
+                    }
+                    
+                    try {
+                        // 创建帖子
+                        const post = await dataService.createPost(title, content, currentUser.id);
+                        if (!post) return;
+                        
+                        // 上传图片
+                        if (selectedImages.length > 0) {
+                            await dataService.uploadImages(post.id, selectedImages);
+                        }
+                        
+                        // 重置表单
+                        renderer.clearPostForm();
+                        document.getElementById('postForm').style.display = 'none';
+                        document.getElementById('createPostBtn').style.display = 'flex';
+                        
+                        // 刷新帖子列表
+                        currentPage = 1;
+                        await this.renderPosts();
+                        
+                        alert('帖子发布成功！');
+                    } catch (error) {
+                        console.error('发布帖子失败:', error);
+                        alert('发布帖子失败: ' + error.message);
+                    }
+                });
+                
+                // 分页按钮
+                document.getElementById('prevPage').addEventListener('click', () => this.changePage(-1));
+                document.getElementById('nextPage').addEventListener('click', () => this.changePage(1));
+                
+                // 登录/注册按钮
+                document.getElementById('authBtn')?.addEventListener('click', () => {
+                    this.showAuthModal();
+                });
+            },
+            
+            async changePage(direction) {
+                const { total } = await dataService.getPosts(currentPage);
+                const totalPages = dataService.getTotalPages(total);
+                const newPage = currentPage + direction;
+                
+                if (newPage >= 1 && newPage <= totalPages) {
+                    currentPage = newPage;
+                    await this.renderPosts();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            },
+            
+            async renderPosts() {
+                await renderer.renderPosts();
+            },
+            
+            showAuthModal() {
+                const modal = document.getElementById('authModal');
+                modal.style.display = 'flex';
+                
+                document.querySelector('.close-auth').onclick = () => {
+                    modal.style.display = 'none';
+                };
+                
+                document.querySelectorAll('.auth-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        document.querySelectorAll('.auth-form').forEach(form => {
+                            form.style.display = 'none';
+                        });
+                        
+                        document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
+                    });
+                });
+                
+                document.getElementById('loginBtn').onclick = async () => {
+                    const username = document.getElementById('loginUsername').value.trim();
+                    const password = document.getElementById('loginPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    try {
+                        const { user, token } = await dataService.login(username, password);
+                        utils.setAuthToken(token);
+                        utils.setCurrentUser(user);
+                        utils.setAuthStatus(user.username);
+                        
+                        document.getElementById('authModal').style.display = 'none';
+                        alert('登录成功！');
+                    } catch (error) {
+                        alert(error.message || '登录失败');
+                    }
+                };
+                
+                document.getElementById('registerBtn').onclick = async () => {
+                    const username = document.getElementById('registerUsername').value.trim();
+                    const password = document.getElementById('registerPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    try {
+                        const { user, token } = await dataService.register(username, password);
+                        utils.setAuthToken(token);
+                        utils.setCurrentUser(user);
+                        utils.setAuthStatus(user.username);
+                        
+                        document.getElementById('authModal').style.display = 'none';
+                        alert('注册成功！');
+                    } catch (error) {
+                        alert(error.message || '注册失败');
+                    }
+                };
+            },
+            
+            logout() {
+                utils.removeAuthToken();
+                utils.removeCurrentUser();
+                utils.setAuthStatus(null);
+                alert('已登出');
+            },
+            
+            checkAuth() {
+                const token = utils.getAuthToken();
+                const user = utils.getCurrentUser();
+                
+                if (token && user) {
+                    utils.setAuthStatus(user.username);
+                }
+            }
+        };
+        
+        function initializeSupabase() {
+            try {
+                supabaseClient = supabase.createClient(
+                    SUPABASE_CONFIG.url,
+                    SUPABASE_CONFIG.key,
+                    SUPABASE_CONFIG.options
+                );
+                return true;
+            } catch (error) {
+                console.error('Supabase初始化失败:', error);
+                return false;
+            }
+        }
+        
+        // 启动应用
+        window.app = app;
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>

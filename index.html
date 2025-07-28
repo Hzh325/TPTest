@@ -814,6 +814,53 @@
             cursor: not-allowed;
             transform: none;
         }
+
+        .forum-btn {
+    position: absolute;
+    top: 20px;
+    left: 120px; /* 放在签到按钮右侧 */
+    z-index: 10;
+    background: var(--blue-400);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.forum-btn:hover {
+    background: #3b82f6;
+    transform: translateY(-2px);
+}
+
+/* ===== 登录/注册按钮样式 ===== */
+.auth-btn {
+    background: white;
+    color: var(--primary);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+}
+
+.auth-btn:hover {
+    background: var(--gray-100);
+    transform: translateY(-2px);
+}
         
         .vote-count-badge {
             background: var(--primary);
@@ -884,6 +931,22 @@
                 top: 10px;
                 left: 10px;
             }
+
+            .checkin-btn {
+        top: 10px;
+        left: 10px;
+    }
+    
+    .forum-btn {
+        top: 10px;
+        left: 90px; /* 在小屏幕上调整位置 */
+        padding: 6px 12px;
+    }
+    
+    .auth-btn, .logged-in {
+        top: 10px;
+        right: 10px;
+    }
         }
         
         @media (max-width: 480px) {
@@ -900,6 +963,9 @@
                 <i class="fas fa-calendar-check"></i> 签到
                 <span id="voteCountBadge" class="vote-count-badge" style="display: none;">0</span>
             </button>
+            <a href="forum.html" class="forum-btn" id="forumBtn" style="display: none;">
+                   <i class="fas fa-comments"></i> 论坛
+            </a>
             <h1>人物投票与留言系统</h1>
             <p class="subtitle">为您喜爱的人物投票并留下宝贵意见</p>
             <div id="authStatus">
@@ -1130,30 +1196,32 @@
             };
         },
         setAuthStatus: (username) => {
-            const authStatus = document.getElementById('authStatus');
-            if (username) {
-                authStatus.innerHTML = `
-                    <div class="logged-in">
-                        <span>欢迎, ${username}</span>
-                        <button class="logout-btn" id="logoutBtn">登出</button>
-                    </div>
-                `;
-                document.getElementById('logoutBtn').addEventListener('click', app.logout);
-                
-                // 显示签到按钮
-                document.getElementById('checkinBtn').style.display = 'flex';
-                
-                // 检查签到状态
-                app.checkCheckinStatus();
-            } else {
-                authStatus.innerHTML = '<button id="authBtn" class="auth-btn">登录/注册</button>';
-                document.getElementById('authBtn').addEventListener('click', app.showAuthModal);
-                
-                // 隐藏签到按钮
-                document.getElementById('checkinBtn').style.display = 'none';
-                document.getElementById('voteCountBadge').style.display = 'none';
-            }
-        },
+    const authStatus = document.getElementById('authStatus');
+    if (username) {
+        authStatus.innerHTML = `
+            <div class="logged-in">
+                <span>欢迎, ${username}</span>
+                <button class="logout-btn" id="logoutBtn">登出</button>
+            </div>
+        `;
+        document.getElementById('logoutBtn').addEventListener('click', app.logout);
+        
+        // 显示签到按钮和论坛按钮
+        document.getElementById('checkinBtn').style.display = 'flex';
+        document.getElementById('forumBtn').style.display = 'flex';
+        
+        // 检查签到状态
+        app.checkCheckinStatus();
+    } else {
+        authStatus.innerHTML = '<button id="authBtn" class="auth-btn">登录/注册</button>';
+        document.getElementById('authBtn').addEventListener('click', app.showAuthModal);
+        
+        // 隐藏签到按钮和论坛按钮
+        document.getElementById('checkinBtn').style.display = 'none';
+        document.getElementById('forumBtn').style.display = 'none';
+        document.getElementById('voteCountBadge').style.display = 'none';
+    }
+},
         getAuthToken: () => localStorage.getItem('authToken'),
         setAuthToken: (token) => localStorage.setItem('authToken', token),
         removeAuthToken: () => localStorage.removeItem('authToken'),
