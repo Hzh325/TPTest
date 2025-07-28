@@ -614,6 +614,45 @@
         }
 
         .comment-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1002;
+    }
+    
+    .comment-modal .modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 16px;
+        width: 500px;
+        max-width: 90%;
+        position: relative;
+    }
+    
+    .comment-modal .close-modal {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 24px;
+        cursor: pointer;
+    }
+    
+    .post-image {
+        cursor: pointer;
+        transition: transform 0.3s;
+    }
+    
+    .post-image:hover {
+        transform: scale(1.05);
+    }
+
+        .comment-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -786,14 +825,17 @@
             </div>
             
             <div class="pagination">
-                <button class="page-btn" id="prevPage" disabled>
-                    <i class="fas fa-chevron-left"></i> 上一页
-                </button>
-                <span class="page-info" id="pageInfo">第 1 页，共 1 页</span>
-                <button class="page-btn" id="nextPage" disabled>
-                    下一页 <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
+        <button class="page-btn" id="prevPage" disabled>
+            <i class="fas fa-chevron-left"></i> 上一页
+        </button>
+        <span class="page-info" id="pageInfo">第 1 页，共 1 页</span>
+        <button class="page-btn" id="nextPage" disabled>
+            下一页 <i class="fas fa-chevron-right"></i>
+        </button>
+        <button class="page-btn" id="backToIndex" onclick="window.location.href='index.html'">
+            <i class="fas fa-home"></i> 返回首页
+        </button>
+    </div>
         </div>
         
         <footer>
@@ -1142,100 +1184,97 @@
         
         // UI渲染器
         const renderer = {
-            async renderPosts() {
-    const container = document.getElementById('postsList');
-    const loading = document.getElementById('loadingContainer');
-    
-    if (!container || !loading) return;
-    
-    try {
-        utils.showLoading('loadingContainer');
-        container.style.display = 'none';
-        
-        const { posts, total } = await dataService.getPosts(currentPage);
-        
-        dataService.updatePagination(total, currentPage);
-        
-        if (posts.length === 0) {
-            container.innerHTML = `
-                <div class="post-card">
-                    <p style="text-align: center; padding: 30px; color: var(--gray-500);">
-                        暂无帖子，成为第一个发帖的人吧！
-                    </p>
-                </div>
-            `;
-        } else {
-            // 为每个帖子获取图片
-            const postsWithImages = await Promise.all(
-                posts.map(async post => {
-                    const images = await dataService.getPostImages(post.id);
-                    return { ...post, images };
-                })
-            );
+        async renderPosts() {
+            const container = document.getElementById('postsList');
+            const loading = document.getElementById('loadingContainer');
             
-            container.innerHTML = postsWithImages.map(post => {
-                return `
-                    <div class="post-card" data-id="${post.id}">
-                        <div class="post-header">
-                            <div class="post-author">
-                                <div class="author-avatar">
-                                    <img src="https://ui-avatars.com/api/?name=${post.user.username}&background=${encodeURIComponent('#4f46e5')}&color=fff" alt="${post.user.username}">
-                                </div>
-                                <div class="author-info">
-                                    <span class="author-name">${post.user.username}</span>
-                                    <span class="post-date">${utils.formatDate(post.created_at)}</span>
-                                </div>
-                            </div>
+            if (!container || !loading) return;
+            
+            try {
+                utils.showLoading('loadingContainer');
+                container.style.display = 'none';
+                
+                const { posts, total } = await dataService.getPosts(currentPage);
+                
+                dataService.updatePagination(total, currentPage);
+                
+                if (posts.length === 0) {
+                    container.innerHTML = `
+                        <div class="post-card">
+                            <p style="text-align: center; padding: 30px; color: var(--gray-500);">
+                                暂无帖子，成为第一个发帖的人吧！
+                            </p>
                         </div>
-                        
-                        <h3 class="post-title">${post.title}</h3>
-                        <p class="post-content">${post.content}</p>
-                        
-                        ${post.images.length > 0 ? `
-                            <div class="post-images">
-                                ${post.images.map(image => `
-                                    <div class="post-image">
-                                        <img src="${image.url}" alt="帖子图片" loading="lazy">
+                    `;
+                } else {
+                    // 为每个帖子获取图片
+                    const postsWithImages = await Promise.all(
+                        posts.map(async post => {
+                            const images = await dataService.getPostImages(post.id);
+                            return { ...post, images };
+                        })
+                    );
+                    
+                    container.innerHTML = postsWithImages.map(post => {
+                        return `
+                            <div class="post-card" data-id="${post.id}">
+                                <div class="post-header">
+                                    <div class="post-author">
+                                        <div class="author-avatar">
+                                            <img src="https://ui-avatars.com/api/?name=${post.user.username}&background=${encodeURIComponent('#4f46e5')}&color=fff" alt="${post.user.username}">
+                                        </div>
+                                        <div class="author-info">
+                                            <span class="author-name">${post.user.username}</span>
+                                            <span class="post-date">${utils.formatDate(post.created_at)}</span>
+                                        </div>
                                     </div>
-                                `).join('')}
+                                </div>
+                                
+                                <h3 class="post-title">${post.title}</h3>
+                                <p class="post-content">${post.content}</p>
+                                
+                                ${post.images.length > 0 ? `
+                                    <div class="post-images">
+                                        ${post.images.map(image => `
+                                            <div class="post-image">
+                                                <img src="${image.url}" alt="帖子图片" loading="lazy" onclick="app.showImageModal('${image.url}')">
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="post-stats">
+                                    <div class="post-stat">
+                                        <i class="fas fa-comment"></i>
+                                        <span>${post.forum_comments[0].count || 0} 条评论</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="post-actions">
+                                    <button class="action-btn" onclick="app.showCommentModal(${post.id})">
+                                        <i class="fas fa-comment"></i> 评论
+                                    </button>
+                                </div>
                             </div>
-                        ` : ''}
-                        
-                        <div class="post-stats">
-                            <div class="post-stat">
-                                <i class="fas fa-comment"></i>
-                                <span>${post.forum_comments[0].count || 0} 条评论</span>
-                            </div>
-                        </div>
-                        
-                        <div class="post-actions">
-                            <button class="action-btn" onclick="app.showPostDetail(${post.id})">
-                                <i class="fas fa-comment"></i> 评论
-                            </button>
-                            <button class="action-btn">
-                                <i class="fas fa-share"></i> 分享
-                            </button>
-                        </div>
+                        `;
+                    }).join('');
+                }
+                
+                container.style.display = 'grid';
+            } catch (error) {
+                console.error('渲染帖子失败:', error);
+                container.innerHTML = `
+                    <div class="post-card">
+                        <p style="text-align: center; padding: 30px; color: var(--red-500);">
+                            加载帖子失败，请刷新页面
+                        </p>
                     </div>
                 `;
-            }).join('');
-        }
-        
-        container.style.display = 'grid';
-    } catch (error) {
-        console.error('渲染帖子失败:', error);
-        container.innerHTML = `
-            <div class="post-card">
-                <p style="text-align: center; padding: 30px; color: var(--red-500);">
-                    加载帖子失败，请刷新页面
-                </p>
-            </div>
-        `;
-        container.style.display = 'block';
-    } finally {
-        utils.hideLoading('loadingContainer');
-    }
-},
+                container.style.display = 'block';
+            } finally {
+                utils.hideLoading('loadingContainer');
+            }
+        },
             
             clearPostForm() {
                 document.getElementById('postTitle').value = '';
@@ -1296,7 +1335,7 @@
         await this.renderPosts();
         this.checkAuth();
     },
-    
+
     setupEventListeners() {
         // 发帖按钮
         document.getElementById('createPostBtn').addEventListener('click', () => {
@@ -1331,7 +1370,6 @@
                 return;
             }
             
-            // 压缩图片并添加到选择列表
             for (const file of files) {
                 try {
                     const compressedFile = await utils.compressImage(file);
@@ -1348,9 +1386,8 @@
                 }
             }
             
-            // 显示预览
             renderer.showImagePreviews(files);
-            event.target.value = ''; // 重置文件输入
+            event.target.value = '';
         });
         
         // 提交帖子表单
@@ -1366,21 +1403,17 @@
             }
             
             try {
-                // 创建帖子
                 const post = await dataService.createPost(title, content, currentUser.id);
                 if (!post) return;
                 
-                // 上传图片
                 if (selectedImages.length > 0) {
                     await dataService.uploadImages(post.id, selectedImages);
                 }
                 
-                // 重置表单
                 renderer.clearPostForm();
                 document.getElementById('postForm').style.display = 'none';
                 document.getElementById('createPostBtn').style.display = 'flex';
                 
-                // 刷新帖子列表
                 currentPage = 1;
                 await this.renderPosts();
                 
@@ -1414,24 +1447,142 @@
     },
     
     async renderPosts() {
-        await renderer.renderPosts();
+        const container = document.getElementById('postsList');
+        const loading = document.getElementById('loadingContainer');
+        
+        if (!container || !loading) return;
+        
+        try {
+            utils.showLoading('loadingContainer');
+            container.style.display = 'none';
+            
+            const { posts, total } = await dataService.getPosts(currentPage);
+            
+            dataService.updatePagination(total, currentPage);
+            
+            if (posts.length === 0) {
+                container.innerHTML = `
+                    <div class="post-card">
+                        <p style="text-align: center; padding: 30px; color: var(--gray-500);">
+                            暂无帖子，成为第一个发帖的人吧！
+                        </p>
+                    </div>
+                `;
+            } else {
+                const postsWithImages = await Promise.all(
+                    posts.map(async post => {
+                        const images = await dataService.getPostImages(post.id);
+                        return { ...post, images };
+                    })
+                );
+                
+                container.innerHTML = postsWithImages.map(post => {
+                    return `
+                        <div class="post-card" data-id="${post.id}">
+                            <div class="post-header">
+                                <div class="post-author">
+                                    <div class="author-avatar">
+                                        <img src="https://ui-avatars.com/api/?name=${post.user.username}&background=${encodeURIComponent('#4f46e5')}&color=fff" alt="${post.user.username}">
+                                    </div>
+                                    <div class="author-info">
+                                        <span class="author-name">${post.user.username}</span>
+                                        <span class="post-date">${utils.formatDate(post.created_at)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h3 class="post-title">${post.title}</h3>
+                            <p class="post-content">${post.content}</p>
+                            
+                            ${post.images.length > 0 ? `
+                                <div class="post-images">
+                                    ${post.images.map(image => `
+                                        <div class="post-image">
+                                            <img src="${image.url}" alt="帖子图片" loading="lazy" onclick="app.showImageModal('${image.url}')">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            <div class="post-stats">
+                                <div class="post-stat">
+                                    <i class="fas fa-comment"></i>
+                                    <span>${post.forum_comments[0].count || 0} 条评论</span>
+                                </div>
+                            </div>
+                            
+                            <div class="post-actions">
+                                <button class="action-btn" onclick="app.showCommentModal(${post.id})">
+                                    <i class="fas fa-comment"></i> 评论
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            container.style.display = 'grid';
+        } catch (error) {
+            console.error('渲染帖子失败:', error);
+            container.innerHTML = `
+                <div class="post-card">
+                    <p style="text-align: center; padding: 30px; color: var(--red-500);">
+                        加载帖子失败，请刷新页面
+                    </p>
+                </div>
+            `;
+            container.style.display = 'block';
+        } finally {
+            utils.hideLoading('loadingContainer');
+        }
     },
-    
-    // 新增的评论功能方法
-    showPostDetail: function(postId) {
-        this.currentPostId = postId;
-        this.showCommentModal();
+
+    /* 新增的图片查看方法 */
+    showImageModal: function(imageUrl) {
+        const modal = document.createElement('div');
+        modal.className = 'image-modal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.style.zIndex = '1003';
+        modal.style.cursor = 'pointer';
+        
+        modal.innerHTML = `
+            <div style="max-width: 90%; max-height: 90%;">
+                <img src="${imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            </div>
+        `;
+        
+        modal.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+        
+        document.body.appendChild(modal);
     },
-    
-    showCommentModal: function() {
+
+    /* 修改后的评论方法 */
+    showCommentModal: function(postId) {
+        const user = utils.getCurrentUser();
+        if (!user) {
+            alert('请先登录后再发表评论');
+            this.showAuthModal();
+            return;
+        }
+        
         const modal = document.createElement('div');
         modal.className = 'comment-modal';
         modal.innerHTML = `
             <div class="modal-content">
                 <span class="close-modal">&times;</span>
                 <h3>发表评论</h3>
-                <textarea id="postCommentContent" placeholder="写下您的评论..."></textarea>
-                <button id="submitPostComment" class="submit-btn">提交评论</button>
+                <textarea id="postCommentContent" placeholder="写下您的评论..." style="width: 100%; min-height: 150px; padding: 15px; border: 1px solid var(--gray-300); border-radius: 10px; margin: 15px 0; resize: vertical;"></textarea>
+                <button id="submitPostComment" class="submit-btn" style="width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">提交评论</button>
             </div>
         `;
         
@@ -1441,46 +1592,35 @@
             document.body.removeChild(modal);
         });
         
-        document.getElementById('submitPostComment').addEventListener('click', () => {
-            this.submitPostComment();
+        document.getElementById('submitPostComment').addEventListener('click', async () => {
+            const content = document.getElementById('postCommentContent').value.trim();
+            if (!content) {
+                alert('请输入评论内容');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('forum_comments')
+                    .insert([{
+                        post_id: postId,
+                        user_id: user.id,
+                        content: content,
+                        user_name: user.username
+                    }]);
+                
+                if (error) throw error;
+                
+                alert('评论发布成功！');
+                document.body.removeChild(modal);
+                await this.renderPosts();
+            } catch (error) {
+                console.error('发布评论失败:', error);
+                alert('发布评论失败: ' + error.message);
+            }
         });
     },
-    
-    submitPostComment: async function() {
-        const user = utils.getCurrentUser();
-        if (!user) {
-            alert('请先登录后再发表评论');
-            this.showAuthModal();
-            return;
-        }
-        
-        const content = document.getElementById('postCommentContent').value.trim();
-        if (!content) {
-            alert('请输入评论内容');
-            return;
-        }
-        
-        try {
-            const { error } = await supabaseClient
-                .from('forum_comments')
-                .insert([{
-                    post_id: this.currentPostId,
-                    user_id: user.id,
-                    content: content,
-                    user_name: user.username
-                }]);
-            
-            if (error) throw error;
-            
-            alert('评论发布成功！');
-            document.body.querySelector('.comment-modal').remove();
-            await this.renderPosts(); // 刷新帖子列表
-        } catch (error) {
-            console.error('发布评论失败:', error);
-            alert('发布评论失败: ' + error.message);
-        }
-    },
-    
+
     showAuthModal() {
         const modal = document.getElementById('authModal');
         modal.style.display = 'flex';
