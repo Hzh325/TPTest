@@ -613,83 +613,104 @@
             cursor: pointer;
         }
 
+        /* 评论模态框样式 */
         .comment-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1002;
-    }
-    
-    .comment-modal .modal-content {
-        background: white;
-        padding: 30px;
-        border-radius: 16px;
-        width: 500px;
-        max-width: 90%;
-        position: relative;
-    }
-    
-    .comment-modal .close-modal {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        font-size: 24px;
-        cursor: pointer;
-    }
-    
-    .post-image {
-        cursor: pointer;
-        transition: transform 0.3s;
-    }
-    
-    .post-image:hover {
-        transform: scale(1.05);
-    }
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+        }
+        
+        .comment-modal .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 500px;
+            max-width: 90%;
+            position: relative;
+        }
+        
+        .comment-modal .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .post-image {
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .post-image:hover {
+            transform: scale(1.05);
+        }
 
         .comment-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1002;
-}
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+        }
 
-.comment-modal .modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 16px;
-    width: 500px;
-    max-width: 90%;
-}
+        .comment-modal .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 500px;
+            max-width: 90%;
+        }
 
-.comment-modal textarea {
-    width: 100%;
-    min-height: 150px;
-    padding: 15px;
-    border: 1px solid var(--gray-300);
-    border-radius: 10px;
-    margin: 15px 0;
-    resize: vertical;
-}
+        .comment-modal textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 1px solid var(--gray-300);
+            border-radius: 10px;
+            margin: 15px 0;
+            resize: vertical;
+        }
 
-.comment-modal .close-modal {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    font-size: 24px;
-    cursor: pointer;
-}
+        .comment-modal .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* 图片查看模态框 */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1003;
+        }
+        
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
         
         /* 响应式调整 */
         @media (max-width: 768px) {
@@ -825,17 +846,17 @@
             </div>
             
             <div class="pagination">
-        <button class="page-btn" id="prevPage" disabled>
-            <i class="fas fa-chevron-left"></i> 上一页
-        </button>
-        <span class="page-info" id="pageInfo">第 1 页，共 1 页</span>
-        <button class="page-btn" id="nextPage" disabled>
-            下一页 <i class="fas fa-chevron-right"></i>
-        </button>
-        <button class="page-btn" id="backToIndex" onclick="window.location.href='index.html'">
-            <i class="fas fa-home"></i> 返回首页
-        </button>
-    </div>
+                <button class="page-btn" id="prevPage" disabled>
+                    <i class="fas fa-chevron-left"></i> 上一页
+                </button>
+                <span class="page-info" id="pageInfo">第 1 页，共 1 页</span>
+                <button class="page-btn" id="nextPage" disabled>
+                    下一页 <i class="fas fa-chevron-right"></i>
+                </button>
+                <button class="page-btn" id="backToIndex" onclick="window.location.href='index.html'">
+                    <i class="fas fa-home"></i> 返回首页
+                </button>
+            </div>
         </div>
         
         <footer>
@@ -897,8 +918,8 @@
                     schema: 'public'
                 },
                 auth: {
-                    persistSession: false,
-                    autoRefreshToken: false
+                    persistSession: true,
+                    autoRefreshToken: true
                 }
             }
         };
@@ -1125,7 +1146,7 @@
                         .from('users')
                         .select('*')
                         .eq('username', username)
-                        .eq('password', password) // 注意: 实际应用中应该使用加密密码
+                        .eq('password', password)
                         .single();
                     
                     if (error) throw error;
@@ -1154,7 +1175,7 @@
                     // 创建新用户
                     const { data, error } = await supabaseClient
                         .from('users')
-                        .insert([{ username, password }]) // 注意: 实际应用中应该加密密码
+                        .insert([{ username, password }])
                         .select()
                         .single();
                     
@@ -1165,6 +1186,27 @@
                     return { user: data, token: fakeToken };
                 } catch (error) {
                     console.error('注册失败:', error);
+                    throw error;
+                }
+            },
+            
+            async submitComment(postId, userId, userName, content) {
+                if (!supabaseClient) return false;
+                
+                try {
+                    const { error } = await supabaseClient
+                        .from('forum_comments')
+                        .insert([{
+                            post_id: postId,
+                            user_id: userId,
+                            user_name: userName,
+                            content: content
+                        }]);
+                    
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('提交评论失败:', error);
                     throw error;
                 }
             },
@@ -1184,98 +1226,98 @@
         
         // UI渲染器
         const renderer = {
-        async renderPosts() {
-            const container = document.getElementById('postsList');
-            const loading = document.getElementById('loadingContainer');
-            
-            if (!container || !loading) return;
-            
-            try {
-                utils.showLoading('loadingContainer');
-                container.style.display = 'none';
+            async renderPosts() {
+                const container = document.getElementById('postsList');
+                const loading = document.getElementById('loadingContainer');
                 
-                const { posts, total } = await dataService.getPosts(currentPage);
+                if (!container || !loading) return;
                 
-                dataService.updatePagination(total, currentPage);
-                
-                if (posts.length === 0) {
+                try {
+                    utils.showLoading('loadingContainer');
+                    container.style.display = 'none';
+                    
+                    const { posts, total } = await dataService.getPosts(currentPage);
+                    
+                    dataService.updatePagination(total, currentPage);
+                    
+                    if (posts.length === 0) {
+                        container.innerHTML = `
+                            <div class="post-card">
+                                <p style="text-align: center; padding: 30px; color: var(--gray-500);">
+                                    暂无帖子，成为第一个发帖的人吧！
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        // 为每个帖子获取图片
+                        const postsWithImages = await Promise.all(
+                            posts.map(async post => {
+                                const images = await dataService.getPostImages(post.id);
+                                return { ...post, images };
+                            })
+                        );
+                        
+                        container.innerHTML = postsWithImages.map(post => {
+                            return `
+                                <div class="post-card" data-id="${post.id}">
+                                    <div class="post-header">
+                                        <div class="post-author">
+                                            <div class="author-avatar">
+                                                <img src="https://ui-avatars.com/api/?name=${post.user.username}&background=${encodeURIComponent('#4f46e5')}&color=fff" alt="${post.user.username}">
+                                            </div>
+                                            <div class="author-info">
+                                                <span class="author-name">${post.user.username}</span>
+                                                <span class="post-date">${utils.formatDate(post.created_at)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <h3 class="post-title">${post.title}</h3>
+                                    <p class="post-content">${post.content}</p>
+                                    
+                                    ${post.images.length > 0 ? `
+                                        <div class="post-images">
+                                            ${post.images.map(image => `
+                                                <div class="post-image">
+                                                    <img src="${image.url}" alt="帖子图片" loading="lazy" onclick="app.showImageModal('${image.url}')">
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                    
+                                    <div class="post-stats">
+                                        <div class="post-stat">
+                                            <i class="fas fa-comment"></i>
+                                            <span>${post.forum_comments[0].count || 0} 条评论</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="post-actions">
+                                        <button class="action-btn" onclick="app.showCommentModal(${post.id})">
+                                            <i class="fas fa-comment"></i> 评论
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                    
+                    container.style.display = 'grid';
+                } catch (error) {
+                    console.error('渲染帖子失败:', error);
                     container.innerHTML = `
                         <div class="post-card">
-                            <p style="text-align: center; padding: 30px; color: var(--gray-500);">
-                                暂无帖子，成为第一个发帖的人吧！
+                            <p style="text-align: center; padding: 30px; color: var(--red-500);">
+                                加载帖子失败，请刷新页面
                             </p>
                         </div>
                     `;
-                } else {
-                    // 为每个帖子获取图片
-                    const postsWithImages = await Promise.all(
-                        posts.map(async post => {
-                            const images = await dataService.getPostImages(post.id);
-                            return { ...post, images };
-                        })
-                    );
-                    
-                    container.innerHTML = postsWithImages.map(post => {
-                        return `
-                            <div class="post-card" data-id="${post.id}">
-                                <div class="post-header">
-                                    <div class="post-author">
-                                        <div class="author-avatar">
-                                            <img src="https://ui-avatars.com/api/?name=${post.user.username}&background=${encodeURIComponent('#4f46e5')}&color=fff" alt="${post.user.username}">
-                                        </div>
-                                        <div class="author-info">
-                                            <span class="author-name">${post.user.username}</span>
-                                            <span class="post-date">${utils.formatDate(post.created_at)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <h3 class="post-title">${post.title}</h3>
-                                <p class="post-content">${post.content}</p>
-                                
-                                ${post.images.length > 0 ? `
-                                    <div class="post-images">
-                                        ${post.images.map(image => `
-                                            <div class="post-image">
-                                                <img src="${image.url}" alt="帖子图片" loading="lazy" onclick="app.showImageModal('${image.url}')">
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                ` : ''}
-                                
-                                <div class="post-stats">
-                                    <div class="post-stat">
-                                        <i class="fas fa-comment"></i>
-                                        <span>${post.forum_comments[0].count || 0} 条评论</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="post-actions">
-                                    <button class="action-btn" onclick="app.showCommentModal(${post.id})">
-                                        <i class="fas fa-comment"></i> 评论
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
+                    container.style.display = 'block';
+                } finally {
+                    utils.hideLoading('loadingContainer');
                 }
+            },
                 
-                container.style.display = 'grid';
-            } catch (error) {
-                console.error('渲染帖子失败:', error);
-                container.innerHTML = `
-                    <div class="post-card">
-                        <p style="text-align: center; padding: 30px; color: var(--red-500);">
-                            加载帖子失败，请刷新页面
-                        </p>
-                    </div>
-                `;
-                container.style.display = 'block';
-            } finally {
-                utils.hideLoading('loadingContainer');
-            }
-        },
-            
             clearPostForm() {
                 document.getElementById('postTitle').value = '';
                 document.getElementById('postContent').value = '';
@@ -1323,386 +1365,280 @@
         
         // 应用控制器
         const app = {
-    async init() {
-        document.getElementById('currentYear').textContent = utils.getCurrentYear();
-        
-        if (!initializeSupabase()) {
-            alert('系统初始化失败，请刷新页面');
-            return;
-        }
-        
-        this.setupEventListeners();
-        await this.renderPosts();
-        this.checkAuth();
-    },
-
-    setupEventListeners() {
-        // 发帖按钮
-        document.getElementById('createPostBtn').addEventListener('click', () => {
-            if (!currentUser) {
-                alert('请先登录后再发帖');
-                this.showAuthModal();
-                return;
-            }
-            
-            document.getElementById('postForm').style.display = 'block';
-            document.getElementById('createPostBtn').style.display = 'none';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        
-        // 取消发帖
-        document.getElementById('cancelPost').addEventListener('click', () => {
-            document.getElementById('postForm').style.display = 'none';
-            document.getElementById('createPostBtn').style.display = 'flex';
-            renderer.clearPostForm();
-        });
-        
-        // 图片上传
-        document.getElementById('uploadBtn').addEventListener('click', () => {
-            document.getElementById('imageUpload').click();
-        });
-        
-        document.getElementById('imageUpload').addEventListener('change', async (event) => {
-            const files = Array.from(event.target.files);
-            
-            if (files.length + selectedImages.length > 5) {
-                alert('最多只能上传5张图片');
-                return;
-            }
-            
-            for (const file of files) {
-                try {
-                    const compressedFile = await utils.compressImage(file);
-                    selectedImages.push({
-                        file: compressedFile,
-                        originalName: file.name
-                    });
-                } catch (error) {
-                    console.error('图片处理失败:', error);
-                    selectedImages.push({
-                        file: file,
-                        originalName: file.name
-                    });
-                }
-            }
-            
-            renderer.showImagePreviews(files);
-            event.target.value = '';
-        });
-        
-        // 提交帖子表单
-        document.getElementById('newPostForm').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            
-            const title = document.getElementById('postTitle').value.trim();
-            const content = document.getElementById('postContent').value.trim();
-            
-            if (!title || !content) {
-                alert('请填写标题和内容');
-                return;
-            }
-            
-            try {
-                const post = await dataService.createPost(title, content, currentUser.id);
-                if (!post) return;
+            async init() {
+                document.getElementById('currentYear').textContent = utils.getCurrentYear();
                 
-                if (selectedImages.length > 0) {
-                    await dataService.uploadImages(post.id, selectedImages);
+                if (!initializeSupabase()) {
+                    alert('系统初始化失败，请刷新页面');
+                    return;
                 }
                 
-                renderer.clearPostForm();
-                document.getElementById('postForm').style.display = 'none';
-                document.getElementById('createPostBtn').style.display = 'flex';
-                
-                currentPage = 1;
+                this.setupEventListeners();
                 await this.renderPosts();
-                
-                alert('帖子发布成功！');
-            } catch (error) {
-                console.error('发布帖子失败:', error);
-                alert('发布帖子失败: ' + error.message);
-            }
-        });
-        
-        // 分页按钮
-        document.getElementById('prevPage').addEventListener('click', () => this.changePage(-1));
-        document.getElementById('nextPage').addEventListener('click', () => this.changePage(1));
-        
-        // 登录/注册按钮
-        document.getElementById('authBtn')?.addEventListener('click', () => {
-            this.showAuthModal();
-        });
-    },
-    
-    async changePage(direction) {
-        const { total } = await dataService.getPosts(currentPage);
-        const totalPages = dataService.getTotalPages(total);
-        const newPage = currentPage + direction;
-        
-        if (newPage >= 1 && newPage <= totalPages) {
-            currentPage = newPage;
-            await this.renderPosts();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    },
-    
-    async renderPosts() {
-        const container = document.getElementById('postsList');
-        const loading = document.getElementById('loadingContainer');
-        
-        if (!container || !loading) return;
-        
-        try {
-            utils.showLoading('loadingContainer');
-            container.style.display = 'none';
-            
-            const { posts, total } = await dataService.getPosts(currentPage);
-            
-            dataService.updatePagination(total, currentPage);
-            
-            if (posts.length === 0) {
-                container.innerHTML = `
-                    <div class="post-card">
-                        <p style="text-align: center; padding: 30px; color: var(--gray-500);">
-                            暂无帖子，成为第一个发帖的人吧！
-                        </p>
-                    </div>
-                `;
-            } else {
-                const postsWithImages = await Promise.all(
-                    posts.map(async post => {
-                        const images = await dataService.getPostImages(post.id);
-                        return { ...post, images };
-                    })
-                );
-                
-                container.innerHTML = postsWithImages.map(post => {
-                    return `
-                        <div class="post-card" data-id="${post.id}">
-                            <div class="post-header">
-                                <div class="post-author">
-                                    <div class="author-avatar">
-                                        <img src="https://ui-avatars.com/api/?name=${post.user.username}&background=${encodeURIComponent('#4f46e5')}&color=fff" alt="${post.user.username}">
-                                    </div>
-                                    <div class="author-info">
-                                        <span class="author-name">${post.user.username}</span>
-                                        <span class="post-date">${utils.formatDate(post.created_at)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <h3 class="post-title">${post.title}</h3>
-                            <p class="post-content">${post.content}</p>
-                            
-                            ${post.images.length > 0 ? `
-                                <div class="post-images">
-                                    ${post.images.map(image => `
-                                        <div class="post-image">
-                                            <img src="${image.url}" alt="帖子图片" loading="lazy" onclick="app.showImageModal('${image.url}')">
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                            
-                            <div class="post-stats">
-                                <div class="post-stat">
-                                    <i class="fas fa-comment"></i>
-                                    <span>${post.forum_comments[0].count || 0} 条评论</span>
-                                </div>
-                            </div>
-                            
-                            <div class="post-actions">
-                                <button class="action-btn" onclick="app.showCommentModal(${post.id})">
-                                    <i class="fas fa-comment"></i> 评论
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-            
-            container.style.display = 'grid';
-        } catch (error) {
-            console.error('渲染帖子失败:', error);
-            container.innerHTML = `
-                <div class="post-card">
-                    <p style="text-align: center; padding: 30px; color: var(--red-500);">
-                        加载帖子失败，请刷新页面
-                    </p>
-                </div>
-            `;
-            container.style.display = 'block';
-        } finally {
-            utils.hideLoading('loadingContainer');
-        }
-    },
+                this.checkAuth();
+            },
 
-    /* 新增的图片查看方法 */
-    showImageModal: function(imageUrl) {
-        const modal = document.createElement('div');
-        modal.className = 'image-modal';
-        modal.style.position = 'fixed';
-        modal.style.top = '0';
-        modal.style.left = '0';
-        modal.style.width = '100%';
-        modal.style.height = '100%';
-        modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
-        modal.style.display = 'flex';
-        modal.style.justifyContent = 'center';
-        modal.style.alignItems = 'center';
-        modal.style.zIndex = '1003';
-        modal.style.cursor = 'pointer';
-        
-        modal.innerHTML = `
-            <div style="max-width: 90%; max-height: 90%;">
-                <img src="${imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-            </div>
-        `;
-        
-        modal.addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-        
-        document.body.appendChild(modal);
-    },
-
-    /* 修改后的评论方法 */
-    showCommentModal: function(postId) {
-        const user = utils.getCurrentUser();
-        if (!user) {
-            alert('请先登录后再发表评论');
-            this.showAuthModal();
-            return;
-        }
-        
-        const modal = document.createElement('div');
-        modal.className = 'comment-modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h3>发表评论</h3>
-                <textarea id="postCommentContent" placeholder="写下您的评论..." style="width: 100%; min-height: 150px; padding: 15px; border: 1px solid var(--gray-300); border-radius: 10px; margin: 15px 0; resize: vertical;"></textarea>
-                <button id="submitPostComment" class="submit-btn" style="width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">提交评论</button>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        modal.querySelector('.close-modal').addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-        
-        document.getElementById('submitPostComment').addEventListener('click', async () => {
-            const content = document.getElementById('postCommentContent').value.trim();
-            if (!content) {
-                alert('请输入评论内容');
-                return;
-            }
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('forum_comments')
-                    .insert([{
-                        post_id: postId,
-                        user_id: user.id,
-                        content: content,
-                        user_name: user.username
-                    }]);
-                
-                if (error) throw error;
-                
-                alert('评论发布成功！');
-                document.body.removeChild(modal);
-                await this.renderPosts();
-            } catch (error) {
-                console.error('发布评论失败:', error);
-                alert('发布评论失败: ' + error.message);
-            }
-        });
-    },
-
-    showAuthModal() {
-        const modal = document.getElementById('authModal');
-        modal.style.display = 'flex';
-        
-        document.querySelector('.close-auth').onclick = () => {
-            modal.style.display = 'none';
-        };
-        
-        document.querySelectorAll('.auth-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                document.querySelectorAll('.auth-form').forEach(form => {
-                    form.style.display = 'none';
+            setupEventListeners() {
+                // 发帖按钮
+                document.getElementById('createPostBtn').addEventListener('click', () => {
+                    if (!currentUser) {
+                        alert('请先登录后再发帖');
+                        this.showAuthModal();
+                        return;
+                    }
+                    
+                    document.getElementById('postForm').style.display = 'block';
+                    document.getElementById('createPostBtn').style.display = 'none';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
                 
-                document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
-            });
-        });
-        
-        document.getElementById('loginBtn').onclick = async () => {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            
-            if (!username || !password) {
-                alert('请输入用户名和密码');
-                return;
-            }
-            
-            try {
-                const { user, token } = await dataService.login(username, password);
-                utils.setAuthToken(token);
-                utils.setCurrentUser(user);
-                utils.setAuthStatus(user.username);
+                // 取消发帖
+                document.getElementById('cancelPost').addEventListener('click', () => {
+                    document.getElementById('postForm').style.display = 'none';
+                    document.getElementById('createPostBtn').style.display = 'flex';
+                    renderer.clearPostForm();
+                });
                 
-                document.getElementById('authModal').style.display = 'none';
-                alert('登录成功！');
-            } catch (error) {
-                alert(error.message || '登录失败');
+                // 图片上传
+                document.getElementById('uploadBtn').addEventListener('click', () => {
+                    document.getElementById('imageUpload').click();
+                });
+                
+                document.getElementById('imageUpload').addEventListener('change', async (event) => {
+                    const files = Array.from(event.target.files);
+                    
+                    if (files.length + selectedImages.length > 5) {
+                        alert('最多只能上传5张图片');
+                        return;
+                    }
+                    
+                    for (const file of files) {
+                        try {
+                            const compressedFile = await utils.compressImage(file);
+                            selectedImages.push({
+                                file: compressedFile,
+                                originalName: file.name
+                            });
+                        } catch (error) {
+                            console.error('图片处理失败:', error);
+                            selectedImages.push({
+                                file: file,
+                                originalName: file.name
+                            });
+                        }
+                    }
+                    
+                    renderer.showImagePreviews(files);
+                    event.target.value = '';
+                });
+                
+                // 提交帖子表单
+                document.getElementById('newPostForm').addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    
+                    const title = document.getElementById('postTitle').value.trim();
+                    const content = document.getElementById('postContent').value.trim();
+                    
+                    if (!title || !content) {
+                        alert('请填写标题和内容');
+                        return;
+                    }
+                    
+                    try {
+                        const post = await dataService.createPost(title, content, currentUser.id);
+                        if (!post) return;
+                        
+                        if (selectedImages.length > 0) {
+                            await dataService.uploadImages(post.id, selectedImages);
+                        }
+                        
+                        renderer.clearPostForm();
+                        document.getElementById('postForm').style.display = 'none';
+                        document.getElementById('createPostBtn').style.display = 'flex';
+                        
+                        currentPage = 1;
+                        await this.renderPosts();
+                        
+                        alert('帖子发布成功！');
+                    } catch (error) {
+                        console.error('发布帖子失败:', error);
+                        alert('发布帖子失败: ' + error.message);
+                    }
+                });
+                
+                // 分页按钮
+                document.getElementById('prevPage').addEventListener('click', () => this.changePage(-1));
+                document.getElementById('nextPage').addEventListener('click', () => this.changePage(1));
+                
+                // 登录/注册按钮
+                document.getElementById('authBtn')?.addEventListener('click', () => {
+                    this.showAuthModal();
+                });
+            },
+            
+            async changePage(direction) {
+                const { total } = await dataService.getPosts(currentPage);
+                const totalPages = dataService.getTotalPages(total);
+                const newPage = currentPage + direction;
+                
+                if (newPage >= 1 && newPage <= totalPages) {
+                    currentPage = newPage;
+                    await this.renderPosts();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            },
+            
+            async renderPosts() {
+                await renderer.renderPosts();
+            },
+
+            /* 图片查看方法 */
+            showImageModal(imageUrl) {
+                const modal = document.createElement('div');
+                modal.className = 'image-modal';
+                modal.style.cursor = 'pointer';
+                
+                modal.innerHTML = `
+                    <img src="${imageUrl}" alt="放大图片">
+                `;
+                
+                modal.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+                
+                document.body.appendChild(modal);
+            },
+
+            /* 评论方法 */
+            showCommentModal(postId) {
+                const user = utils.getCurrentUser();
+                if (!user) {
+                    alert('请先登录后再发表评论');
+                    this.showAuthModal();
+                    return;
+                }
+                
+                const modal = document.createElement('div');
+                modal.className = 'comment-modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <span class="close-modal">&times;</span>
+                        <h3>发表评论</h3>
+                        <textarea id="postCommentContent" placeholder="写下您的评论..."></textarea>
+                        <button id="submitPostComment" class="submit-btn">提交评论</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                modal.querySelector('.close-modal').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+                
+                document.getElementById('submitPostComment').addEventListener('click', async () => {
+                    const content = document.getElementById('postCommentContent').value.trim();
+                    if (!content) {
+                        alert('请输入评论内容');
+                        return;
+                    }
+                    
+                    try {
+                        const success = await dataService.submitComment(postId, user.id, user.username, content);
+                        if (success) {
+                            alert('评论发布成功！');
+                            document.body.removeChild(modal);
+                            await this.renderPosts();
+                        }
+                    } catch (error) {
+                        console.error('发布评论失败:', error);
+                        alert('发布评论失败: ' + error.message);
+                    }
+                });
+            },
+
+            showAuthModal() {
+                const modal = document.getElementById('authModal');
+                modal.style.display = 'flex';
+                
+                document.querySelector('.close-auth').onclick = () => {
+                    modal.style.display = 'none';
+                };
+                
+                document.querySelectorAll('.auth-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        document.querySelectorAll('.auth-form').forEach(form => {
+                            form.style.display = 'none';
+                        });
+                        
+                        document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
+                    });
+                });
+                
+                document.getElementById('loginBtn').onclick = async () => {
+                    const username = document.getElementById('loginUsername').value.trim();
+                    const password = document.getElementById('loginPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    try {
+                        const { user, token } = await dataService.login(username, password);
+                        utils.setAuthToken(token);
+                        utils.setCurrentUser(user);
+                        utils.setAuthStatus(user.username);
+                        
+                        document.getElementById('authModal').style.display = 'none';
+                        alert('登录成功！');
+                    } catch (error) {
+                        alert(error.message || '登录失败');
+                    }
+                };
+                
+                document.getElementById('registerBtn').onclick = async () => {
+                    const username = document.getElementById('registerUsername').value.trim();
+                    const password = document.getElementById('registerPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    try {
+                        const { user, token } = await dataService.register(username, password);
+                        utils.setAuthToken(token);
+                        utils.setCurrentUser(user);
+                        utils.setAuthStatus(user.username);
+                        
+                        document.getElementById('authModal').style.display = 'none';
+                        alert('注册成功！');
+                    } catch (error) {
+                        alert(error.message || '注册失败');
+                    }
+                };
+            },
+            
+            logout() {
+                utils.removeAuthToken();
+                utils.removeCurrentUser();
+                utils.setAuthStatus(null);
+                alert('已登出');
+            },
+            
+            checkAuth() {
+                const token = utils.getAuthToken();
+                const user = utils.getCurrentUser();
+                
+                if (token && user) {
+                    utils.setAuthStatus(user.username);
+                    currentUser = user;
+                }
             }
         };
-        
-        document.getElementById('registerBtn').onclick = async () => {
-            const username = document.getElementById('registerUsername').value.trim();
-            const password = document.getElementById('registerPassword').value.trim();
-            
-            if (!username || !password) {
-                alert('请输入用户名和密码');
-                return;
-            }
-            
-            try {
-                const { user, token } = await dataService.register(username, password);
-                utils.setAuthToken(token);
-                utils.setCurrentUser(user);
-                utils.setAuthStatus(user.username);
-                
-                document.getElementById('authModal').style.display = 'none';
-                alert('注册成功！');
-            } catch (error) {
-                alert(error.message || '注册失败');
-            }
-        };
-    },
-    
-    logout() {
-        utils.removeAuthToken();
-        utils.removeCurrentUser();
-        utils.setAuthStatus(null);
-        alert('已登出');
-    },
-    
-    checkAuth() {
-        const token = utils.getAuthToken();
-        const user = utils.getCurrentUser();
-        
-        if (token && user) {
-            utils.setAuthStatus(user.username);
-        }
-    }
-};
         
         function initializeSupabase() {
             try {
