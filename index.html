@@ -814,53 +814,6 @@
             cursor: not-allowed;
             transform: none;
         }
-
-        .forum-btn {
-    position: absolute;
-    top: 20px;
-    left: 120px; /* 放在签到按钮右侧 */
-    z-index: 10;
-    background: var(--blue-400);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-}
-
-.forum-btn:hover {
-    background: #3b82f6;
-    transform: translateY(-2px);
-}
-
-/* ===== 登录/注册按钮样式 ===== */
-.auth-btn {
-    background: white;
-    color: var(--primary);
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 10;
-}
-
-.auth-btn:hover {
-    background: var(--gray-100);
-    transform: translateY(-2px);
-}
         
         .vote-count-badge {
             background: var(--primary);
@@ -931,22 +884,6 @@
                 top: 10px;
                 left: 10px;
             }
-
-            .checkin-btn {
-        top: 10px;
-        left: 10px;
-    }
-    
-    .forum-btn {
-        top: 10px;
-        left: 90px; /* 在小屏幕上调整位置 */
-        padding: 6px 12px;
-    }
-    
-    .auth-btn, .logged-in {
-        top: 10px;
-        right: 10px;
-    }
         }
         
         @media (max-width: 480px) {
@@ -963,9 +900,6 @@
                 <i class="fas fa-calendar-check"></i> 签到
                 <span id="voteCountBadge" class="vote-count-badge" style="display: none;">0</span>
             </button>
-            <a href="forum.html" class="forum-btn" id="forumBtn" style="display: none;">
-                   <i class="fas fa-comments"></i> 论坛
-            </a>
             <h1>人物投票与留言系统</h1>
             <p class="subtitle">为您喜爱的人物投票并留下宝贵意见</p>
             <div id="authStatus">
@@ -1113,837 +1047,851 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
-    // Supabase配置
-    const SUPABASE_CONFIG = {
-        url: 'https://vwwicvqojtruwmovhbjg.supabase.co',
-        key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
-        options: {
-            headers: {
-                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
-                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA'
-            },
-            db: {
-                schema: 'public'
-            },
-            auth: {
-                persistSession: false,
-                autoRefreshToken: false
-            }
-        }
-    };
-    
-    // 应用程序代码
-    let supabaseClient;
-    let currentDetailId = null;
-    let pendingComment = null;
-    let isCheckingIn = false;
-    
-    function initializeSupabase() {
-        try {
-            supabaseClient = supabase.createClient(
-                SUPABASE_CONFIG.url,
-                SUPABASE_CONFIG.key,
-                SUPABASE_CONFIG.options
-            );
-            return true;
-        } catch (error) {
-            console.error('Supabase初始化失败:', error);
-            return false;
-        }
-    }
-    
-    // 工具函数
-    const utils = {
-        hasVoted: () => localStorage.getItem('hasVoted') === 'true',
-        markAsVoted: () => localStorage.setItem('hasVoted', 'true'),
-        getCurrentYear: () => new Date().getFullYear(),
-        debounce: (func, wait) => {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        },
-        formatDate: (dateString) => {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        },
-        showLoading: (elementId) => {
-            const element = document.getElementById(elementId);
-            if (element) element.style.display = 'block';
-        },
-        hideLoading: (elementId) => {
-            const element = document.getElementById(elementId);
-            if (element) element.style.display = 'none';
-        },
-        showDialog: (callback) => {
-            document.getElementById('confirmationDialog').style.display = 'flex';
-            
-            document.getElementById('dialogConfirm').onclick = () => {
-                document.getElementById('confirmationDialog').style.display = 'none';
-                if (callback) callback(true);
-            };
-            
-            document.getElementById('dialogCancel').onclick = () => {
-                document.getElementById('confirmationDialog').style.display = 'none';
-                if (callback) callback(false);
-            };
-        },
-        setAuthStatus: (username) => {
-    const authStatus = document.getElementById('authStatus');
-    if (username) {
-        authStatus.innerHTML = `
-            <div class="logged-in">
-                <span>欢迎, ${username}</span>
-                <button class="logout-btn" id="logoutBtn">登出</button>
-            </div>
-        `;
-        document.getElementById('logoutBtn').addEventListener('click', app.logout);
-        
-        // 显示签到按钮和论坛按钮
-        document.getElementById('checkinBtn').style.display = 'flex';
-        document.getElementById('forumBtn').style.display = 'flex';
-        
-        // 检查签到状态
-        app.checkCheckinStatus();
-    } else {
-        authStatus.innerHTML = '<button id="authBtn" class="auth-btn">登录/注册</button>';
-        document.getElementById('authBtn').addEventListener('click', app.showAuthModal);
-        
-        // 隐藏签到按钮和论坛按钮
-        document.getElementById('checkinBtn').style.display = 'none';
-        document.getElementById('forumBtn').style.display = 'none';
-        document.getElementById('voteCountBadge').style.display = 'none';
-    }
-},
-        getAuthToken: () => localStorage.getItem('authToken'),
-        setAuthToken: (token) => localStorage.setItem('authToken', token),
-        removeAuthToken: () => localStorage.removeItem('authToken'),
-        getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
-        setCurrentUser: (user) => localStorage.setItem('currentUser', JSON.stringify(user)),
-        removeCurrentUser: () => localStorage.removeItem('currentUser'),
-        getLastCheckinDate: () => localStorage.getItem('lastCheckinDate'),
-        setLastCheckinDate: (date) => localStorage.setItem('lastCheckinDate', date),
-        getVoteCount: () => parseInt(localStorage.getItem('voteCount') || '0'),
-        setVoteCount: (count) => localStorage.setItem('voteCount', count.toString()),
-        incrementVoteCount: () => {
-            const count = utils.getVoteCount() + 1;
-            utils.setVoteCount(count);
-            return count;
-        },
-        isSameDay: (date1, date2) => {
-            const d1 = new Date(date1);
-            const d2 = new Date(date2);
-            return d1.getFullYear() === d2.getFullYear() &&
-                   d1.getMonth() === d2.getMonth() &&
-                   d1.getDate() === d2.getDate();
-        }
-    };
-    
-    // 数据服务（已修改为按票数排序）
-    const dataService = {
-        currentPage: 1,
-        itemsPerPage: 9,
-        totalItems: 0,
-        searchTerm: '',
-        
-        async getCandidates(page = 1) {
-            if (!supabaseClient) return [];
-            
-            try {
-                const offset = (page - 1) * this.itemsPerPage;
-                
-                // 1. 获取所有候选人数据
-                let { data: candidates, error: candidatesError } = await supabaseClient
-                    .from('candidates')
-                    .select('*');
-                
-                if (candidatesError) throw candidatesError;
-                
-                // 2. 获取所有投票数据
-                let { data: votes, error: votesError } = await supabaseClient
-                    .from('votes')
-                    .select('candidate_id');
-                
-                if (votesError) throw votesError;
-                
-                // 3. 计算每个候选人的票数
-                const voteCounts = {};
-                (votes || []).forEach(v => {
-                    voteCounts[v.candidate_id] = (voteCounts[v.candidate_id] || 0) + 1;
-                });
-                
-                // 4. 将票数添加到候选人对象中
-                candidates.forEach(candidate => {
-                    candidate.votes = voteCounts[candidate.id] || 0;
-                });
-                
-                // 5. 如果有搜索词，先过滤
-                if (this.searchTerm) {
-                    const searchTermLower = this.searchTerm.toLowerCase();
-                    candidates = candidates.filter(candidate => 
-                                candidate.name.toLowerCase().includes(searchTermLower) || 
-                                (candidate.description && candidate.description.toLowerCase().includes(searchTermLower))
-                    );
-                 }
-                
-                // 6. 按票数降序排序（票数多的在前）
-                candidates.sort((a, b) => b.votes - a.votes);
-                
-                // 7. 实现分页
-                this.totalItems = candidates.length;
-                const paginatedCandidates = candidates.slice(offset, offset + this.itemsPerPage);
-                
-                this.currentPage = page;
-                return paginatedCandidates;
-            } catch (error) {
-                console.error('获取候选人失败:', error);
-                return [];
-            }
-        },
-        
-        // 简化getVotes方法，因为票数已经在getCandidates中计算了
-        async getVotes() {
-            return {};
-        },
-        
-        async getCandidateDetail(id) {
-            if (!supabaseClient) return null;
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('candidates')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
-                
-                if (error) throw error;
-                return data;
-            } catch (error) {
-                console.error('获取候选人详情失败:', error);
-                return null;
-            }
-        },
-        
-        async getComments(candidateId = null) {
-            if (!supabaseClient) return [];
-            
-            try {
-                let query = supabaseClient
-                    .from('comments')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
-                if (candidateId) {
-                    query = query.eq('candidate_id', candidateId);
-                } else {
-                    query = query.is('candidate_id', null);
+        // Supabase配置
+        const SUPABASE_CONFIG = {
+            url: 'https://vwwicvqojtruwmovhbjg.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
+            options: {
+                headers: {
+                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA',
+                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d2ljdnFvanRydXdtb3ZoYmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzA2MTcsImV4cCI6MjA2OTEwNjYxN30.1CQYTZM3LxVsbnOuuYvQCOK9AzvQ2Mt0epNBc3IhgYA'
+                },
+                db: {
+                    schema: 'public'
+                },
+                auth: {
+                    persistSession: false,
+                    autoRefreshToken: false
                 }
-                
-                const { data, error } = await query;
-                
-                if (error) throw error;
-                return data || [];
-            } catch (error) {
-                console.error('获取留言失败:', error);
-                return [];
             }
-        },
+        };
         
-        async getLatestComments(limit = 10) {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('comments')
-                    .select('*')
-                    .is('candidate_id', null)
-                    .order('created_at', { ascending: false })
-                    .limit(limit);
-                
-                if (error) throw error;
-                return data || [];
-            } catch (error) {
-                console.error('获取最新留言失败:', error);
-                return [];
-            }
-        },
+        // 应用程序代码
+        let supabaseClient;
+        let currentDetailId = null;
+        let pendingComment = null;
+        let isCheckingIn = false; // 防止重复签到
         
-        async submitVote(candidateId) {
-            if (!supabaseClient) return false;
-            
+        function initializeSupabase() {
             try {
-                const { error } = await supabaseClient
-                    .from('votes')
-                    .insert([{ candidate_id: candidateId }]);
-                
-                if (error) throw error;
+                supabaseClient = supabase.createClient(
+                    SUPABASE_CONFIG.url,
+                    SUPABASE_CONFIG.key,
+                    SUPABASE_CONFIG.options
+                );
                 return true;
             } catch (error) {
-                console.error('投票失败:', error);
-                alert('投票失败: ' + error.message);
+                console.error('Supabase初始化失败:', error);
                 return false;
             }
-        },
-        
-        async submitComment(candidateId, userName, content) {
-            if (!supabaseClient) return false;
-            if (!userName || !content) return false;
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('comments')
-                    .insert([{
-                        candidate_id: candidateId,
-                        user_name: userName,
-                        content: content
-                    }]);
-                
-                if (error) throw error;
-                return true;
-            } catch (error) {
-                console.error('提交留言失败:', error);
-                alert('提交留言失败: ' + error.message);
-                return false;
-            }
-        },
-        
-        async login(username, password) {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('users')
-                    .select('*')
-                    .eq('username', username)
-                    .eq('password', password)
-                    .single();
-                
-                if (error) throw error;
-                if (!data) throw new Error('用户名或密码错误');
-                
-                const fakeToken = `fake-jwt-token-${Date.now()}`;
-                return { user: data, token: fakeToken };
-            } catch (error) {
-                console.error('登录失败:', error);
-                throw error;
-            }
-        },
-        
-        async register(username, password) {
-            try {
-                const { data: existingUser, error: checkError } = await supabaseClient
-                    .from('users')
-                    .select('username')
-                    .eq('username', username)
-                    .single();
-                
-                if (existingUser) throw new Error('用户名已存在');
-                
-                const { data, error } = await supabaseClient
-                    .from('users')
-                    .insert([{ username, password }])
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                const fakeToken = `fake-jwt-token-${Date.now()}`;
-                return { user: data, token: fakeToken };
-            } catch (error) {
-                console.error('注册失败:', error);
-                throw error;
-            }
-        },
-        
-        getTotalPages() {
-            return Math.ceil(this.totalItems / this.itemsPerPage);
-        },
-        
-        updatePagination() {
-            const totalPages = this.getTotalPages();
-            const pageInfo = `第 ${this.currentPage} 页，共 ${totalPages} 页`;
-            
-            document.getElementById('pageInfo').textContent = pageInfo;
-            document.getElementById('pageInfoBottom').textContent = pageInfo;
-            
-            document.getElementById('prevPage').disabled = this.currentPage <= 1;
-            document.getElementById('prevPageBottom').disabled = this.currentPage <= 1;
-            document.getElementById('nextPage').disabled = this.currentPage >= totalPages;
-            document.getElementById('nextPageBottom').disabled = this.currentPage >= totalPages;
         }
-    };
-    
-    // UI渲染器
-    const renderer = {
-        async renderCandidates() {
-            const container = document.getElementById('candidatesContainer');
-            const loading = document.getElementById('loadingContainer');
-            if (!container || !loading) return;
-            
-            try {
-                utils.showLoading('loadingContainer');
+        
+        // 工具函数
+        const utils = {
+            hasVoted: () => localStorage.getItem('hasVoted') === 'true',
+            markAsVoted: () => localStorage.setItem('hasVoted', 'true'),
+            getCurrentYear: () => new Date().getFullYear(),
+            debounce: (func, wait) => {
+                let timeout;
+                return function(...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            },
+            formatDate: (dateString) => {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            },
+            showLoading: (elementId) => {
+                const element = document.getElementById(elementId);
+                if (element) element.style.display = 'block';
+            },
+            hideLoading: (elementId) => {
+                const element = document.getElementById(elementId);
+                if (element) element.style.display = 'none';
+            },
+            showDialog: (callback) => {
+                document.getElementById('confirmationDialog').style.display = 'flex';
                 
-                const candidates = await dataService.getCandidates(dataService.currentPage);
+                document.getElementById('dialogConfirm').onclick = () => {
+                    document.getElementById('confirmationDialog').style.display = 'none';
+                    if (callback) callback(true);
+                };
                 
-                dataService.updatePagination();
-                
-                if (candidates.length === 0) {
-                    container.innerHTML = `
-                        <div class="no-results">
-                            <i class="fas fa-search"></i>
-                            <h3>未找到匹配的人物</h3>
-                            <p>尝试使用不同的搜索词或浏览其他页面</p>
+                document.getElementById('dialogCancel').onclick = () => {
+                    document.getElementById('confirmationDialog').style.display = 'none';
+                    if (callback) callback(false);
+                };
+            },
+            setAuthStatus: (username) => {
+                const authStatus = document.getElementById('authStatus');
+                if (username) {
+                    authStatus.innerHTML = `
+                        <div class="logged-in">
+                            <span>欢迎, ${username}</span>
+                            <button class="logout-btn" id="logoutBtn">登出</button>
                         </div>
                     `;
+                    document.getElementById('logoutBtn').addEventListener('click', app.logout);
+                    
+                    // 显示签到按钮
+                    document.getElementById('checkinBtn').style.display = 'flex';
+                    
+                    // 检查签到状态
+                    app.checkCheckinStatus();
                 } else {
-                    container.innerHTML = candidates.map(candidate => {
-                        return `
-                            <div class="candidate-card" data-id="${candidate.id}">
-                                <div class="image-container">
-                                    <img src="${candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片'}" 
-                                         alt="${candidate.name}" 
-                                         class="candidate-image"
-                                         onerror="this.onerror=null;this.src='https://via.placeholder.com/400x250?text=图片加载失败'">
-                                </div>
-                                <div class="candidate-info">
-                                    <h3 class="candidate-name">${candidate.name}</h3>
-                                    <p class="candidate-description">${candidate.description || '暂无描述'}</p>
-                                    
-                                    <div class="vote-count">
-                                        <i class="fas fa-vote-yea"></i> 票数: ${candidate.votes || 0}
-                                    </div>
-                                    
-                                    <div class="action-buttons">
-                                        <button class="vote-btn" onclick="app.voteForCandidate(${candidate.id})" 
-                                            ${utils.getVoteCount() <= 0 ? 'disabled' : ''}>
-                                            ${utils.getVoteCount() <= 0 ? '无投票机会' : '投票'}
-                                        </button>
-                                        <button class="detail-btn" onclick="app.showDetail(${candidate.id})">
-                                            详情 <i class="fas fa-chevron-right"></i>
-                                        </button>
-                                    </div>
-                                </div>
+                    authStatus.innerHTML = '<button id="authBtn" class="auth-btn">登录/注册</button>';
+                    document.getElementById('authBtn').addEventListener('click', app.showAuthModal);
+                    
+                    // 隐藏签到按钮
+                    document.getElementById('checkinBtn').style.display = 'none';
+                    document.getElementById('voteCountBadge').style.display = 'none';
+                }
+            },
+            getAuthToken: () => localStorage.getItem('authToken'),
+            setAuthToken: (token) => localStorage.setItem('authToken', token),
+            removeAuthToken: () => localStorage.removeItem('authToken'),
+            getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
+            setCurrentUser: (user) => localStorage.setItem('currentUser', JSON.stringify(user)),
+            removeCurrentUser: () => localStorage.removeItem('currentUser'),
+            getLastCheckinDate: () => localStorage.getItem('lastCheckinDate'),
+            setLastCheckinDate: (date) => localStorage.setItem('lastCheckinDate', date),
+            getVoteCount: () => parseInt(localStorage.getItem('voteCount') || '0'),
+            setVoteCount: (count) => localStorage.setItem('voteCount', count.toString()),
+            incrementVoteCount: () => {
+                const count = utils.getVoteCount() + 1;
+                utils.setVoteCount(count);
+                return count;
+            },
+            isSameDay: (date1, date2) => {
+                const d1 = new Date(date1);
+                const d2 = new Date(date2);
+                return d1.getFullYear() === d2.getFullYear() &&
+                       d1.getMonth() === d2.getMonth() &&
+                       d1.getDate() === d2.getDate();
+            }
+        };
+        
+        // 数据服务
+        const dataService = {
+            currentPage: 1,
+            itemsPerPage: 9,
+            totalItems: 0,
+            searchTerm: '',
+            
+            async getCandidates(page = 1) {
+                if (!supabaseClient) return [];
+                
+                try {
+                    const offset = (page - 1) * this.itemsPerPage;
+                    
+                    let query = supabaseClient
+                        .from('candidates')
+                        .select('*', { count: 'exact' })
+                        .order('id', { ascending: true })
+                        .range(offset, offset + this.itemsPerPage - 1);
+                    
+                    if (this.searchTerm) {
+                        query = query.or(`name.ilike.%${this.searchTerm}%,description.ilike.%${this.searchTerm}%`);
+                    }
+                    
+                    const { data, count, error } = await query;
+                    
+                    if (error) throw error;
+                    
+                    this.totalItems = count;
+                    this.currentPage = page;
+                    
+                    return data || [];
+                } catch (error) {
+                    console.error('获取候选人失败:', error);
+                    return [];
+                }
+            },
+            
+            async getCandidateDetail(id) {
+                if (!supabaseClient) return null;
+                
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('candidates')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
+                    
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('获取候选人详情失败:', error);
+                    return null;
+                }
+            },
+            
+            async getVotes() {
+                if (!supabaseClient) return {};
+                
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('votes')
+                        .select('candidate_id');
+                    
+                    if (error) throw error;
+                    
+                    const counts = {};
+                    (data || []).forEach(v => {
+                        counts[v.candidate_id] = (counts[v.candidate_id] || 0) + 1;
+                    });
+                    return counts;
+                } catch (error) {
+                    console.error('获取票数失败:', error);
+                    return {};
+                }
+            },
+            
+            async getComments(candidateId = null) {
+                if (!supabaseClient) return [];
+                
+                try {
+                    let query = supabaseClient
+                        .from('comments')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (candidateId) {
+                        query = query.eq('candidate_id', candidateId);
+                    } else {
+                        query = query.is('candidate_id', null);
+                    }
+                    
+                    const { data, error } = await query;
+                    
+                    if (error) throw error;
+                    return data || [];
+                } catch (error) {
+                    console.error('获取留言失败:', error);
+                    return [];
+                }
+            },
+            
+            async getLatestComments(limit = 10) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('comments')
+                        .select('*')
+                        .is('candidate_id', null)
+                        .order('created_at', { ascending: false })
+                        .limit(limit);
+                    
+                    if (error) throw error;
+                    return data || [];
+                } catch (error) {
+                    console.error('获取最新留言失败:', error);
+                    return [];
+                }
+            },
+            
+            async submitVote(candidateId) {
+                if (!supabaseClient) return false;
+                
+                try {
+                    const { error } = await supabaseClient
+                        .from('votes')
+                        .insert([{ candidate_id: candidateId }]);
+                    
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('投票失败:', error);
+                    alert('投票失败: ' + error.message);
+                    return false;
+                }
+            },
+            
+            async submitComment(candidateId, userName, content) {
+                if (!supabaseClient) return false;
+                if (!userName || !content) return false;
+                
+                try {
+                    const { error } = await supabaseClient
+                        .from('comments')
+                        .insert([{
+                            candidate_id: candidateId,
+                            user_name: userName,
+                            content: content
+                        }]);
+                    
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('提交留言失败:', error);
+                    alert('提交留言失败: ' + error.message);
+                    return false;
+                }
+            },
+            
+            async login(username, password) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select('*')
+                        .eq('username', username)
+                        .eq('password', password) // 注意: 实际应用中应该使用加密密码
+                        .single();
+                    
+                    if (error) throw error;
+                    if (!data) throw new Error('用户名或密码错误');
+                    
+                    // 在实际应用中，这里应该使用JWT或其他安全令牌
+                    const fakeToken = `fake-jwt-token-${Date.now()}`;
+                    return { user: data, token: fakeToken };
+                } catch (error) {
+                    console.error('登录失败:', error);
+                    throw error;
+                }
+            },
+            
+            async register(username, password) {
+                try {
+                    // 检查用户名是否已存在
+                    const { data: existingUser, error: checkError } = await supabaseClient
+                        .from('users')
+                        .select('username')
+                        .eq('username', username)
+                        .single();
+                    
+                    if (existingUser) throw new Error('用户名已存在');
+                    
+                    // 创建新用户
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .insert([{ username, password }]) // 注意: 实际应用中应该加密密码
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    // 在实际应用中，这里应该使用JWT或其他安全令牌
+                    const fakeToken = `fake-jwt-token-${Date.now()}`;
+                    return { user: data, token: fakeToken };
+                } catch (error) {
+                    console.error('注册失败:', error);
+                    throw error;
+                }
+            },
+            
+            getTotalPages() {
+                return Math.ceil(this.totalItems / this.itemsPerPage);
+            },
+            
+            updatePagination() {
+                const totalPages = this.getTotalPages();
+                const pageInfo = `第 ${this.currentPage} 页，共 ${totalPages} 页`;
+                
+                document.getElementById('pageInfo').textContent = pageInfo;
+                document.getElementById('pageInfoBottom').textContent = pageInfo;
+                
+                document.getElementById('prevPage').disabled = this.currentPage <= 1;
+                document.getElementById('prevPageBottom').disabled = this.currentPage <= 1;
+                document.getElementById('nextPage').disabled = this.currentPage >= totalPages;
+                document.getElementById('nextPageBottom').disabled = this.currentPage >= totalPages;
+            }
+        };
+        
+        // UI渲染器
+        const renderer = {
+            async renderCandidates() {
+                const container = document.getElementById('candidatesContainer');
+                const loading = document.getElementById('loadingContainer');
+                if (!container || !loading) return;
+                
+                try {
+                    utils.showLoading('loadingContainer');
+                    
+                    const [candidates, votes] = await Promise.all([
+                        dataService.getCandidates(dataService.currentPage),
+                        dataService.getVotes(),
+                    ]);
+                    
+                    dataService.updatePagination();
+                    
+                    if (candidates.length === 0) {
+                        container.innerHTML = `
+                            <div class="no-results">
+                                <i class="fas fa-search"></i>
+                                <h3>未找到匹配的人物</h3>
+                                <p>尝试使用不同的搜索词或浏览其他页面</p>
                             </div>
                         `;
-                    }).join('');
+                    } else {
+                        container.innerHTML = candidates.map(candidate => {
+                            return `
+                                <div class="candidate-card" data-id="${candidate.id}">
+                                    <div class="image-container">
+                                        <img src="${candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片'}" 
+                                             alt="${candidate.name}" 
+                                             class="candidate-image"
+                                             onerror="this.onerror=null;this.src='https://via.placeholder.com/400x250?text=图片加载失败'">
+                                    </div>
+                                    <div class="candidate-info">
+                                        <h3 class="candidate-name">${candidate.name}</h3>
+                                        <p class="candidate-description">${candidate.description || '暂无描述'}</p>
+                                        
+                                        <div class="vote-count">
+                                            <i class="fas fa-vote-yea"></i> 票数: ${votes[candidate.id] || 0}
+                                        </div>
+                                        
+                                        <div class="action-buttons">
+                                            <button class="vote-btn" onclick="app.voteForCandidate(${candidate.id})" 
+                                                ${utils.getVoteCount() <= 0 ? 'disabled' : ''}>
+                                                ${utils.getVoteCount() <= 0 ? '无投票机会' : '投票'}
+                                            </button>
+                                            <button class="detail-btn" onclick="app.showDetail(${candidate.id})">
+                                                详情 <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                    
+                    document.getElementById('currentYear').textContent = utils.getCurrentYear();
+                    container.style.display = 'grid';
+                } catch (error) {
+                    console.error('渲染候选人失败:', error);
+                    container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:red;padding:20px;">数据加载失败，请刷新页面</p>';
+                    container.style.display = 'block';
+                } finally {
+                    utils.hideLoading('loadingContainer');
+                }
+            },
+            
+            async renderComments() {
+                const container = document.getElementById('commentsList');
+                const loading = document.getElementById('commentsLoading');
+                if (!container || !loading) return;
+                
+                try {
+                    utils.showLoading('commentsLoading');
+                    
+                    const comments = await dataService.getLatestComments(10);
+                    
+                    if (comments.length === 0) {
+                        container.innerHTML = `
+                            <div class="comment-item">
+                                <p style="text-align: center; color: var(--gray-500);">
+                                    暂无留言，成为第一个留言的人吧！
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = comments.map(comment => {
+                            return `
+                                <div class="comment-item">
+                                    <div class="comment-header">
+                                        <div>
+                                            <span class="comment-author">
+                                                ${comment.user_name}
+                                                <span class="global-comment-label">全局留言</span>
+                                            </span>
+                                        </div>
+                                        <span class="comment-date">${utils.formatDate(comment.created_at)}</span>
+                                    </div>
+                                    <p class="comment-content">${comment.content}</p>
+                                    <div class="comment-actions">
+                                        <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}')">
+                                            <i class="fas fa-reply"></i> 回复
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                } catch (error) {
+                    console.error('渲染留言失败:', error);
+                    container.innerHTML = '<p style="text-align:center;color:red;padding:10px;">留言加载失败</p>';
+                } finally {
+                    utils.hideLoading('commentsLoading');
+                }
+            },
+            
+            updateVoteButtons() {
+                const voteCount = utils.getVoteCount();
+                document.querySelectorAll('.vote-btn').forEach(btn => {
+                    btn.disabled = voteCount <= 0;
+                    btn.textContent = voteCount <= 0 ? '无投票机会' : '投票';
+                });
+                
+                const badge = document.getElementById('voteCountBadge');
+                if (voteCount > 0) {
+                    badge.textContent = voteCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        };
+        
+        // 应用控制器
+        const app = {
+            async init() {
+                document.getElementById('currentYear').textContent = utils.getCurrentYear();
+                
+                if (!initializeSupabase()) {
+                    alert('系统初始化失败，请刷新页面');
+                    return;
                 }
                 
-                document.getElementById('currentYear').textContent = utils.getCurrentYear();
-                container.style.display = 'grid';
-            } catch (error) {
-                console.error('渲染候选人失败:', error);
-                container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:red;padding:20px;">数据加载失败，请刷新页面</p>';
-                container.style.display = 'block';
-            } finally {
-                utils.hideLoading('loadingContainer');
-            }
-        },
-        
-        async renderComments() {
-            const container = document.getElementById('commentsList');
-            const loading = document.getElementById('commentsLoading');
-            if (!container || !loading) return;
+                this.setupEventListeners();
+                await renderer.renderCandidates();
+                await renderer.renderComments();
+                this.checkAuth();
+            },
             
-            try {
-                utils.showLoading('commentsLoading');
+            setupEventListeners() {
+                const searchInput = document.getElementById('searchInput');
+                searchInput.addEventListener('input', utils.debounce(() => {
+                    dataService.searchTerm = searchInput.value.trim();
+                    dataService.currentPage = 1;
+                    renderer.renderCandidates();
+                }, 500));
                 
-                const comments = await dataService.getLatestComments(10);
+                document.getElementById('prevPage').addEventListener('click', () => this.changePage(-1));
+                document.getElementById('prevPageBottom').addEventListener('click', () => this.changePage(-1));
+                document.getElementById('nextPage').addEventListener('click', () => this.changePage(1));
+                document.getElementById('nextPageBottom').addEventListener('click', () => this.changePage(1));
                 
-                if (comments.length === 0) {
-                    container.innerHTML = `
-                        <div class="comment-item">
-                            <p style="text-align: center; color: var(--gray-500);">
-                                暂无留言，成为第一个留言的人吧！
-                            </p>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = comments.map(comment => {
-                        return `
-                            <div class="comment-item">
-                                <div class="comment-header">
-                                    <div>
-                                        <span class="comment-author">
-                                            ${comment.user_name}
-                                            <span class="global-comment-label">全局留言</span>
-                                        </span>
-                                    </div>
-                                    <span class="comment-date">${utils.formatDate(comment.created_at)}</span>
+                document.getElementById('submitComment').addEventListener('click', () => {
+                    this.prepareSubmitComment(false);
+                });
+                
+                document.getElementById('authBtn')?.addEventListener('click', () => {
+                    this.showAuthModal();
+                });
+                
+                document.getElementById('checkinBtn').addEventListener('click', () => {
+                    this.checkin();
+                });
+            },
+            
+            async changePage(direction) {
+                const newPage = dataService.currentPage + direction;
+                const totalPages = dataService.getTotalPages();
+                
+                if (newPage >= 1 && newPage <= totalPages) {
+                    dataService.currentPage = newPage;
+                    await renderer.renderCandidates();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            },
+            
+            async voteForCandidate(candidateId) {
+                const user = utils.getCurrentUser();
+                if (!user) {
+                    alert('请先登录后再投票');
+                    this.showAuthModal();
+                    return;
+                }
+                
+                if (utils.getVoteCount() <= 0) {
+                    alert('您没有投票机会，请先签到获取投票机会');
+                    return;
+                }
+                
+                const success = await dataService.submitVote(candidateId);
+                if (success) {
+                    const newCount = utils.getVoteCount() - 1;
+                    utils.setVoteCount(newCount);
+                    
+                    alert('投票成功！');
+                    renderer.updateVoteButtons();
+                    await renderer.renderCandidates();
+                }
+            },
+            
+            async showDetail(candidateId) {
+                // 跳转到详情页
+                window.location.href = `detail.html?id=${candidateId}`;
+            },
+            
+            prepareSubmitComment(isDetail) {
+                const user = utils.getCurrentUser();
+                if (!user) {
+                    alert('请先登录后再发表评论');
+                    this.showAuthModal();
+                    return;
+                }
+                
+                const contentField = isDetail 
+                    ? document.getElementById('detailCommentContent')
+                    : document.getElementById('commentContent');
+                
+                const content = contentField.value.trim();
+                
+                if (!content) {
+                    alert('请输入留言内容');
+                    return;
+                }
+                
+                pendingComment = { isDetail, content };
+                
+                utils.showDialog((confirmed) => {
+                    if (confirmed) {
+                        this.submitComment(isDetail, user.username, content);
+                    }
+                });
+            },
+            
+            async submitComment(isDetail, username, content) {
+                const candidateId = isDetail ? currentDetailId : null;
+                const success = await dataService.submitComment(candidateId, username, content);
+                
+                if (success) {
+                    const newComment = {
+                        id: Date.now(),
+                        user_name: username,
+                        content: content,
+                        created_at: new Date().toISOString(),
+                        candidate_id: candidateId
+                    };
+                    
+                    const container = document.getElementById(isDetail ? 'detailCommentsContainer' : 'commentsList');
+                    
+                    if (container) {
+                        const newElement = document.createElement('div');
+                        newElement.className = isDetail ? 'detail-comment-item' : 'comment-item';
+                        
+                        if (isDetail) {
+                            newElement.innerHTML = `
+                                <div class="detail-comment-header">
+                                    <span class="detail-comment-author">${newComment.user_name}</span>
+                                    <span class="detail-comment-date">刚刚</span>
                                 </div>
-                                <p class="comment-content">${comment.content}</p>
-                                <div class="comment-actions">
-                                    <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}')">
+                                <p class="detail-comment-content">${newComment.content}</p>
+                                <div class="detail-comment-actions">
+                                    <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}')">
                                         <i class="fas fa-reply"></i> 回复
                                     </button>
                                 </div>
-                            </div>
-                        `;
-                    }).join('');
+                            `;
+                        } else {
+                            newElement.innerHTML = `
+                                <div class="comment-header">
+                                    <div>
+                                        <span class="comment-author">
+                                            ${newComment.user_name}
+                                            ${!candidateId ? '<span class="global-comment-label">全局留言</span>' : ''}
+                                        </span>
+                                    </div>
+                                    <span class="comment-date">刚刚</span>
+                                </div>
+                                <p class="comment-content">${newComment.content}</p>
+                                <div class="comment-actions">
+                                    <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}')">
+                                        <i class="fas fa-reply"></i> 回复
+                                    </button>
+                                </div>
+                            `;
+                        }
+                        
+                        if (container.firstChild) {
+                            container.insertBefore(newElement, container.firstChild);
+                        } else {
+                            container.appendChild(newElement);
+                        }
+                    }
+                    
+                    if (isDetail) {
+                        document.getElementById('detailCommentContent').value = '';
+                    } else {
+                        document.getElementById('commentContent').value = '';
+                    }
+                    
+                    setTimeout(async () => {
+                        if (isDetail) {
+                            const comments = await dataService.getComments(currentDetailId);
+                            renderer.renderDetailComments(comments);
+                        } else {
+                            await renderer.renderComments();
+                        }
+                    }, 2000);
                 }
-            } catch (error) {
-                console.error('渲染留言失败:', error);
-                container.innerHTML = '<p style="text-align:center;color:red;padding:10px;">留言加载失败</p>';
-            } finally {
-                utils.hideLoading('commentsLoading');
-            }
-        },
-        
-        updateVoteButtons() {
-            const voteCount = utils.getVoteCount();
-            document.querySelectorAll('.vote-btn').forEach(btn => {
-                btn.disabled = voteCount <= 0;
-                btn.textContent = voteCount <= 0 ? '无投票机会' : '投票';
-            });
+            },
             
-            const badge = document.getElementById('voteCountBadge');
-            if (voteCount > 0) {
-                badge.textContent = voteCount;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-    };
-    
-    // 应用控制器
-    const app = {
-        async init() {
-            document.getElementById('currentYear').textContent = utils.getCurrentYear();
-            
-            if (!initializeSupabase()) {
-                alert('系统初始化失败，请刷新页面');
-                return;
-            }
-            
-            this.setupEventListeners();
-            await renderer.renderCandidates();
-            await renderer.renderComments();
-            this.checkAuth();
-        },
-        
-        setupEventListeners() {
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', utils.debounce(() => {
-                dataService.searchTerm = searchInput.value.trim();
-                dataService.currentPage = 1;
-                renderer.renderCandidates();
-            }, 500));
-            
-            document.getElementById('prevPage').addEventListener('click', () => this.changePage(-1));
-            document.getElementById('prevPageBottom').addEventListener('click', () => this.changePage(-1));
-            document.getElementById('nextPage').addEventListener('click', () => this.changePage(1));
-            document.getElementById('nextPageBottom').addEventListener('click', () => this.changePage(1));
-            
-            document.getElementById('submitComment').addEventListener('click', () => {
-                this.prepareSubmitComment(false);
-            });
-            
-            document.getElementById('authBtn')?.addEventListener('click', () => {
-                this.showAuthModal();
-            });
-            
-            document.getElementById('checkinBtn').addEventListener('click', () => {
-                this.checkin();
-            });
-        },
-        
-        async changePage(direction) {
-            const newPage = dataService.currentPage + direction;
-            const totalPages = dataService.getTotalPages();
-            
-            if (newPage >= 1 && newPage <= totalPages) {
-                dataService.currentPage = newPage;
-                await renderer.renderCandidates();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        },
-        
-        async voteForCandidate(candidateId) {
-            const user = utils.getCurrentUser();
-            if (!user) {
-                alert('请先登录后再投票');
-                this.showAuthModal();
-                return;
-            }
-            
-            if (utils.getVoteCount() <= 0) {
-                alert('您没有投票机会，请先签到获取投票机会');
-                return;
-            }
-            
-            const success = await dataService.submitVote(candidateId);
-            if (success) {
-                const newCount = utils.getVoteCount() - 1;
-                utils.setVoteCount(newCount);
+            showAuthModal() {
+                const modal = document.getElementById('authModal');
+                modal.style.display = 'flex';
                 
-                alert('投票成功！');
-                renderer.updateVoteButtons();
-                await renderer.renderCandidates();
-            }
-        },
-        
-        async showDetail(candidateId) {
-            window.location.href = `detail.html?id=${candidateId}`;
-        },
-        
-        prepareSubmitComment(isDetail) {
-            const user = utils.getCurrentUser();
-            if (!user) {
-                alert('请先登录后再发表评论');
-                this.showAuthModal();
-                return;
-            }
-            
-            const contentField = isDetail 
-                ? document.getElementById('detailCommentContent')
-                : document.getElementById('commentContent');
-            
-            const content = contentField.value.trim();
-            
-            if (!content) {
-                alert('请输入留言内容');
-                return;
-            }
-            
-            pendingComment = { isDetail, content };
-            
-            utils.showDialog((confirmed) => {
-                if (confirmed) {
-                    this.submitComment(isDetail, user.username, content);
-                }
-            });
-        },
-        
-        async submitComment(isDetail, username, content) {
-            const candidateId = isDetail ? currentDetailId : null;
-            const success = await dataService.submitComment(candidateId, username, content);
-            
-            if (success) {
-                const newComment = {
-                    id: Date.now(),
-                    user_name: username,
-                    content: content,
-                    created_at: new Date().toISOString(),
-                    candidate_id: candidateId
+                document.querySelector('.close-auth').onclick = () => {
+                    modal.style.display = 'none';
                 };
                 
-                const container = document.getElementById(isDetail ? 'detailCommentsContainer' : 'commentsList');
-                
-                if (container) {
-                    const newElement = document.createElement('div');
-                    newElement.className = isDetail ? 'detail-comment-item' : 'comment-item';
-                    
-                    if (isDetail) {
-                        newElement.innerHTML = `
-                            <div class="detail-comment-header">
-                                <span class="detail-comment-author">${newComment.user_name}</span>
-                                <span class="detail-comment-date">刚刚</span>
-                            </div>
-                            <p class="detail-comment-content">${newComment.content}</p>
-                            <div class="detail-comment-actions">
-                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}')">
-                                    <i class="fas fa-reply"></i> 回复
-                                </button>
-                            </div>
-                        `;
-                    } else {
-                        newElement.innerHTML = `
-                            <div class="comment-header">
-                                <div>
-                                    <span class="comment-author">
-                                        ${newComment.user_name}
-                                        ${!candidateId ? '<span class="global-comment-label">全局留言</span>' : ''}
-                                    </span>
-                                </div>
-                                <span class="comment-date">刚刚</span>
-                            </div>
-                            <p class="comment-content">${newComment.content}</p>
-                            <div class="comment-actions">
-                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}')">
-                                    <i class="fas fa-reply"></i> 回复
-                                </button>
-                            </div>
-                        `;
-                    }
-                    
-                    if (container.firstChild) {
-                        container.insertBefore(newElement, container.firstChild);
-                    } else {
-                        container.appendChild(newElement);
-                    }
-                }
-                
-                if (isDetail) {
-                    document.getElementById('detailCommentContent').value = '';
-                } else {
-                    document.getElementById('commentContent').value = '';
-                }
-                
-                setTimeout(async () => {
-                    if (isDetail) {
-                        const comments = await dataService.getComments(currentDetailId);
-                        renderer.renderDetailComments(comments);
-                    } else {
-                        await renderer.renderComments();
-                    }
-                }, 2000);
-            }
-        },
-        
-        showAuthModal() {
-            const modal = document.getElementById('authModal');
-            modal.style.display = 'flex';
-            
-            document.querySelector('.close-auth').onclick = () => {
-                modal.style.display = 'none';
-            };
-            
-            document.querySelectorAll('.auth-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    
-                    document.querySelectorAll('.auth-form').forEach(form => {
-                        form.style.display = 'none';
+                document.querySelectorAll('.auth-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        document.querySelectorAll('.auth-form').forEach(form => {
+                            form.style.display = 'none';
+                        });
+                        
+                        document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
                     });
-                    
-                    document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
                 });
-            });
-            
-            document.getElementById('loginBtn').onclick = async () => {
-                const username = document.getElementById('loginUsername').value.trim();
-                const password = document.getElementById('loginPassword').value.trim();
                 
-                if (!username || !password) {
-                    alert('请输入用户名和密码');
+                document.getElementById('loginBtn').onclick = async () => {
+                    const username = document.getElementById('loginUsername').value.trim();
+                    const password = document.getElementById('loginPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    try {
+                        const { user, token } = await dataService.login(username, password);
+                        utils.setAuthToken(token);
+                        utils.setCurrentUser(user);
+                        utils.setAuthStatus(user.username);
+                        
+                        document.getElementById('authModal').style.display = 'none';
+                        alert('登录成功！');
+                        
+                        // 检查签到状态
+                        this.checkCheckinStatus();
+                    } catch (error) {
+                        alert(error.message || '登录失败');
+                    }
+                };
+                
+                document.getElementById('registerBtn').onclick = async () => {
+                    const username = document.getElementById('registerUsername').value.trim();
+                    const password = document.getElementById('registerPassword').value.trim();
+                    
+                    if (!username || !password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    
+                    try {
+                        const { user, token } = await dataService.register(username, password);
+                        utils.setAuthToken(token);
+                        utils.setCurrentUser(user);
+                        utils.setAuthStatus(user.username);
+                        
+                        // 新注册用户初始获得1次投票机会
+                        utils.setVoteCount(1);
+                        renderer.updateVoteButtons();
+                        
+                        document.getElementById('authModal').style.display = 'none';
+                        alert('注册成功！您获得了1次初始投票机会');
+                        
+                        // 设置签到状态
+                        utils.setLastCheckinDate(new Date().toISOString());
+                    } catch (error) {
+                        alert(error.message || '注册失败');
+                    }
+                };
+            },
+            
+            logout() {
+                utils.removeAuthToken();
+                utils.removeCurrentUser();
+                utils.setAuthStatus(null);
+                alert('已登出');
+            },
+            
+            checkAuth() {
+                const token = utils.getAuthToken();
+                const user = utils.getCurrentUser();
+                
+                if (token && user) {
+                    utils.setAuthStatus(user.username);
+                }
+            },
+            
+            setReplyTarget(username) {
+                const contentField = document.getElementById('commentContent') || 
+                                    document.getElementById('detailCommentContent');
+                
+                if (contentField) {
+                    contentField.value = `@${username} `;
+                    contentField.focus();
+                }
+            },
+            
+            async checkin() {
+                if (isCheckingIn) return;
+                isCheckingIn = true;
+                
+                const user = utils.getCurrentUser();
+                if (!user) {
+                    alert('请先登录后再签到');
+                    this.showAuthModal();
+                    isCheckingIn = false;
                     return;
                 }
                 
-                try {
-                    const { user, token } = await dataService.login(username, password);
-                    utils.setAuthToken(token);
-                    utils.setCurrentUser(user);
-                    utils.setAuthStatus(user.username);
-                    
-                    document.getElementById('authModal').style.display = 'none';
-                    alert('登录成功！');
-                    
-                    this.checkCheckinStatus();
-                } catch (error) {
-                    alert(error.message || '登录失败');
-                }
-            };
-            
-            document.getElementById('registerBtn').onclick = async () => {
-                const username = document.getElementById('registerUsername').value.trim();
-                const password = document.getElementById('registerPassword').value.trim();
+                const lastCheckinDate = utils.getLastCheckinDate();
+                const today = new Date().toISOString();
                 
-                if (!username || !password) {
-                    alert('请输入用户名和密码');
+                if (lastCheckinDate && utils.isSameDay(lastCheckinDate, today)) {
+                    alert('您今天已经签到过了，明天再来吧！');
+                    isCheckingIn = false;
                     return;
                 }
                 
-                try {
-                    const { user, token } = await dataService.register(username, password);
-                    utils.setAuthToken(token);
-                    utils.setCurrentUser(user);
-                    utils.setAuthStatus(user.username);
-                    
-                    utils.setVoteCount(1);
-                    renderer.updateVoteButtons();
-                    
-                    document.getElementById('authModal').style.display = 'none';
-                    alert('注册成功！您获得了1次初始投票机会');
-                    
-                    utils.setLastCheckinDate(new Date().toISOString());
-                } catch (error) {
-                    alert(error.message || '注册失败');
-                }
-            };
-        },
-        
-        logout() {
-            utils.removeAuthToken();
-            utils.removeCurrentUser();
-            utils.setAuthStatus(null);
-            alert('已登出');
-        },
-        
-        checkAuth() {
-            const token = utils.getAuthToken();
-            const user = utils.getCurrentUser();
-            
-            if (token && user) {
-                utils.setAuthStatus(user.username);
-            }
-        },
-        
-        setReplyTarget(username) {
-            const contentField = document.getElementById('commentContent') || 
-                                document.getElementById('detailCommentContent');
-            
-            if (contentField) {
-                contentField.value = `@${username} `;
-                contentField.focus();
-            }
-        },
-        
-        async checkin() {
-            if (isCheckingIn) return;
-            isCheckingIn = true;
-            
-            const user = utils.getCurrentUser();
-            if (!user) {
-                alert('请先登录后再签到');
-                this.showAuthModal();
-                isCheckingIn = false;
-                return;
-            }
-            
-            const lastCheckinDate = utils.getLastCheckinDate();
-            const today = new Date().toISOString();
-            
-            if (lastCheckinDate && utils.isSameDay(lastCheckinDate, today)) {
-                alert('您今天已经签到过了，明天再来吧！');
-                isCheckingIn = false;
-                return;
-            }
-            
-            utils.setLastCheckinDate(today);
-            const newCount = utils.incrementVoteCount();
-            renderer.updateVoteButtons();
-            document.getElementById('checkinBtn').disabled = true;
-            
-            alert(`签到成功！您获得了1次投票机会，当前共有${newCount}次投票机会`);
-            
-            setTimeout(() => {
-                document.getElementById('checkinBtn').disabled = false;
-                isCheckingIn = false;
-            }, 1000);
-        },
-        
-        checkCheckinStatus() {
-            const user = utils.getCurrentUser();
-            if (!user) return;
-            
-            const lastCheckinDate = utils.getLastCheckinDate();
-            const today = new Date().toISOString();
-            
-            if (!lastCheckinDate || !utils.isSameDay(lastCheckinDate, today)) {
-                document.getElementById('checkinBtn').disabled = false;
-            } else {
+                // 更新签到日期
+                utils.setLastCheckinDate(today);
+                
+                // 增加投票机会
+                const newCount = utils.incrementVoteCount();
+                
+                // 更新UI
+                renderer.updateVoteButtons();
+                
+                // 禁用签到按钮
                 document.getElementById('checkinBtn').disabled = true;
-            }
+                
+                alert(`签到成功！您获得了1次投票机会，当前共有${newCount}次投票机会`);
+                
+                // 防止重复签到
+                setTimeout(() => {
+                    document.getElementById('checkinBtn').disabled = false;
+                    isCheckingIn = false;
+                }, 1000);
+            },
             
-            renderer.updateVoteButtons();
-        }
-    };
-    
-    // 启动应用
-    window.app = app;
-    document.addEventListener('DOMContentLoaded', () => app.init());
-</script>
+            checkCheckinStatus() {
+                const user = utils.getCurrentUser();
+                if (!user) return;
+                
+                const lastCheckinDate = utils.getLastCheckinDate();
+                const today = new Date().toISOString();
+                
+                // 如果没有签到记录，或者上次签到不是今天
+                if (!lastCheckinDate || !utils.isSameDay(lastCheckinDate, today)) {
+                    // 启用签到按钮
+                    document.getElementById('checkinBtn').disabled = false;
+                } else {
+                    // 禁用签到按钮
+                    document.getElementById('checkinBtn').disabled = true;
+                }
+                
+                // 更新投票机会显示
+                renderer.updateVoteButtons();
+            }
+        };
+        
+        // 启动应用
+        window.app = app;
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
