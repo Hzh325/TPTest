@@ -612,6 +612,45 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
+        .comment-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1002;
+}
+
+.comment-modal .modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    width: 500px;
+    max-width: 90%;
+}
+
+.comment-modal textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 15px;
+    border: 1px solid var(--gray-300);
+    border-radius: 10px;
+    margin: 15px 0;
+    resize: vertical;
+}
+
+.comment-modal .close-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+}
         
         /* 响应式调整 */
         @media (max-width: 768px) {
@@ -1104,99 +1143,99 @@
         // UI渲染器
         const renderer = {
             async renderPosts() {
-                const container = document.getElementById('postsList');
-                const loading = document.getElementById('loadingContainer');
-                
-                if (!container || !loading) return;
-                
-                try {
-                    utils.showLoading('loadingContainer');
-                    container.style.display = 'none';
-                    
-                    const { posts, total } = await dataService.getPosts(currentPage);
-                    
-                    dataService.updatePagination(total, currentPage);
-                    
-                    if (posts.length === 0) {
-                        container.innerHTML = `
-                            <div class="post-card">
-                                <p style="text-align: center; padding: 30px; color: var(--gray-500);">
-                                    暂无帖子，成为第一个发帖的人吧！
-                                </p>
-                            </div>
-                        `;
-                    } else {
-                        // 为每个帖子获取图片
-                        const postsWithImages = await Promise.all(
-                            posts.map(async post => {
-                                const images = await dataService.getPostImages(post.id);
-                                return { ...post, images };
-                            })
-                        );
-                        
-                        container.innerHTML = postsWithImages.map(post => {
-                            return `
-                                <div class="post-card" data-id="${post.id}">
-                                    <div class="post-header">
-                                        <div class="post-author">
-                                            <div class="author-avatar">
-                                                <img src="https://ui-avatars.com/api/?name=${post.user.username}&background=${encodeURIComponent('#4f46e5')}&color=fff" alt="${post.user.username}">
-                                            </div>
-                                            <div class="author-info">
-                                                <span class="author-name">${post.user.username}</span>
-                                                <span class="post-date">${utils.formatDate(post.created_at)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <h3 class="post-title">${post.title}</h3>
-                                    <p class="post-content">${post.content}</p>
-                                    
-                                    ${post.images.length > 0 ? `
-                                        <div class="post-images">
-                                            ${post.images.slice(0, 5).map(image => `
-                                                <div class="post-image">
-                                                    <img src="${image.url}" alt="帖子图片" loading="lazy">
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    ` : ''}
-                                    
-                                    <div class="post-stats">
-                                        <div class="post-stat">
-                                            <i class="fas fa-comment"></i>
-                                            <span>${post.forum_comments[0].count || 0} 条评论</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="post-actions">
-                                        <button class="action-btn">
-                                            <i class="fas fa-comment"></i> 评论
-                                        </button>
-                                        <button class="action-btn">
-                                            <i class="fas fa-share"></i> 分享
-                                        </button>
-                                    </div>
+    const container = document.getElementById('postsList');
+    const loading = document.getElementById('loadingContainer');
+    
+    if (!container || !loading) return;
+    
+    try {
+        utils.showLoading('loadingContainer');
+        container.style.display = 'none';
+        
+        const { posts, total } = await dataService.getPosts(currentPage);
+        
+        dataService.updatePagination(total, currentPage);
+        
+        if (posts.length === 0) {
+            container.innerHTML = `
+                <div class="post-card">
+                    <p style="text-align: center; padding: 30px; color: var(--gray-500);">
+                        暂无帖子，成为第一个发帖的人吧！
+                    </p>
+                </div>
+            `;
+        } else {
+            // 为每个帖子获取图片
+            const postsWithImages = await Promise.all(
+                posts.map(async post => {
+                    const images = await dataService.getPostImages(post.id);
+                    return { ...post, images };
+                })
+            );
+            
+            container.innerHTML = postsWithImages.map(post => {
+                return `
+                    <div class="post-card" data-id="${post.id}">
+                        <div class="post-header">
+                            <div class="post-author">
+                                <div class="author-avatar">
+                                    <img src="https://ui-avatars.com/api/?name=${post.user.username}&background=${encodeURIComponent('#4f46e5')}&color=fff" alt="${post.user.username}">
                                 </div>
-                            `;
-                        }).join('');
-                    }
-                    
-                    container.style.display = 'grid';
-                } catch (error) {
-                    console.error('渲染帖子失败:', error);
-                    container.innerHTML = `
-                        <div class="post-card">
-                            <p style="text-align: center; padding: 30px; color: var(--red-500);">
-                                加载帖子失败，请刷新页面
-                            </p>
+                                <div class="author-info">
+                                    <span class="author-name">${post.user.username}</span>
+                                    <span class="post-date">${utils.formatDate(post.created_at)}</span>
+                                </div>
+                            </div>
                         </div>
-                    `;
-                    container.style.display = 'block';
-                } finally {
-                    utils.hideLoading('loadingContainer');
-                }
-            },
+                        
+                        <h3 class="post-title">${post.title}</h3>
+                        <p class="post-content">${post.content}</p>
+                        
+                        ${post.images.length > 0 ? `
+                            <div class="post-images">
+                                ${post.images.map(image => `
+                                    <div class="post-image">
+                                        <img src="${image.url}" alt="帖子图片" loading="lazy">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="post-stats">
+                            <div class="post-stat">
+                                <i class="fas fa-comment"></i>
+                                <span>${post.forum_comments[0].count || 0} 条评论</span>
+                            </div>
+                        </div>
+                        
+                        <div class="post-actions">
+                            <button class="action-btn" onclick="app.showPostDetail(${post.id})">
+                                <i class="fas fa-comment"></i> 评论
+                            </button>
+                            <button class="action-btn">
+                                <i class="fas fa-share"></i> 分享
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        container.style.display = 'grid';
+    } catch (error) {
+        console.error('渲染帖子失败:', error);
+        container.innerHTML = `
+            <div class="post-card">
+                <p style="text-align: center; padding: 30px; color: var(--red-500);">
+                    加载帖子失败，请刷新页面
+                </p>
+            </div>
+        `;
+        container.style.display = 'block';
+    } finally {
+        utils.hideLoading('loadingContainer');
+    }
+},
             
             clearPostForm() {
                 document.getElementById('postTitle').value = '';
@@ -1245,221 +1284,285 @@
         
         // 应用控制器
         const app = {
-            async init() {
-                document.getElementById('currentYear').textContent = utils.getCurrentYear();
-                
-                if (!initializeSupabase()) {
-                    alert('系统初始化失败，请刷新页面');
-                    return;
-                }
-                
-                this.setupEventListeners();
-                await this.renderPosts();
-                this.checkAuth();
-            },
+    async init() {
+        document.getElementById('currentYear').textContent = utils.getCurrentYear();
+        
+        if (!initializeSupabase()) {
+            alert('系统初始化失败，请刷新页面');
+            return;
+        }
+        
+        this.setupEventListeners();
+        await this.renderPosts();
+        this.checkAuth();
+    },
+    
+    setupEventListeners() {
+        // 发帖按钮
+        document.getElementById('createPostBtn').addEventListener('click', () => {
+            if (!currentUser) {
+                alert('请先登录后再发帖');
+                this.showAuthModal();
+                return;
+            }
             
-            setupEventListeners() {
-                // 发帖按钮
-                document.getElementById('createPostBtn').addEventListener('click', () => {
-                    if (!currentUser) {
-                        alert('请先登录后再发帖');
-                        this.showAuthModal();
-                        return;
-                    }
-                    
-                    document.getElementById('postForm').style.display = 'block';
-                    document.getElementById('createPostBtn').style.display = 'none';
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-                
-                // 取消发帖
-                document.getElementById('cancelPost').addEventListener('click', () => {
-                    document.getElementById('postForm').style.display = 'none';
-                    document.getElementById('createPostBtn').style.display = 'flex';
-                    renderer.clearPostForm();
-                });
-                
-                // 图片上传
-                document.getElementById('uploadBtn').addEventListener('click', () => {
-                    document.getElementById('imageUpload').click();
-                });
-                
-                document.getElementById('imageUpload').addEventListener('change', async (event) => {
-                    const files = Array.from(event.target.files);
-                    
-                    if (files.length + selectedImages.length > 5) {
-                        alert('最多只能上传5张图片');
-                        return;
-                    }
-                    
-                    // 压缩图片并添加到选择列表
-                    for (const file of files) {
-                        try {
-                            const compressedFile = await utils.compressImage(file);
-                            selectedImages.push({
-                                file: compressedFile,
-                                originalName: file.name
-                            });
-                        } catch (error) {
-                            console.error('图片处理失败:', error);
-                            selectedImages.push({
-                                file: file,
-                                originalName: file.name
-                            });
-                        }
-                    }
-                    
-                    // 显示预览
-                    renderer.showImagePreviews(files);
-                    event.target.value = ''; // 重置文件输入
-                });
-                
-                // 提交帖子表单
-                document.getElementById('newPostForm').addEventListener('submit', async (event) => {
-                    event.preventDefault();
-                    
-                    const title = document.getElementById('postTitle').value.trim();
-                    const content = document.getElementById('postContent').value.trim();
-                    
-                    if (!title || !content) {
-                        alert('请填写标题和内容');
-                        return;
-                    }
-                    
-                    try {
-                        // 创建帖子
-                        const post = await dataService.createPost(title, content, currentUser.id);
-                        if (!post) return;
-                        
-                        // 上传图片
-                        if (selectedImages.length > 0) {
-                            await dataService.uploadImages(post.id, selectedImages);
-                        }
-                        
-                        // 重置表单
-                        renderer.clearPostForm();
-                        document.getElementById('postForm').style.display = 'none';
-                        document.getElementById('createPostBtn').style.display = 'flex';
-                        
-                        // 刷新帖子列表
-                        currentPage = 1;
-                        await this.renderPosts();
-                        
-                        alert('帖子发布成功！');
-                    } catch (error) {
-                        console.error('发布帖子失败:', error);
-                        alert('发布帖子失败: ' + error.message);
-                    }
-                });
-                
-                // 分页按钮
-                document.getElementById('prevPage').addEventListener('click', () => this.changePage(-1));
-                document.getElementById('nextPage').addEventListener('click', () => this.changePage(1));
-                
-                // 登录/注册按钮
-                document.getElementById('authBtn')?.addEventListener('click', () => {
-                    this.showAuthModal();
-                });
-            },
+            document.getElementById('postForm').style.display = 'block';
+            document.getElementById('createPostBtn').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        // 取消发帖
+        document.getElementById('cancelPost').addEventListener('click', () => {
+            document.getElementById('postForm').style.display = 'none';
+            document.getElementById('createPostBtn').style.display = 'flex';
+            renderer.clearPostForm();
+        });
+        
+        // 图片上传
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('imageUpload').click();
+        });
+        
+        document.getElementById('imageUpload').addEventListener('change', async (event) => {
+            const files = Array.from(event.target.files);
             
-            async changePage(direction) {
-                const { total } = await dataService.getPosts(currentPage);
-                const totalPages = dataService.getTotalPages(total);
-                const newPage = currentPage + direction;
-                
-                if (newPage >= 1 && newPage <= totalPages) {
-                    currentPage = newPage;
-                    await this.renderPosts();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-            },
+            if (files.length + selectedImages.length > 5) {
+                alert('最多只能上传5张图片');
+                return;
+            }
             
-            async renderPosts() {
-                await renderer.renderPosts();
-            },
-            
-            showAuthModal() {
-                const modal = document.getElementById('authModal');
-                modal.style.display = 'flex';
-                
-                document.querySelector('.close-auth').onclick = () => {
-                    modal.style.display = 'none';
-                };
-                
-                document.querySelectorAll('.auth-tab').forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-                        tab.classList.add('active');
-                        
-                        document.querySelectorAll('.auth-form').forEach(form => {
-                            form.style.display = 'none';
-                        });
-                        
-                        document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
+            // 压缩图片并添加到选择列表
+            for (const file of files) {
+                try {
+                    const compressedFile = await utils.compressImage(file);
+                    selectedImages.push({
+                        file: compressedFile,
+                        originalName: file.name
                     });
-                });
-                
-                document.getElementById('loginBtn').onclick = async () => {
-                    const username = document.getElementById('loginUsername').value.trim();
-                    const password = document.getElementById('loginPassword').value.trim();
-                    
-                    if (!username || !password) {
-                        alert('请输入用户名和密码');
-                        return;
-                    }
-                    
-                    try {
-                        const { user, token } = await dataService.login(username, password);
-                        utils.setAuthToken(token);
-                        utils.setCurrentUser(user);
-                        utils.setAuthStatus(user.username);
-                        
-                        document.getElementById('authModal').style.display = 'none';
-                        alert('登录成功！');
-                    } catch (error) {
-                        alert(error.message || '登录失败');
-                    }
-                };
-                
-                document.getElementById('registerBtn').onclick = async () => {
-                    const username = document.getElementById('registerUsername').value.trim();
-                    const password = document.getElementById('registerPassword').value.trim();
-                    
-                    if (!username || !password) {
-                        alert('请输入用户名和密码');
-                        return;
-                    }
-                    
-                    try {
-                        const { user, token } = await dataService.register(username, password);
-                        utils.setAuthToken(token);
-                        utils.setCurrentUser(user);
-                        utils.setAuthStatus(user.username);
-                        
-                        document.getElementById('authModal').style.display = 'none';
-                        alert('注册成功！');
-                    } catch (error) {
-                        alert(error.message || '注册失败');
-                    }
-                };
-            },
-            
-            logout() {
-                utils.removeAuthToken();
-                utils.removeCurrentUser();
-                utils.setAuthStatus(null);
-                alert('已登出');
-            },
-            
-            checkAuth() {
-                const token = utils.getAuthToken();
-                const user = utils.getCurrentUser();
-                
-                if (token && user) {
-                    utils.setAuthStatus(user.username);
+                } catch (error) {
+                    console.error('图片处理失败:', error);
+                    selectedImages.push({
+                        file: file,
+                        originalName: file.name
+                    });
                 }
             }
+            
+            // 显示预览
+            renderer.showImagePreviews(files);
+            event.target.value = ''; // 重置文件输入
+        });
+        
+        // 提交帖子表单
+        document.getElementById('newPostForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            const title = document.getElementById('postTitle').value.trim();
+            const content = document.getElementById('postContent').value.trim();
+            
+            if (!title || !content) {
+                alert('请填写标题和内容');
+                return;
+            }
+            
+            try {
+                // 创建帖子
+                const post = await dataService.createPost(title, content, currentUser.id);
+                if (!post) return;
+                
+                // 上传图片
+                if (selectedImages.length > 0) {
+                    await dataService.uploadImages(post.id, selectedImages);
+                }
+                
+                // 重置表单
+                renderer.clearPostForm();
+                document.getElementById('postForm').style.display = 'none';
+                document.getElementById('createPostBtn').style.display = 'flex';
+                
+                // 刷新帖子列表
+                currentPage = 1;
+                await this.renderPosts();
+                
+                alert('帖子发布成功！');
+            } catch (error) {
+                console.error('发布帖子失败:', error);
+                alert('发布帖子失败: ' + error.message);
+            }
+        });
+        
+        // 分页按钮
+        document.getElementById('prevPage').addEventListener('click', () => this.changePage(-1));
+        document.getElementById('nextPage').addEventListener('click', () => this.changePage(1));
+        
+        // 登录/注册按钮
+        document.getElementById('authBtn')?.addEventListener('click', () => {
+            this.showAuthModal();
+        });
+    },
+    
+    async changePage(direction) {
+        const { total } = await dataService.getPosts(currentPage);
+        const totalPages = dataService.getTotalPages(total);
+        const newPage = currentPage + direction;
+        
+        if (newPage >= 1 && newPage <= totalPages) {
+            currentPage = newPage;
+            await this.renderPosts();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    },
+    
+    async renderPosts() {
+        await renderer.renderPosts();
+    },
+    
+    // 新增的评论功能方法
+    showPostDetail: function(postId) {
+        this.currentPostId = postId;
+        this.showCommentModal();
+    },
+    
+    showCommentModal: function() {
+        const modal = document.createElement('div');
+        modal.className = 'comment-modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h3>发表评论</h3>
+                <textarea id="postCommentContent" placeholder="写下您的评论..."></textarea>
+                <button id="submitPostComment" class="submit-btn">提交评论</button>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        modal.querySelector('.close-modal').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+        
+        document.getElementById('submitPostComment').addEventListener('click', () => {
+            this.submitPostComment();
+        });
+    },
+    
+    submitPostComment: async function() {
+        const user = utils.getCurrentUser();
+        if (!user) {
+            alert('请先登录后再发表评论');
+            this.showAuthModal();
+            return;
+        }
+        
+        const content = document.getElementById('postCommentContent').value.trim();
+        if (!content) {
+            alert('请输入评论内容');
+            return;
+        }
+        
+        try {
+            const { error } = await supabaseClient
+                .from('forum_comments')
+                .insert([{
+                    post_id: this.currentPostId,
+                    user_id: user.id,
+                    content: content,
+                    user_name: user.username
+                }]);
+            
+            if (error) throw error;
+            
+            alert('评论发布成功！');
+            document.body.querySelector('.comment-modal').remove();
+            await this.renderPosts(); // 刷新帖子列表
+        } catch (error) {
+            console.error('发布评论失败:', error);
+            alert('发布评论失败: ' + error.message);
+        }
+    },
+    
+    showAuthModal() {
+        const modal = document.getElementById('authModal');
+        modal.style.display = 'flex';
+        
+        document.querySelector('.close-auth').onclick = () => {
+            modal.style.display = 'none';
         };
+        
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                document.querySelectorAll('.auth-form').forEach(form => {
+                    form.style.display = 'none';
+                });
+                
+                document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
+            });
+        });
+        
+        document.getElementById('loginBtn').onclick = async () => {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            if (!username || !password) {
+                alert('请输入用户名和密码');
+                return;
+            }
+            
+            try {
+                const { user, token } = await dataService.login(username, password);
+                utils.setAuthToken(token);
+                utils.setCurrentUser(user);
+                utils.setAuthStatus(user.username);
+                
+                document.getElementById('authModal').style.display = 'none';
+                alert('登录成功！');
+            } catch (error) {
+                alert(error.message || '登录失败');
+            }
+        };
+        
+        document.getElementById('registerBtn').onclick = async () => {
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value.trim();
+            
+            if (!username || !password) {
+                alert('请输入用户名和密码');
+                return;
+            }
+            
+            try {
+                const { user, token } = await dataService.register(username, password);
+                utils.setAuthToken(token);
+                utils.setCurrentUser(user);
+                utils.setAuthStatus(user.username);
+                
+                document.getElementById('authModal').style.display = 'none';
+                alert('注册成功！');
+            } catch (error) {
+                alert(error.message || '注册失败');
+            }
+        };
+    },
+    
+    logout() {
+        utils.removeAuthToken();
+        utils.removeCurrentUser();
+        utils.setAuthStatus(null);
+        alert('已登出');
+    },
+    
+    checkAuth() {
+        const token = utils.getAuthToken();
+        const user = utils.getCurrentUser();
+        
+        if (token && user) {
+            utils.setAuthStatus(user.username);
+        }
+    }
+};
         
         function initializeSupabase() {
             try {
