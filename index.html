@@ -1220,9 +1220,10 @@
                 if (this.searchTerm) {
                     const searchTermLower = this.searchTerm.toLowerCase();
                     candidates = candidates.filter(candidate => 
-                        candidate.name.toLowerCase().includes(searchTermLower) || 
-                        (candidate.description && candidate.description.toLowerCase().includes(searchTermLower))
-                }
+                                candidate.name.toLowerCase().includes(searchTermLower) || 
+                                (candidate.description && candidate.description.toLowerCase().includes(searchTermLower))
+                    );
+                 }
                 
                 // 6. 按票数降序排序（票数多的在前）
                 candidates.sort((a, b) => b.votes - a.votes);
