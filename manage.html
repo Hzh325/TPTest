@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐与电台管理 · 投稿消息 (修复版)</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ========== 基础样式 (保留原有结构，优化模态框) ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .back-btn {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .back-btn:hover {
+            background: #e5e5e5;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: #222;
+        }
+        .auth-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .auth-info span {
+            font-weight: 500;
+            color: #333;
+        }
+        .logout-btn {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .logout-btn:hover {
+            background: #e5e5e5;
+        }
+        .tab-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f5f5f5;
+            color: #666;
+        }
+        .tab-btn.active {
+            background: #00a1d6;
+            color: white;
+        }
+        .tab-btn:hover {
+            background: #e5e5e5;
+        }
+        .tab-btn.active:hover {
+            background: #0085b3;
+        }
+        .manage-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e5e5e5;
+            margin-bottom: 20px;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .panel-header h2 {
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: #333;
+        }
+        .add-btn {
+            background: #00a1d6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .add-btn:hover {
+            background: #0085b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        th {
+            text-align: left;
+            padding: 10px;
+            background: #f5f5f5;
+            color: #666;
+            font-weight: 500;
+            border-bottom: 2px solid #e5e5e5;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+        tr:hover {
+            background: #fafafa;
+        }
+        .cover-thumb {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .action-btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .edit-btn, .delete-btn, .read-btn, .detail-btn, .add-music-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .edit-btn { color: #00a1d6; }
+        .edit-btn:hover { background: #e6f7ff; }
+        .delete-btn { color: #f25d8e; }
+        .delete-btn:hover { background: #ffe6f0; }
+        .read-btn { color: #52c41a; }
+        .read-btn:hover { background: #f6ffed; }
+        .detail-btn { color: #fa8c16; }
+        .detail-btn:hover { background: #fff7e6; }
+        .add-music-btn { color: #722ed1; }
+        .add-music-btn:hover { background: #f9f0ff; }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-unread {
+            background: #ff4d4f;
+            color: white;
+        }
+        .status-read {
+            background: #d9d9d9;
+            color: #666;
+        }
+        .notification-bar {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 4px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #0050b3;
+        }
+        .notification-bar i {
+            font-size: 1.2rem;
+        }
+        .notification-bar .close-notify {
+            margin-left: auto;
+            cursor: pointer;
+            color: #999;
+        }
+        /* 模态框样式优化 (修复错乱/按钮缺失) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 520px;
+            max-width: 95%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            border-radius: 8px 8px 0 0;
+            flex-shrink: 0;
+        }
+        .modal-header h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #333;
+        }
+        .close-modal {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #00a1d6;
+        }
+        /* 统一提交按钮样式 — 在表单内部作为块级元素 */
+        .submit-btn {
+            background: #00a1d6;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            margin-top: 15px;
+            transition: background 0.2s;
+            position: relative;
+            bottom: auto;
+        }
+        .submit-btn:hover {
+            background: #0085b3;
+        }
+        /* 音频选择器行 */
+        .audio-selector {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .audio-selector select {
+            flex: 1;
+        }
+        .use-music-btn {
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .use-music-btn:hover {
+            background: #e5e5e5;
+        }
+        .detail-field {
+            margin-bottom: 15px;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 10px;
+        }
+        .detail-field strong {
+            display: inline-block;
+            width: 80px;
+            color: #555;
+        }
+        .detail-field span {
+            color: #333;
+            word-break: break-all;
+        }
+        .detail-cover {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <a href="blog.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> 返回博客
+                </a>
+                <h1>音乐与电台管理 · 投稿消息</h1>
+            </div>
+            <div class="auth-info" id="authInfo"></div>
+        </header>
+
+        <!-- 通知横幅 -->
+        <div id="notificationBar" class="notification-bar" style="display: none;">
+            <i class="fas fa-bell"></i>
+            <span id="notifyMessage"></span>
+            <span class="close-notify" onclick="this.parentElement.style.display='none'"><i class="fas fa-times"></i></span>
+        </div>
+
+        <div class="tab-switcher">
+            <button class="tab-btn active" id="submissionTabBtn">投稿管理</button>
+            <button class="tab-btn" id="musicTabBtn">音乐管理</button>
+            <button class="tab-btn" id="radioTabBtn">电台管理</button>
+            <button class="tab-btn" id="bugTabBtn">Bug反馈</button>
+            <button class="tab-btn" id="playlistTabBtn">播放列表</button>
+            <!-- 已移除 系统主题 标签 -->
+        </div>
+
+        <!-- 投稿管理面板 -->
+        <div class="manage-panel" id="submissionPanel">
+            <table id="submissionTable">
+                <thead>
+                    <tr>
+                        <th>状态</th><th>投稿人ID</th><th>用户名</th><th>标题</th><th>艺术家</th><th>封面</th><th>音频URL</th><th>投稿时间</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="submissionTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Bug反馈管理面板 -->
+        <div class="manage-panel" id="bugPanel" style="display: none;">
+            <div class="panel-header">
+                <h2><i class="fas fa-bug" style="color:#f25d8e;"></i> Bug反馈列表</h2>
+            </div>
+            <table id="bugTable">
+                <thead>
+                    <tr>
+                        <th>状态</th><th>用户名</th><th>标题</th><th>内容</th><th>提交时间</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="bugTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Bug详情模态框 -->
+        <div class="modal" id="bugDetailModal">
+            <div class="modal-content">
+                <div class="modal-header"><h3>反馈详情</h3><span class="close-modal" id="closeBugDetail">&times;</span></div>
+                <div class="modal-body" id="bugDetailBody"></div>
+            </div>
+        </div>
+
+        <!-- 音乐管理面板 (增加时长列) -->
+        <div class="manage-panel" id="musicPanel" style="display: none;">
+            <div class="panel-header">
+                <h2><i class="fas fa-music" style="color:#00a1d6;"></i> 歌曲列表</h2>
+                <button class="add-btn" id="addMusicBtn"><i class="fas fa-plus"></i> 添加歌曲</button>
+            </div>
+            <table id="musicTable">
+                <thead><tr><th>封面</th><th>标题</th><th>艺术家</th><th>时长(分)</th><th>音频URL</th><th>排序</th><th>操作</th></tr></thead>
+                <tbody id="musicTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- 电台管理面板 -->
+        <div class="manage-panel" id="radioPanel" style="display: none;">
+<div class="panel-header">
+    <h2><i class="fas fa-broadcast-tower" style="color:#00a1d6;"></i> 电台节目列表</h2>
+    <div style="display: flex; gap: 10px;">
+        <select id="playlistSelect" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+            <option value="">-- 选择列表 --</option>
+        </select>
+        <button class="add-btn" id="addRadioBtn"><i class="fas fa-plus"></i> 添加节目</button>
+    </div>
+</div>
+            <table id="radioTable">
+                <thead><tr><th>时间</th><th>节目名称</th><th>音频URL</th><th>时长(分)</th><th>操作</th></tr></thead>
+                <tbody id="radioTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- 播放列表管理面板 -->
+<div class="manage-panel" id="playlistPanel" style="display: none;">
+    <div class="panel-header">
+        <h2><i class="fas fa-list"></i> 播放列表管理</h2>
+        <button class="add-btn" id="addPlaylistBtn"><i class="fas fa-plus"></i> 新建列表</button>
+    </div>
+    <table id="playlistTable">
+        <thead>
+            <tr>
+                <th>名称</th>
+                <th>播放星期</th>
+                <th>默认</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="playlistTableBody"></tbody>
+    </table>
+</div>
+
+        <footer>
+            <p>© <span id="currentYear"></span> 管理后台 | 投稿消息实时更新</p>
+        </footer>
+    </div>
+
+    <!-- 音乐编辑模态框 (增加时长字段) -->
+    <div class="modal" id="musicModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="musicModalTitle">添加歌曲</h3><span class="close-modal" id="closeMusicModal">&times;</span></div>
+            <div class="modal-body">
+                <form id="musicForm">
+                    <input type="hidden" id="musicId">
+                    <div class="form-group"><label>标题 *</label><input type="text" id="musicTitle" required></div>
+                    <div class="form-group"><label>艺术家</label><input type="text" id="musicArtist"></div>
+                    <div class="form-group"><label>封面图片URL</label><input type="text" id="musicCover"></div>
+                    <div class="form-group"><label>音频URL *</label><input type="text" id="musicAudio" required></div>
+                    <!-- 新增时长字段 (分钟) 用于电台自动填充 -->
+                    <div class="form-group"><label>时长 (分钟) </label><input type="number" id="musicDuration" min="0" step="1" value="0"></div>
+                    <div class="form-group"><label>排序顺序</label><input type="number" id="musicSort" value="0"></div>
+                    <div class="form-group"><label>主题标签</label><input type="text" id="musicThemeTag" placeholder="例如 special"></div>
+                    <button type="submit" class="submit-btn">保存歌曲</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 电台编辑模态框 (修复：添加保存按钮，优化时长联动) -->
+    <div class="modal" id="radioModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="radioModalTitle">添加节目</h3><span class="close-modal" id="closeRadioModal">&times;</span></div>
+            <div class="modal-body">
+                <form id="radioForm">
+                    <input type="hidden" id="radioId">
+                    <input type="hidden" id="radioOriginalPlaylistId">
+                    <div class="form-group"><label>开始时间 (HH:MM) *</label><input type="text" id="radioTime" required pattern="\d{2}:\d{2}" placeholder="例如 14:30"></div>
+                    <div class="form-group"><label>节目名称 *</label><input type="text" id="radioName" required></div>
+                    <div class="form-group">
+                        <label>音频URL *</label>
+                        <div class="audio-selector">
+                            <input type="text" id="radioAudio" required style="flex:1;">
+                            <select id="musicSelect"><option value="">-- 从音乐库选择 --</option></select>
+                            <button type="button" class="use-music-btn" id="useSelectedMusic">使用</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>播放模式（仅标识）</label>
+                        <div style="display: flex; gap: 20px;">
+                            <label><input type="radio" name="playMode" value="loop" id="loopMode" checked> 循环播放</label>
+                            <label><input type="radio" name="playMode" value="once" id="onceMode"> 播放一次</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>时长 (分钟) *</label>
+                        <input type="number" id="radioDuration" min="1" required placeholder="例如 30">
+                    </div>
+                    <!-- 修复：添加保存按钮 (之前缺失) -->
+                    <button type="submit" class="submit-btn">保存节目</button>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="radioStrictEnd" checked> 
+                            严格播放完毕 (启用: 按时段结束淡出; 禁用: 让当前音频完整播放一遍后再切换)
+                        </label>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 投稿详情模态框 -->
+    <div class="modal" id="submissionDetailModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>投稿详情</h3><span class="close-modal" id="closeDetailModal">&times;</span></div>
+            <div class="modal-body" id="submissionDetailBody"></div>
+        </div>
+    </div>
+
+    <!-- 播放列表模态框 -->
+<div class="modal" id="playlistModal">
+    <div class="modal-content">
+        <div class="modal-header"><h3 id="playlistModalTitle">编辑播放列表</h3><span class="close-modal" id="closePlaylistModal">&times;</span></div>
+        <div class="modal-body">
+            <form id="playlistForm">
+                <input type="hidden" id="playlistId">
+                <div class="form-group"><label>列表名称 *</label><input type="text" id="playlistName" required></div>
+                <div class="form-group"><label>播放星期</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <label><input type="checkbox" value="1"> 周一</label>
+                        <label><input type="checkbox" value="2"> 周二</label>
+                        <label><input type="checkbox" value="3"> 周三</label>
+                        <label><input type="checkbox" value="4"> 周四</label>
+                        <label><input type="checkbox" value="5"> 周五</label>
+                        <label><input type="checkbox" value="6"> 周六</label>
+                        <label><input type="checkbox" value="7"> 周日</label>
+                    </div>
+                    <small style="color:#999;">不选表示每天都不播放（除非是默认列表）</small>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="playlistIsDefault"> 设为默认列表（只能有一个默认）</label>
+                </div>
+                <button type="submit" class="submit-btn">保存</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="js/supabase.js"></script>
+
+    <script>
+        // Supabase配置
+        const SUPABASE_CONFIG = {
+            url: 'https://btwykwtvstjhgchldwez.supabase.co',
+            key: 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
+            options: {
+                headers: {
+                    'apikey': 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
+                    'Authorization': 'Bearer sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY'
+                },
+                db: { schema: 'public' },
+                auth: { persistSession: false }
+            }
+        };
+
+        let supabaseClient;
+        let currentUser = null;
+        let musicList = [];          // 全局音乐库，包含新增的 duration_minutes
+
+        let playlistList = [];   // 存储所有播放列表
+        let currentPlaylistId = null; // 当前选中的列表ID（用于电台节目）
+
+        const utils = {
+            getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
+            formatDate: (dateString) => {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+            }
+        };
+
+        function initializeSupabase() {
+            try {
+                supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key, SUPABASE_CONFIG.options);
+                return true;
+            } catch (error) {
+                console.error('Supabase初始化失败:', error);
+                return false;
+            }
+        }
+
+        function checkAuth() {
+            currentUser = utils.getCurrentUser();
+            const authInfo = document.getElementById('authInfo');
+            if (currentUser) {
+                authInfo.innerHTML = `<span>欢迎, ${currentUser.username}</span><button class="logout-btn" id="logoutBtn">登出</button>`;
+                document.getElementById('logoutBtn').addEventListener('click', () => {
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('authToken');
+                    window.location.href = 'index.html';
+                });
+            } else {
+                alert('请先登录');
+                window.location.href = 'index.html';
+            }
+        }
+
+        // ========= 投稿管理 =========
+        async function loadSubmissions() {
+            const { data, error } = await supabaseClient
+                .from('music_submissions')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) { console.error('加载投稿失败', error); return; }
+            const tbody = document.getElementById('submissionTableBody');
+            tbody.innerHTML = data.map(sub => {
+                const statusClass = sub.status === 'unread' ? 'status-unread' : 'status-read';
+                const statusText = sub.status === 'unread' ? '未读' : '已读';
+                return `
+                <tr>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>${sub.user_id || ''}</td><td>${sub.user_name || ''}</td>
+                    <td>${sub.title || ''}</td><td>${sub.artist || ''}</td>
+                    <td>${sub.cover_url ? `<img src="${sub.cover_url}" class="cover-thumb" onerror="this.style.display='none'">` : ''}</td>
+                    <td><small>${sub.audio_url ? sub.audio_url.substring(0,30)+'...' : ''}</small></td>
+                    <td>${utils.formatDate(sub.created_at)}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="detail-btn" onclick="showSubmissionDetail('${sub.id}')"><i class="fas fa-info-circle"></i> 详情</button>
+                            <button class="add-music-btn" onclick="addToMusicSongs('${sub.id}')"><i class="fas fa-plus-circle"></i> 一键添加</button>
+                            ${sub.status === 'unread' ? `<button class="read-btn" onclick="markAsRead('${sub.id}')"><i class="fas fa-check-circle"></i> 标记已读</button>` : ''}
+                        </div>
+                    </td>
+                </tr>`}).join('');
+            const unreadCount = data.filter(s => s.status === 'unread').length;
+            const notifyBar = document.getElementById('notificationBar');
+            if (unreadCount > 0) {
+                document.getElementById('notifyMessage').innerHTML = `您有 <strong>${unreadCount}</strong> 条新投稿待处理。`;
+                notifyBar.style.display = 'flex';
+            } else { notifyBar.style.display = 'none'; }
+        }
+
+        async function loadPlaylists() {
+    const { data, error } = await supabaseClient.from('radio_playlists').select('*').order('created_at');
+    if (error) { console.error('加载播放列表失败', error); return; }
+    playlistList = data || [];
+    renderPlaylistTable();
+    refreshPlaylistSelect();
+}
+
+function renderPlaylistTable() {
+    const tbody = document.getElementById('playlistTableBody');
+    tbody.innerHTML = playlistList.map(p => {
+        // 将星期数组转换为中文显示
+        const weekMap = {1:'周一',2:'周二',3:'周三',4:'周四',5:'周五',6:'周六',7:'周日'};
+        const weekStr = p.days_of_week && p.days_of_week.length > 0 
+            ? p.days_of_week.map(d => weekMap[d]).join('、') 
+            : '无';
+        const defaultBadge = p.is_default ? '<span class="status-badge" style="background:#52c41a;">默认</span>' : '';
+        return `<tr>
+            <td>${p.name}</td>
+            <td>${weekStr}</td>
+            <td>${defaultBadge}</td>
+            <td>
+                <div class="action-btns">
+                    <button class="edit-btn" onclick="editPlaylist('${p.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="delete-btn" onclick="deletePlaylist('${p.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function refreshPlaylistSelect() {
+    const select = document.getElementById('playlistSelect');
+    select.innerHTML = '<option value="">-- 选择列表 --</option>' + 
+        playlistList.map(p => `<option value="${p.id}" ${p.is_default ? 'selected' : ''}>${p.name}${p.is_default ? ' (默认)' : ''}</option>`).join('');
+    // 如果有默认列表，自动选中
+    const defaultList = playlistList.find(p => p.is_default);
+    if (defaultList) {
+        select.value = defaultList.id;
+        currentPlaylistId = defaultList.id;
+        loadRadio(currentPlaylistId);
+    } else {
+        currentPlaylistId = null;
+        document.getElementById('radioTableBody').innerHTML = '';
+    }
+}
+
+// 编辑播放列表
+window.editPlaylist = (id) => {
+    const list = playlistList.find(p => p.id === id);
+    if (!list) return;
+    document.getElementById('playlistModalTitle').textContent = '编辑播放列表';
+    document.getElementById('playlistId').value = list.id;
+    document.getElementById('playlistName').value = list.name;
+    // 勾选星期复选框
+    document.querySelectorAll('#playlistForm input[type=checkbox][value]').forEach(cb => {
+        cb.checked = list.days_of_week && list.days_of_week.includes(parseInt(cb.value));
+    });
+    document.getElementById('playlistIsDefault').checked = list.is_default;
+    document.getElementById('playlistModal').style.display = 'flex';
+};
+
+// 删除播放列表
+window.deletePlaylist = async (id) => {
+    const list = playlistList.find(p => p.id === id);
+    if (list.is_default) {
+        alert('默认列表不能删除！');
+        return;
+    }
+    if (!confirm('确定删除该列表吗？其下的所有节目也会被删除。')) return;
+    const { error } = await supabaseClient.from('radio_playlists').delete().eq('id', id);
+    if (error) { alert('删除失败：' + error.message); return; }
+    loadPlaylists();
+    // 如果删除的是当前选中的列表，则切换到默认列表
+    if (currentPlaylistId === id) {
+        const defaultList = playlistList.find(p => p.is_default);
+        if (defaultList) {
+            currentPlaylistId = defaultList.id;
+            document.getElementById('playlistSelect').value = defaultList.id;
+            loadRadio(currentPlaylistId);
+        }
+    }
+};
+
+        window.markAsRead = async (id) => {
+            const { error } = await supabaseClient.from('music_submissions').update({ status: 'read' }).eq('id', id);
+            if (error) { alert('操作失败：' + error.message); } else { await loadSubmissions(); }
+        };
+
+        window.showSubmissionDetail = async (id) => {
+            const { data, error } = await supabaseClient.from('music_submissions').select('*').eq('id', id).single();
+            if (error || !data) { alert('无法加载投稿详情'); return; }
+            const detailBody = document.getElementById('submissionDetailBody');
+            detailBody.innerHTML = `
+                <div class="detail-field"><strong>ID:</strong> <span>${data.id}</span></div>
+                <div class="detail-field"><strong>状态:</strong> <span class="status-badge ${data.status === 'unread' ? 'status-unread' : 'status-read'}">${data.status === 'unread' ? '未读' : '已读'}</span></div>
+                <div class="detail-field"><strong>投稿人ID:</strong> <span>${data.user_id || ''}</span></div>
+                <div class="detail-field"><strong>用户名:</strong> <span>${data.user_name || ''}</span></div>
+                <div class="detail-field"><strong>标题:</strong> <span>${data.title || ''}</span></div>
+                <div class="detail-field"><strong>艺术家:</strong> <span>${data.artist || ''}</span></div>
+                <div class="detail-field"><strong>封面URL:</strong> <span>${data.cover_url || ''}</span></div>
+                ${data.cover_url ? `<img src="${data.cover_url}" class="detail-cover" onerror="this.style.display='none'">` : ''}
+                <div class="detail-field"><strong>音频URL:</strong> <span>${data.audio_url || ''}</span></div>
+                <div class="detail-field"><strong>投稿时间:</strong> <span>${utils.formatDate(data.created_at)}</span></div>
+            `;
+            document.getElementById('submissionDetailModal').style.display = 'flex';
+        };
+
+        window.addToMusicSongs = async (id) => {
+            if (!confirm('确定要将此投稿添加到音乐库吗？')) return;
+            const { data: sub, error: fetchError } = await supabaseClient.from('music_submissions').select('*').eq('id', id).single();
+            if (fetchError || !sub) { alert('获取投稿数据失败'); return; }
+            // 投稿默认时长设为0，用户可后续编辑
+            const musicData = {
+                title: sub.title,
+                artist: sub.artist || '',
+                cover_url: sub.cover_url || '',
+                audio_url: sub.audio_url,
+                sort_order: 0,
+                duration_minutes: 0      // 新增字段，投稿时默认为0
+            };
+            const { error: insertError } = await supabaseClient.from('music_songs').insert([musicData]);
+            if (insertError) { alert('添加失败：' + insertError.message); return; }
+            await supabaseClient.from('music_submissions').update({ status: 'read' }).eq('id', id);
+            await loadSubmissions();
+            await loadMusic();
+            alert('已成功添加到音乐库！');
+        };
+
+        // ========= 音乐管理 (增加时长字段) =========
+        async function loadMusic() {
+            // 假设 music_songs 表已增加 duration_minutes 列 (整数)
+            const { data, error } = await supabaseClient.from('music_songs').select('*').order('sort_order');
+            if (error) { console.error(error); return; }
+            musicList = data || [];
+            const tbody = document.getElementById('musicTableBody');
+            tbody.innerHTML = musicList.map(song => `
+                <tr>
+                    <td>${song.cover_url ? `<img src="${song.cover_url}" class="cover-thumb">` : ''}</td>
+                    <td>${song.title || ''}</td>
+                    <td>${song.artist || ''}</td>
+                    <td>${song.duration_minutes ?? 0}</td>
+                    <td><small>${song.audio_url?.substring(0,30)}...</small></td>
+                    <td>${song.sort_order}</td>
+                    <td><div class="action-btns">
+                        <button class="edit-btn" onclick="editMusic('${song.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="delete-btn" onclick="deleteMusic('${song.id}')"><i class="fas fa-trash"></i></button>
+                    </div></td>
+                </tr>`).join('');
+            refreshMusicSelect();
+        }
+
+        window.editMusic = (id) => {
+            const song = musicList.find(s => s.id === id);
+            document.getElementById('musicModalTitle').textContent = '编辑歌曲';
+            document.getElementById('musicId').value = song.id;
+            document.getElementById('musicTitle').value = song.title || '';
+            document.getElementById('musicArtist').value = song.artist || '';
+            document.getElementById('musicCover').value = song.cover_url || '';
+            document.getElementById('musicAudio').value = song.audio_url || '';
+            document.getElementById('musicDuration').value = song.duration_minutes ?? 0;
+            document.getElementById('musicSort').value = song.sort_order || 0;
+            document.getElementById('musicThemeTag').value = song.theme_tag || '';
+            document.getElementById('musicModal').style.display = 'flex';
+        };
+
+        window.deleteMusic = async (id) => {
+            if (!confirm('确定删除？')) return;
+            await supabaseClient.from('music_songs').delete().eq('id', id);
+            loadMusic();
+        };
+
+        // ========= 电台管理 =========
+async function loadRadio(playlistId) {
+    if (!playlistId) {
+        document.getElementById('radioTableBody').innerHTML = '';
+        return;
+    }
+    const { data, error } = await supabaseClient.from('radio_programs')
+        .select('*')
+        .eq('playlist_id', playlistId)
+        .order('time');
+    if (error) { console.error('加载电台节目失败', error); return; }
+    const tbody = document.getElementById('radioTableBody');
+    tbody.innerHTML = data.map(p => `
+        <tr><td>${p.time}</td><td>${p.name}</td><td><small>${p.audio_url?.substring(0,30)}...</small></td><td>${p.duration_minutes}</td>
+        <td><div class="action-btns">
+            <button class="edit-btn" onclick="editRadio('${p.id}')"><i class="fas fa-edit"></i></button>
+            <button class="delete-btn" onclick="deleteRadio('${p.id}')"><i class="fas fa-trash"></i></button>
+        </div></td></tr>`).join('');
+}
+
+        // 加载bug反馈
+        async function loadBugReports() {
+            const { data, error } = await supabaseClient
+                .from('bug_reports')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) { console.error('加载bug反馈失败', error); return; }
+            const tbody = document.getElementById('bugTableBody');
+            tbody.innerHTML = data.map(report => {
+                const statusClass = report.status === 'unread' ? 'status-unread' : 'status-read';
+                const statusText = report.status === 'unread' ? '未读' : '已读';
+                return `
+                <tr>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>${report.user_name || ''}</td>
+                    <td>${report.title || ''}</td>
+                    <td>${(report.content || '').substring(0, 30)}${report.content?.length > 30 ? '...' : ''}</td>
+                    <td>${utils.formatDate(report.created_at)}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="detail-btn" onclick="showBugDetail('${report.id}')"><i class="fas fa-info-circle"></i> 详情</button>
+                            ${report.status === 'unread' ? `<button class="read-btn" onclick="markBugAsRead('${report.id}')"><i class="fas fa-check-circle"></i> 标记已读</button>` : ''}
+                            <button class="delete-btn" onclick="deleteBug('${report.id}')"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            const unreadCount = data.filter(r => r.status === 'unread').length;
+            if (unreadCount > 0) {
+                document.getElementById('notifyMessage').innerHTML = `您有 <strong>${unreadCount}</strong> 条新Bug反馈。`;
+                document.getElementById('notificationBar').style.display = 'flex';
+            }
+        }
+
+        // 标记已读
+        window.markBugAsRead = async (id) => {
+            const { error } = await supabaseClient.from('bug_reports').update({ status: 'read' }).eq('id', id);
+            if (error) alert('操作失败：' + error.message);
+            else loadBugReports();
+        };
+
+        // 删除反馈
+        window.deleteBug = async (id) => {
+            if (!confirm('确定要删除这条反馈吗？')) return;
+            const { error } = await supabaseClient.from('bug_reports').delete().eq('id', id);
+            if (error) alert('删除失败：' + error.message);
+            else loadBugReports();
+        };
+
+        // 显示详情
+        window.showBugDetail = async (id) => {
+            const { data, error } = await supabaseClient.from('bug_reports').select('*').eq('id', id).single();
+            if (error || !data) { alert('无法加载详情'); return; }
+            const detailBody = document.getElementById('bugDetailBody');
+            detailBody.innerHTML = `
+                <div class="detail-field"><strong>ID:</strong> <span>${data.id}</span></div>
+                <div class="detail-field"><strong>状态:</strong> <span class="status-badge ${data.status === 'unread' ? 'status-unread' : 'status-read'}">${data.status === 'unread' ? '未读' : '已读'}</span></div>
+                <div class="detail-field"><strong>用户名:</strong> <span>${data.user_name || ''}</span></div>
+                <div class="detail-field"><strong>标题:</strong> <span>${data.title || ''}</span></div>
+                <div class="detail-field"><strong>内容:</strong> <span>${data.content || ''}</span></div>
+                <div class="detail-field"><strong>提交时间:</strong> <span>${utils.formatDate(data.created_at)}</span></div>
+            `;
+            document.getElementById('bugDetailModal').style.display = 'flex';
+        };
+
+        window.editRadio = (id) => {
+            supabaseClient.from('radio_programs').select('*').eq('id',id).single().then(({data,error})=>{
+                if(error) return;
+                document.getElementById('radioModalTitle').textContent='编辑节目';
+                document.getElementById('radioId').value=data.id;
+                document.getElementById('radioOriginalPlaylistId').value = data.playlist_id;
+                document.getElementById('radioTime').value=data.time;
+                document.getElementById('radioName').value=data.name;
+                document.getElementById('radioAudio').value=data.audio_url;
+                document.getElementById('radioDuration').value = data.duration_minutes || 30;
+                if (data.play_mode === 'once') {
+                    document.getElementById('onceMode').checked = true;
+                } else {
+                    document.getElementById('loopMode').checked = true;
+                }
+                document.getElementById('radioStrictEnd').checked = data.strict_end !== false;
+                document.getElementById('radioModal').style.display = 'flex';
+            });
+        };
+
+        // 刷新音乐选择下拉框 (显示时长)
+        function refreshMusicSelect() {
+            const select = document.getElementById('musicSelect');
+            select.innerHTML = '<option value="">-- 从音乐库选择 --</option>' +
+                musicList.map(s => {
+                    let label = `${s.title} - ${s.artist}`;
+                    if (s.duration_minutes) label += ` (${s.duration_minutes}分)`;
+                    return `<option value="${s.audio_url}" data-duration="${s.duration_minutes || ''}">${label}</option>`;
+                }).join('');
+        }
+
+        // 使用音乐库选中项填充电台表单 (包括时长)
+        document.getElementById('useSelectedMusic').addEventListener('click', () => {
+            const select = document.getElementById('musicSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            if (!selectedOption || !selectedOption.value) return;
+            const audioUrl = selectedOption.value;
+            const song = musicList.find(s => s.audio_url === audioUrl);
+            if (song) {
+                document.getElementById('radioAudio').value = song.audio_url;
+                document.getElementById('radioName').value = song.title || '';
+                if (song.duration_minutes && song.duration_minutes > 0) {
+                    document.getElementById('radioDuration').value = song.duration_minutes;
+                } else {
+                    console.log('所选歌曲无时长信息，请手动输入');
+                }
+            }
+        });
+
+        // 初始化及事件绑定
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+            if (!initializeSupabase()) return;
+            checkAuth();
+
+            await loadSubmissions();
+            await loadMusic();
+            //await loadRadio();
+            await loadBugReports();
+            await loadPlaylists();
+
+            // 标签切换
+            document.getElementById('submissionTabBtn').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById('submissionTabBtn').classList.add('active');
+                document.getElementById('submissionPanel').style.display = 'block';
+                document.getElementById('musicPanel').style.display = 'none';
+                document.getElementById('radioPanel').style.display = 'none';
+                document.getElementById('bugPanel').style.display = 'none';
+            });
+            document.getElementById('musicTabBtn').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById('musicTabBtn').classList.add('active');
+                document.getElementById('musicPanel').style.display = 'block';
+                document.getElementById('submissionPanel').style.display = 'none';
+                document.getElementById('radioPanel').style.display = 'none';
+                document.getElementById('bugPanel').style.display = 'none';
+            });
+            document.getElementById('radioTabBtn').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById('radioTabBtn').classList.add('active');
+                document.getElementById('radioPanel').style.display = 'block';
+                document.getElementById('submissionPanel').style.display = 'none';
+                document.getElementById('musicPanel').style.display = 'none';
+                document.getElementById('bugPanel').style.display = 'none';
+            });
+            document.getElementById('bugTabBtn').addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById('bugTabBtn').classList.add('active');
+                document.getElementById('bugPanel').style.display = 'block';
+                document.getElementById('submissionPanel').style.display = 'none';
+                document.getElementById('musicPanel').style.display = 'none';
+                document.getElementById('radioPanel').style.display = 'none';
+                loadBugReports();
+            });
+
+            document.getElementById('playlistTabBtn').addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('playlistTabBtn').classList.add('active');
+    document.getElementById('playlistPanel').style.display = 'block';
+    document.getElementById('submissionPanel').style.display = 'none';
+    document.getElementById('musicPanel').style.display = 'none';
+    document.getElementById('radioPanel').style.display = 'none';
+    document.getElementById('bugPanel').style.display = 'none';
+    loadPlaylists(); // 刷新列表
+});
+
+            // 音乐添加按钮
+            document.getElementById('addMusicBtn').addEventListener('click', () => {
+                document.getElementById('musicModalTitle').textContent = '添加歌曲';
+                document.getElementById('musicId').value = '';
+                document.getElementById('musicTitle').value = '';
+                document.getElementById('musicArtist').value = '';
+                document.getElementById('musicCover').value = '';
+                document.getElementById('musicAudio').value = '';
+                document.getElementById('musicDuration').value = '0';
+                document.getElementById('musicSort').value = '0';
+                document.getElementById('musicModal').style.display = 'flex';
+            });
+
+            // 电台添加按钮
+            document.getElementById('addRadioBtn').addEventListener('click', () => {
+                document.getElementById('radioModalTitle').textContent = '添加节目';
+                document.getElementById('radioId').value = '';
+                document.getElementById('radioTime').value = '';
+                document.getElementById('radioName').value = '';
+                document.getElementById('radioAudio').value = '';
+                document.getElementById('radioDuration').value = '';
+                document.getElementById('loopMode').checked = true;
+                document.getElementById('radioModal').style.display = 'flex';
+            });
+
+            document.getElementById('closeBugDetail').addEventListener('click', () => {
+                document.getElementById('bugDetailModal').style.display = 'none';
+            });
+
+            document.getElementById('playlistSelect').addEventListener('change', (e) => {
+    currentPlaylistId = e.target.value;
+    loadRadio(currentPlaylistId);
+});
+
+            // 关闭模态框 (仅通过关闭按钮，不再通过点击外部遮罩关闭)
+            document.getElementById('closeMusicModal').addEventListener('click', ()=>document.getElementById('musicModal').style.display='none');
+            document.getElementById('closeRadioModal').addEventListener('click', ()=>document.getElementById('radioModal').style.display='none');
+            document.getElementById('closeDetailModal').addEventListener('click', ()=>document.getElementById('submissionDetailModal').style.display='none');
+            // 已移除点击遮罩关闭的功能，避免误触
+
+            // 音乐表单提交 (包含时长)
+            document.getElementById('musicForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('musicId').value;
+                const data = {
+                    title: document.getElementById('musicTitle').value.trim(),
+                    artist: document.getElementById('musicArtist').value.trim(),
+                    cover_url: document.getElementById('musicCover').value.trim(),
+                    audio_url: document.getElementById('musicAudio').value.trim(),
+                    sort_order: parseInt(document.getElementById('musicSort').value) || 0,
+                    duration_minutes: parseInt(document.getElementById('musicDuration').value) || 0,
+                    theme_tag: document.getElementById('musicThemeTag').value.trim() || 'default'
+                };
+                if (!data.title || !data.audio_url) { alert('标题和音频URL为必填'); return; }
+                let error;
+                if (id) ({ error } = await supabaseClient.from('music_songs').update(data).eq('id', id));
+                else ({ error } = await supabaseClient.from('music_songs').insert([data]));
+                if (!error) {
+                    document.getElementById('musicModal').style.display = 'none';
+                    loadMusic();
+                } else alert('保存失败：' + error.message);
+            });
+
+            // 电台表单提交 (已包含保存按钮)
+document.getElementById('radioForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('radioId').value;
+    const originalPlaylistId = document.getElementById('radioOriginalPlaylistId').value;
+    const playlistId = id ? originalPlaylistId : currentPlaylistId;
+
+    const time = document.getElementById('radioTime').value.trim();
+    const name = document.getElementById('radioName').value.trim();
+    const audio = document.getElementById('radioAudio').value.trim();
+    const duration = parseInt(document.getElementById('radioDuration').value);
+    const playMode = document.querySelector('input[name="playMode"]:checked')?.value || 'loop';
+    const strictEnd = document.getElementById('radioStrictEnd').checked;
+
+    if (!time || !name || !audio || !/^\d{2}:\d{2}$/.test(time)) {
+        alert('请正确填写时间、名称和音频URL'); return;
+    }
+    if (isNaN(duration) || duration < 1) { alert('时长必须为大于0的数字'); return; }
+
+    const radioData = { 
+        time, 
+        name, 
+        audio_url: audio, 
+        duration_minutes: duration, 
+        play_mode: playMode, 
+        strict_end: strictEnd,
+        playlist_id: playlistId
+    };
+
+    let error;
+    if (id) {
+        ({ error } = await supabaseClient.from('radio_programs').update(radioData).eq('id', id));
+    } else {
+        ({ error } = await supabaseClient.from('radio_programs').insert([radioData]));
+    }
+    if (!error) {
+        document.getElementById('radioModal').style.display = 'none';
+        loadRadio(currentPlaylistId);
+    } else {
+        alert('保存失败：' + error.message);
+    }
+});
+
+            document.getElementById('addPlaylistBtn').addEventListener('click', () => {
+    document.getElementById('playlistModalTitle').textContent = '新建播放列表';
+    document.getElementById('playlistId').value = '';
+    document.getElementById('playlistName').value = '';
+    document.querySelectorAll('#playlistForm input[type=checkbox]').forEach(cb => cb.checked = false);
+    document.getElementById('playlistIsDefault').checked = false;
+    document.getElementById('playlistModal').style.display = 'flex';
+});
+document.getElementById('closePlaylistModal').addEventListener('click', () => {
+    document.getElementById('playlistModal').style.display = 'none';
+});
+document.getElementById('playlistForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('playlistId').value;
+    const name = document.getElementById('playlistName').value.trim();
+    if (!name) { alert('请输入列表名称'); return; }
+    
+    // 收集选中的星期
+    const days = [];
+    document.querySelectorAll('#playlistForm input[type=checkbox][value]').forEach(cb => {
+        if (cb.checked) days.push(parseInt(cb.value));
+    });
+    
+    const isDefault = document.getElementById('playlistIsDefault').checked;
+    
+    const data = { name, days_of_week: days, is_default: isDefault };
+    
+    // 如果设为默认，需要将其他列表的 is_default 设为 false（通过数据库更新，这里用事务或先后顺序处理）
+    if (isDefault) {
+        // 先将所有列表的默认取消（除了当前）
+        const { error: updateError } = await supabaseClient
+            .from('radio_playlists')
+            .update({ is_default: false })
+            .neq('id', id || '00000000-0000-0000-0000-000000000000'); // 如果 id 为空，则更新所有
+        if (updateError) { alert('操作失败：' + updateError.message); return; }
+    }
+    
+    let error;
+    if (id) {
+        ({ error } = await supabaseClient.from('radio_playlists').update(data).eq('id', id));
+    } else {
+        ({ error } = await supabaseClient.from('radio_playlists').insert([data]));
+    }
+    if (error) { alert('保存失败：' + error.message); return; }
+    
+    document.getElementById('playlistModal').style.display = 'none';
+    loadPlaylists(); // 重新加载列表，会更新下拉框
+});
+        });
+
+    </script>
+</body>
+</html>
