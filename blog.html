@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mohzka 的博客 · 系统视图（已修复）</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/aero-style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* ========= 原有样式保持不变 ========= */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        body { background-color: #f5f5f5; color: #333; line-height: 1.6; padding: 20px; min-height: 100vh; transition: all 0.3s; }
+        .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+        @media (max-width: 992px) { .container { grid-template-columns: 1fr; } }
+        header { grid-column: 1 / -1; margin-bottom: 20px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn { background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; padding: 8px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #666; font-size: 0.95rem; transition: all 0.2s; text-decoration: none; }
+        .back-btn:hover { background: #e5e5e5; }
+        .system-btn { background: #00a1d6; border: 1px solid #0085b3; border-radius: 4px; padding: 8px 20px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: white; font-size: 0.95rem; transition: all 0.2s; font-weight: 500; }
+        .system-btn:hover { background: #0085b3; transform: scale(1.02); }
+        h1 { font-size: 1.8rem; font-weight: 500; color: #222; }
+        .main-content { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e5e5e5; max-height: calc(100vh - 120px); overflow-y: auto; display: flex; flex-direction: column; }
+        .comments-header { font-size: 1.2rem; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; color: #333; display: flex; align-items: center; gap: 10px; }
+        .comments-header i { color: #00a1d6; }
+        .blog-comment-form { background: #fafafa; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .blog-comment-form textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px; margin-bottom: 10px; font-size: 0.95rem; resize: vertical; }
+        .blog-comment-form textarea:focus { outline: none; border-color: #00a1d6; }
+        .form-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .image-upload-label { padding: 8px 16px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; color: #666; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; transition: all 0.2s; }
+        .image-upload-label:hover { background: #e5e5e5; }
+        #blogImageUpload { display: none; }
+        .blog-submit-btn { padding: 8px 20px; background: #00a1d6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; }
+        .blog-submit-btn:hover { background: #0085b3; }
+        .blog-submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+        #imagePreview { margin-top: 10px; position: relative; display: inline-block; }
+        #previewImg { max-width: 100px; max-height: 100px; border-radius: 4px; border: 1px solid #ddd; }
+        .remove-image { position: absolute; top: -5px; right: -5px; background: red; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; }
+        .blog-comments-list { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ccc #f5f5f5; }
+        .blog-comments-list::-webkit-scrollbar { width: 6px; }
+        .blog-comments-list::-webkit-scrollbar-track { background: #f5f5f5; border-radius: 3px; }
+        .blog-comments-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        .blog-comments-list::-webkit-scrollbar-thumb:hover { background: #999; }
+        .blog-comment-item { padding: 15px 0; border-bottom: 1px solid #f0f0f0; }
+        .blog-comment-item:last-child { border-bottom: none; }
+        .blog-comment-header { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; }
+        .blog-comment-author { font-weight: 600; color: #00a1d6; display: flex; align-items: center; gap: 5px; }
+        .blog-comment-author i { color: #999; }
+        .blog-comment-date { color: #999; font-size: 0.8rem; }
+        .blog-comment-content { color: #333; font-size: 0.95rem; line-height: 1.5; margin-bottom: 8px; word-break: break-word; }
+        .blog-comment-content a { color: #00a1d6; text-decoration: none; }
+        .blog-comment-content a:hover { text-decoration: underline; }
+        .blog-comment-image { max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 5px; cursor: pointer; border: 1px solid #e5e5e5; transition: opacity 0.2s; }
+        .blog-comment-image:hover { opacity: 0.9; }
+        .sidebar { background: white; border-radius: 8px; padding: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e5e5e5; position: sticky; top: 20px; text-align: center; max-height: calc(100vh - 120px); overflow-y: auto; }
+        .avatar-container { margin-bottom: 20px; }
+        .avatar { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #00a1d6; margin: 0 auto; display: block; background: #f5f5f5; }
+        .avatar-placeholder { width: 150px; height: 150px; border-radius: 50%; background: #00a1d6; color: white; display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: bold; margin: 0 auto; border: 4px solid #00a1d6; }
+        .username { font-size: 1.5rem; font-weight: 600; margin-bottom: 5px; color: #333; }
+        .bio { color: #999; margin-bottom: 20px; font-size: 0.95rem; padding: 0 10px; }
+        .social-links { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .social-link { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 4px; background: #f5f5f5; color: #666; text-decoration: none; transition: all 0.2s; border: 1px solid #e5e5e5; }
+        .social-link:hover { background: #e5e5e5; color: #00a1d6; transform: translateX(5px); }
+        .social-link i { width: 20px; color: #00a1d6; font-size: 1.2rem; }
+        .music-widget { background: #fafafa; border-radius: 8px; padding: 20px 15px; margin-top: 25px; border: 1px solid #e5e5e5; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: all 0.2s; }
+        .player-content { display: flex; flex-direction: column; gap: 12px; }
+        .song-info { display: flex; align-items: center; gap: 12px; background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e5e5; }
+        .album-art { width: 48px; height: 48px; border-radius: 4px; background: #ddd; background-size: cover; background-position: center; background-color: #f0f0f0; border: 1px solid #ccc; flex-shrink: 0; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23999"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>'); background-size: 50% 50%; background-repeat: no-repeat; background-position: center; }
+        .album-art.has-cover { background-size: cover; background-repeat: no-repeat; background-position: center; }
+        .song-text { flex: 1; text-align: left; overflow: hidden; }
+        .song-title { font-weight: 600; font-size: 0.95rem; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+        .song-artist { font-size: 0.75rem; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .progress-container { background: #e5e5e5; height: 4px; border-radius: 2px; cursor: pointer; position: relative; margin: 5px 0 2px; }
+        .progress-bar { background: #00a1d6; height: 100%; width: 0%; border-radius: 2px; transition: width 0.05s linear; }
+        .time-indicator { display: flex; justify-content: space-between; font-size: 0.7rem; color: #999; margin-bottom: 8px; }
+        .controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 5px; }
+        .control-btn { background: white; border: 1px solid #ddd; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #666; font-size: 1.2rem; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .control-btn:hover { background: #f5f5f5; color: #00a1d6; border-color: #00a1d6; }
+        .play-btn { background: #00a1d6; border-color: #00a1d6; color: white; width: 48px; height: 48px; font-size: 1.6rem; }
+        .play-btn:hover { background: #0085b3; border-color: #0085b3; color: white; }
+        .volume-control { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 0 4px; }
+        .volume-control i { color: #999; font-size: 0.9rem; width: 20px; }
+        .volume-control input[type=range] { flex: 1; height: 4px; -webkit-appearance: none; background: #e5e5e5; border-radius: 2px; }
+        .volume-control input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #00a1d6; border-radius: 50%; cursor: pointer; border: 1px solid white; }
+        .player-footer { font-size: 0.65rem; color: #ccc; margin-top: 5px; text-align: right; }
+        /* 电台模块 */
+        .radio-widget { background: #fafafa; border-radius: 8px; padding: 18px 12px; margin-top: 25px; border: 1px solid #e5e5e5; box-shadow: 0 1px 2px rgba(0,0,0,0.03); text-align: left; }
+        .radio-widget h4 { font-size: 1rem; margin-bottom: 12px; color: #00a1d6; display: flex; align-items: center; gap: 6px; border-bottom: 1px dashed #ddd; padding-bottom: 8px; }
+        .radio-schedule { width: 100%; font-size: 0.8rem; border-collapse: collapse; margin-bottom: 15px; }
+        .radio-schedule th { text-align: left; background: #f0f0f0; padding: 6px 8px; color: #555; font-weight: 500; }
+        .radio-schedule td { padding: 6px 8px; border-bottom: 1px solid #eee; color: #666; }
+        .radio-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .radio-controls input[type=range] { flex: 1; min-width: 100px; height: 4px; background: #e5e5e5; border-radius: 2px; }
+        .radio-btn { background: #00a1d6; border: none; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.2s; white-space: nowrap; }
+        .radio-btn:hover { background: #0085b3; }
+        .radio-status { font-size: 0.75rem; color: #888; margin-top: 6px; min-height: 18px; }
+
+        /* 新增紧急状态条 */
+        .emergency-status {
+            background: #f25d8e;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            animation: pulse 1.5s infinite;
+        }
+        .emergency-status i {
+            font-size: 1rem;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        /* 紧急广播时禁用电台按钮 */
+        .radio-btn.disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* 北京时间模块 */
+        .beijing-time-widget { background: #fafafa; border-radius: 8px; padding: 15px; margin-top: 25px; border: 1px solid #e5e5e5; box-shadow: 0 1px 2px rgba(0,0,0,0.03); text-align: center; }
+        .beijing-time-widget h4 { font-size: 1rem; margin-bottom: 10px; color: #00a1d6; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .beijing-time-display { font-size: 2rem; font-weight: 600; color: #333; font-family: monospace; line-height: 1.2; }
+        .beijing-time-note { font-size: 0.7rem; color: #999; margin-top: 5px; }
+        @font-face { font-family: 'MyBeijingFont'; src: url('fonts/MyCustomFont.ttf') format('truetype'); font-weight: normal; font-style: normal; }
+        .beijing-time-display { font-family: 'MyBeijingFont', monospace; }
+        .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 20000; }
+        .lightbox.active { display: flex; }
+        .lightbox img { max-width: 90%; max-height: 90%; border-radius: 4px; }
+        .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(0,0,0,0.5); }
+        .lightbox-close:hover { background: rgba(0,0,0,0.8); }
+        .loading { text-align: center; padding: 20px; color: #999; }
+        .loading-spinner { border: 3px solid #f0f0f0; border-top: 3px solid #00a1d6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .announcement { grid-column: 1 / -1; background: #fff9e6; border: 1px solid #ffe58f; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 10px; position: relative; }
+        .announcement i { color: #faad14; font-size: 1.2rem; margin-top: 2px; }
+        .announcement-content { flex: 1; color: #666; }
+        .announcement-content h3 { margin-bottom: 5px; color: #333; }
+        .close-announcement { background: none; border: none; color: #999; cursor: pointer; font-size: 1.2rem; }
+        .close-announcement:hover { color: #666; }
+        footer { grid-column: 1 / -1; text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e5e5; color: #999; font-size: 0.8rem; }
+        .submit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center; }
+        .submit-modal.active { display: flex; }
+        .submit-content { background: white; border-radius: 8px; width: 450px; max-width: 90%; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .submit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 1.3rem; font-weight: 500; }
+        .close-submit { font-size: 28px; cursor: pointer; color: #999; }
+        .close-submit:hover { color: #333; }
+        .submit-field { margin-bottom: 15px; }
+        .submit-field label { display: block; margin-bottom: 5px; font-weight: 500; color: #555; }
+        .submit-field input { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; }
+        .submit-field input:focus { outline: none; border-color: #00a1d6; }
+        .submit-btn { background: #00a1d6; color: white; border: none; padding: 10px; border-radius: 4px; width: 100%; font-size: 1rem; cursor: pointer; font-weight: 500; }
+        .submit-btn:hover { background: #0085b3; }
+        .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .system-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            color: white;
+            font-family: 'Segoe UI', 'Helvetica', sans-serif;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #1a2634;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .system-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+        .system-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: 2rem; font-weight: 300; margin-bottom: 20px; }
+        .close-system-btn { background: transparent; border: none; color: white; font-size: 2.5rem; cursor: pointer; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s; }
+        .close-system-btn:hover { background: rgba(255,255,255,0.2); }
+        .system-content { flex: 1; display: flex; flex-wrap: wrap; gap: 30px; padding: 0 20px; }
+        .system-section { flex: 1 1 400px; min-width: 300px; }
+        .section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-left: 5px solid #00a1d6; padding-left: 15px; cursor: pointer; user-select: none; }
+        .section-header h2 { font-weight: 300; font-size: 2rem; display: flex; align-items: center; gap: 10px; margin: 0; }
+        .section-header i { transition: transform 0.2s; }
+        .section-header.collapsed i { transform: rotate(-90deg); }
+        .tile-grid { display: flex; flex-wrap: wrap; gap: 15px; transition: opacity 0.2s; }
+        .tile-grid.collapsed { display: none; }
+        .metro-tile { width: 150px; height: 150px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.3); word-break: break-word; position: relative; background-size: cover; background-position: center; background-color: #2c3e50; background-blend-mode: overlay; }
+        .metro-tile::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); border-radius: 4px; z-index: 1; }
+        .metro-tile > * { position: relative; z-index: 2; }
+        .metro-tile i { font-size: 3rem; margin-bottom: 8px; filter: drop-shadow(0 2px 4px black); }
+        .metro-tile .tile-title { font-size: 0.9rem; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .metro-tile .tile-sub { font-size: 0.7rem; opacity: 0.9; margin-top: 4px; }
+        .play-indicator { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.6); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 1rem; z-index: 3; }
+        .system-player-bar { margin-top: 30px; background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 40px; display: flex; align-items: center; gap: 20px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); }
+        .now-playing-info { flex: 1; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #systemAudioPlayer { width: 300px; background: transparent; }
+        @media (max-width: 700px) { .system-player-bar { flex-direction: column; align-items: stretch; } #systemAudioPlayer { width: 100%; } }
+
+        .radio-schedule {
+            display: block;
+            max-height: 200px;
+            overflow-y: auto;
+            border-collapse: collapse;
+        }
+        .radio-schedule thead,
+        .radio-schedule tbody tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+        .radio-schedule thead {
+            width: calc(100% - 6px);
+        }
+
+        .emergency-banner {
+            display: none;
+            background: #f25d8e;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(242,93,142,0.3);
+        }
+        .emergency-banner button {
+            background: white;
+            color: #f25d8e;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .emergency-banner button:hover {
+            background: #fff0f0;
+        }
+        .emergency-banner button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="announcement" id="announcement" style="display: none;">
+            <i class="fas fa-bullhorn"></i>
+            <div class="announcement-content" id="announcementContent">
+                <h3>公告</h3>
+                <p>欢迎来到 Mohzka 的博客！这里可以自由留言交流。</p>
+            </div>
+            <button class="close-announcement" onclick="document.getElementById('announcement').style.display='none'">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <header>
+            <div class="header-left">
+                <a href="index.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> 返回主站
+                </a>
+                <h1>Mohzka 的博客</h1>
+            </div>
+            <button class="system-btn" id="systemBtn">
+                <i class="fas fa-th"></i> 系统
+            </button>
+        </header>
+        
+        <div class="main-content">
+            <div class="comments-header">
+                <i class="fas fa-comments"></i> 博客留言板
+            </div>
+            <div class="blog-comment-form">
+                <textarea id="blogCommentContent" placeholder="写下你的留言..."></textarea>
+                <div class="form-actions">
+                    <label for="blogImageUpload" class="image-upload-label">
+                        <i class="fas fa-image"></i> 添加图片
+                    </label>
+                    <input type="file" id="blogImageUpload" accept="image/*">
+                    <button class="blog-submit-btn" id="submitBlogComment">
+                        <i class="fas fa-paper-plane"></i> 发布留言
+                    </button>
+                </div>
+                <div id="imagePreview" style="display: none;">
+                    <img id="previewImg" src="" alt="预览">
+                    <span class="remove-image" onclick="app.removeImage()">×</span>
+                </div>
+            </div>
+            <div id="blogCommentsLoading" class="loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>正在加载留言...</p>
+            </div>
+            <div class="blog-comments-list" id="blogCommentsList"></div>
+        </div>
+        
+        <div class="sidebar">
+            <div class="avatar-container">
+                <img src="" alt="头像" class="avatar" id="avatarImg" style="display: none;" onerror="this.style.display='none'; document.getElementById('avatarPlaceholder').style.display='flex';">
+                <div class="avatar-placeholder" id="avatarPlaceholder">M</div>
+            </div>
+            <div class="username" id="username">Mohzka</div>
+            <div class="bio" id="bio">一个臭亚比而已</div>
+            
+            <div class="social-links">
+                <a href="#" target="_blank" class="social-link bilibili-link" id="bilibiliLink">
+                    <i class="fab fa-bilibili"></i> <span id="bilibiliText">Bilibili 主页</span>
+                </a>
+                <a href="#" class="social-link qq-link" id="qqLink">
+                    <i class="fab fa-qq"></i> <span id="qqText">QQ: 3678398440</span>
+                </a>
+                <button id="submitMusicBtn" class="social-link" style="background: #f5f5f5; border: none; width: 100%; margin-top: 20px;">
+                    <i class="fas fa-upload"></i> 投稿音乐
+                </button>
+            </div>
+            
+            <div class="music-widget">
+                <div class="music-loader" id="musicLoader">
+                    <div class="loading-spinner"></div>
+                    <p>加载音乐中...</p>
+                </div>
+                <div class="player-content" id="musicContent" style="display: none;">
+                    <div class="song-info">
+                        <div class="album-art" id="albumArt"></div>
+                        <div class="song-text">
+                            <div class="song-title" id="songTitle">Frutiger Aero</div>
+                            <div class="song-artist" id="songArtist">Mii Editor</div>
+                        </div>
+                    </div>
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="time-indicator">
+                        <span id="currentTime">0:00</span>
+                        <span id="duration">-:--</span>
+                    </div>
+                    <div class="controls">
+                        <button class="control-btn" id="prevBtn" title="上一首"><i class="fas fa-backward"></i></button>
+                        <button class="control-btn play-btn" id="playBtn" title="播放/暂停"><i class="fas fa-play" id="playIcon"></i></button>
+                        <button class="control-btn" id="nextBtn" title="下一首"><i class="fas fa-forward"></i></button>
+                        <button class="control-btn" id="modeBtn" title="播放模式"><i class="fas fa-redo-alt"></i></button>
+                    </div>
+                    <div class="volume-control">
+                        <i class="fas fa-volume-down"></i>
+                        <input type="range" id="musicVolume" min="0" max="1" step="0.01" value="1">
+                        <i class="fas fa-volume-up"></i>
+                    </div>
+                    <div class="player-footer"><i class="fas fa-music"></i> 简洁·在线</div>
+                </div>
+                <audio id="audioPlayer" preload="metadata"></audio>
+            </div>
+
+            <!-- 紧急广播横幅 -->
+            <div class="emergency-banner" id="emergencyBanner" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="emergencyBannerText" style="flex:1;">紧急广播：</span>
+                <button class="radio-btn" id="playEmergencyBtn">
+                    <i class="fas fa-play"></i> 开始播放
+                </button>
+            </div>
+
+            <!-- 电台模块，新增紧急状态条 -->
+            <div class="radio-widget" id="radioWidget">
+                <div class="emergency-status" id="emergencyStatus">
+                    <i class="fas fa-broadcast-tower"></i>
+                    <span id="emergencyNowPlaying"></span>
+                </div>
+                <div class="radio-loader" id="radioLoader">
+                    <div class="loading-spinner"></div>
+                    <p>加载节目信息中...</p>
+                </div>
+                <div class="radio-content" id="radioContent" style="display: none;">
+                    <h4><i class="fas fa-broadcast-tower"></i> 电台 · 节目表</h4>
+                    <table class="radio-schedule">
+                        <thead><tr><th>时间</th><th>节目 (音频)</th></tr></thead>
+                        <tbody id="radioScheduleBody"></tbody>
+                    </table>
+                    <div class="radio-controls">
+                        <i class="fas fa-volume-down" style="color:#999;"></i>
+                        <input type="range" id="radioVolume" min="0" max="1" step="0.01" value="0.7">
+                        <i class="fas fa-volume-up" style="color:#999;"></i>
+                        <button class="radio-btn" id="radioToggleBtn"><i class="fas fa-play"></i> 开始电台</button>
+                    </div>
+                    <div class="radio-status" id="radioStatus">⏳ 加载节目时长...</div>
+                </div>
+            </div>
+
+            <div class="beijing-time-widget">
+                <h4><i class="fas fa-clock"></i> 北京时间</h4>
+                <div class="beijing-time-display" id="beijingTimeDisplay">--:--:--</div>
+                <div class="beijing-time-note" id="beijingTimeNote"></div>
+            </div>
+        
+            <footer>
+                <p>© <span id="currentYear"></span> Mohzka 的博客 | 播放器融入 | 系统上线</p>
+            </footer>
+        </div>
+    </div>
+    
+    <div class="lightbox" id="lightbox">
+        <span class="lightbox-close">&times;</span>
+        <img id="lightbox-img" src="" alt="">
+    </div>
+    
+    <div class="submit-modal" id="submitModal">
+        <div class="submit-content">
+            <div class="submit-header">
+                <span>投稿音乐</span>
+                <span class="close-submit" id="closeSubmitModal">&times;</span>
+            </div>
+            <div class="submit-body">
+                <div class="submit-field">
+                    <label>歌曲标题 *</label>
+                    <input type="text" id="submitTitle" placeholder="例如：Frutiger Aero">
+                </div>
+                <div class="submit-field">
+                    <label>艺术家</label>
+                    <input type="text" id="submitArtist" placeholder="例如：Mii Editor">
+                </div>
+                <div class="submit-field">
+                    <label>封面图片URL</label>
+                    <input type="text" id="submitCover" placeholder="https://...">
+                </div>
+                <div class="submit-field">
+                    <label>音频URL *</label>
+                    <input type="text" id="submitAudio" placeholder="https://.../song.mp3">
+                </div>
+                <button class="submit-btn" id="submitMusicBtnAction">提交投稿</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win8 系统浮层 -->
+    <div class="system-overlay" id="win8System">
+        <div class="system-header">
+            <span><i class="fas fa-th"></i> 系统 · Metro</span>
+            <button class="close-system-btn" id="closeSystemBtn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="system-content">
+            <div class="system-section" id="imageSection">
+                <div class="section-header" id="toggleImageSection">
+                    <h2><i class="fas fa-image"></i> 图像库</h2>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="tile-grid" id="systemImageTiles"></div>
+            </div>
+            <div class="system-section" id="audioSection">
+                <div class="section-header" id="toggleAudioSection">
+                    <h2><i class="fas fa-music"></i> 音频库</h2>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="tile-grid" id="systemAudioTiles"></div>
+            </div>
+        </div>
+        <div class="system-player-bar" id="systemPlayerBar" style="display: none;">
+            <div class="now-playing-info" id="nowPlayingLabel">未播放</div>
+            <audio id="systemAudioPlayer" controls style="height: 40px;"></audio>
+        </div>
+    </div>
+
+    <script>
+        // ========= Supabase配置 =========
+        const SUPABASE_CONFIG = {
+            url: 'https://btwykwtvstjhgchldwez.supabase.co',
+            key: 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
+            options: {
+                headers: {
+                    'apikey': 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
+                    'Authorization': 'Bearer sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY'
+                },
+                db: { schema: 'public' },
+                auth: { persistSession: false }
+            }
+        };
+        
+        let supabaseClient;
+        let emergencyMode = false;      // 全局紧急模式状态
+        let emergencyStreamUrl = '';
+        let emergencyName = '';
+        let currentUser = null;
+        let selectedImageFile = null;
+        
+        const utils = {
+            getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
+            formatDate: (dateString) => {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-CN', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            },
+            compressImage: (file, maxWidth = 800, maxHeight = 800, quality = 0.7) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.src = e.target.result;
+                        img.onload = () => {
+                            let width = img.width, height = img.height;
+                            if (width > height) {
+                                if (width > maxWidth) {
+                                    height = Math.round(height * (maxWidth / width));
+                                    width = maxWidth;
+                                }
+                            } else {
+                                if (height > maxHeight) {
+                                    width = Math.round(width * (maxHeight / height));
+                                    height = maxHeight;
+                                }
+                            }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fillRect(0, 0, width, height);
+                            ctx.drawImage(img, 0, 0, width, height);
+                            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                            resolve(compressedDataUrl);
+                        };
+                        img.onerror = reject;
+                    };
+                    reader.onerror = reject;
+                });
+            },
+            getCurrentSettings() {
+                const user = this.getCurrentUser();
+                if (user) {
+                    const saved = localStorage.getItem(`userSettings_${user.id}`);
+                    if (saved) return JSON.parse(saved);
+                }
+                return {};
+            },
+            applySettings(settings) {
+                if (!settings) return;
+                if (settings.bgColor) document.body.style.backgroundColor = settings.bgColor;
+                else document.body.style.backgroundColor = '#f5f5f5';
+                if (settings.bgImageUrl && settings.bgImageUrl.trim() !== '') {
+                    document.body.style.backgroundImage = `url('${settings.bgImageUrl}')`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundAttachment = 'fixed';
+                    document.body.style.backgroundPosition = 'center';
+                    document.body.style.backgroundRepeat = 'no-repeat';
+                } else {
+                    document.body.style.backgroundImage = '';
+                }
+                if (settings.bgBlur) document.body.style.backdropFilter = `blur(${settings.bgBlur}px)`;
+                else document.body.style.backdropFilter = '';
+                const header = document.querySelector('header');
+                if (header) {
+                    header.style.backgroundColor = `rgba(255, 255, 255, ${settings.headerOpacity || 1})`;
+                    header.style.backdropFilter = settings.headerOpacity < 1 ? 'blur(5px)' : 'none';
+                }
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.style.backgroundColor = `rgba(255, 255, 255, ${settings.mainOpacity || 1})`;
+                    mainContent.style.backdropFilter = settings.mainOpacity < 1 ? 'blur(5px)' : 'none';
+                }
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar) {
+                    sidebar.style.backgroundColor = `rgba(255, 255, 255, ${settings.commentsOpacity || 1})`;
+                    sidebar.style.backdropFilter = settings.commentsOpacity < 1 ? 'blur(5px)' : 'none';
+                }
+            }
+        };
+        
+        const dataService = {
+            async getBlogComments() {
+                if (!supabaseClient) return [];
+                try { const { data, error } = await supabaseClient.from('blog_comments').select('*').order('created_at', { ascending: false }); if (error) throw error; return data || []; } catch (error) { console.error('获取博客留言失败:', error); return []; }
+            },
+            async addBlogComment(userName, content, imageData = null) {
+                if (!supabaseClient) return false;
+                try { const { error } = await supabaseClient.from('blog_comments').insert([{ user_name: userName, content: content, image_data: imageData, created_at: getCurrentBeijingTime().toISOString() }]); if (error) throw error; return true; } catch (error) { console.error('添加博客留言失败:', error); return false; }
+            },
+            async getBlogProfile() {
+                if (!supabaseClient) return null;
+                try { const { data, error } = await supabaseClient.from('blog_profile').select('*').eq('id', 1).single(); if (error) throw error; return data; } catch (error) { console.error('获取博客资料失败:', error); return null; }
+            },
+            async getAnnouncement() {
+                if (!supabaseClient) return null;
+                try { const { data, error } = await supabaseClient.from('announcements').select('*').eq('active', true).order('created_at', { ascending: false }).limit(1).single(); if (error) throw error; return data; } catch (error) { console.error('获取公告失败:', error); return null; }
+            },
+            async submitMusic(submission) {
+                if (!supabaseClient) return false;
+                try { const { error } = await supabaseClient.from('music_submissions').insert([submission]); if (error) throw error; return true; } catch (error) { console.error('投稿失败:', error); return false; }
+            },
+            async getSystemImages() {
+                if (!supabaseClient) return [];
+                const { data, error } = await supabaseClient.from('blog_comments').select('user_name, image_data, created_at').not('image_data', 'is', null).order('created_at', { ascending: false }).limit(30);
+                if (error) { console.error('获取系统图像失败', error); return []; }
+                return data || [];
+            },
+            async getSystemSongs() {
+                if (!supabaseClient) return [];
+                const { data, error } = await supabaseClient.from('music_songs').select('*').order('sort_order');
+                if (error) { console.error('获取系统音频失败', error); return []; }
+                return data || [];
+            },
+        };
+        
+        const renderer = {
+            async renderComments() {
+                const container = document.getElementById('blogCommentsList');
+                const loading = document.getElementById('blogCommentsLoading');
+                loading.style.display = 'block';
+                container.innerHTML = '';
+                try {
+                    const comments = await dataService.getBlogComments();
+                    if (comments.length === 0) {
+                        container.innerHTML = '<div style="text-align: center; padding: 30px;"><i class="fas fa-comment-dots" style="font-size: 2rem; color: #ddd; margin-bottom: 10px;"></i><p style="color: #999;">暂无留言，成为第一个留言的人吧！</p></div>';
+                    } else {
+                        container.innerHTML = comments.map(comment => {
+                            const contentWithLinks = comment.content.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="nofollow">$1</a>');
+                            const avatarLetter = comment.user_name ? comment.user_name.charAt(0).toUpperCase() : '?';
+                            const imageHtml = comment.image_data ? `<img src="${comment.image_data}" class="blog-comment-image" onclick="app.openLightbox('${comment.image_data}')">` : '';
+                            return `<div class="blog-comment-item"><div class="blog-comment-header"><div style="display: flex; align-items: center; gap: 8px;"><div style="width: 28px; height: 28px; border-radius: 50%; background: #00a1d6; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">${avatarLetter}</div><span class="blog-comment-author">${comment.user_name}</span></div><span class="blog-comment-date">${utils.formatDate(comment.created_at)}</span></div><div class="blog-comment-content">${contentWithLinks}</div>${imageHtml}</div>`;
+                        }).join('');
+                    }
+                } catch (error) {
+                    container.innerHTML = '<p style="color:red;text-align:center;">加载失败</p>';
+                } finally {
+                    loading.style.display = 'none';
+                }
+            },
+            renderProfile(profile) {
+                if (!profile) return;
+                if (profile.avatar_data) {
+                    const img = document.getElementById('avatarImg');
+                    img.src = profile.avatar_data;
+                    img.style.display = 'block';
+                    document.getElementById('avatarPlaceholder').style.display = 'none';
+                } else {
+                    document.getElementById('avatarPlaceholder').textContent = profile.username ? profile.username.charAt(0).toUpperCase() : 'M';
+                }
+                document.getElementById('username').textContent = profile.username || 'Mohzka';
+                document.getElementById('bio').textContent = profile.bio || '一个臭亚比而已';
+                if (profile.bilibili_url) document.getElementById('bilibiliLink').href = profile.bilibili_url;
+                if (profile.qq_number) {
+                    document.getElementById('qqLink').href = `tencent://message/?uin=${profile.qq_number}`;
+                    document.getElementById('qqText').textContent = `QQ: ${profile.qq_number}`;
+                }
+            },
+            renderAnnouncement(announcement) {
+                if (!announcement) return;
+                const announcementDiv = document.getElementById('announcement');
+                const contentDiv = document.getElementById('announcementContent');
+                const closedAnnouncements = JSON.parse(localStorage.getItem('closedAnnouncements') || '[]');
+                if (!closedAnnouncements.includes(announcement.id)) {
+                    contentDiv.innerHTML = announcement.content;
+                    announcementDiv.style.display = 'flex';
+                    announcementDiv.querySelector('.close-announcement').onclick = () => {
+                        announcementDiv.style.display = 'none';
+                        closedAnnouncements.push(announcement.id);
+                        localStorage.setItem('closedAnnouncements', JSON.stringify(closedAnnouncements));
+                    };
+                }
+            }
+        };
+        
+        // ========= 音乐播放器完整初始化 =========
+        function initMusicPlayer(playlist) {
+            const audio = document.getElementById('audioPlayer');
+            if (!audio) return;
+            let currentTrackIndex = 0;
+            let isPlaying = false;
+            let progressInterval = null;
+
+            const albumArtDiv = document.getElementById('albumArt');
+            const songTitleEl = document.getElementById('songTitle');
+            const songArtistEl = document.getElementById('songArtist');
+            const playBtn = document.getElementById('playBtn');
+            const playIcon = document.getElementById('playIcon');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const currentTimeEl = document.getElementById('currentTime');
+            const durationEl = document.getElementById('duration');
+            const musicVolume = document.getElementById('musicVolume');
+            const musicLoader = document.getElementById('musicLoader');
+            const musicContent = document.getElementById('musicContent');
+
+            function formatTime(seconds) {
+                if (isNaN(seconds) || seconds < 0) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+
+            function loadTrack(index) {
+                const track = playlist[index];
+                if (!track) return;
+                songTitleEl.textContent = track.title || '未知标题';
+                songArtistEl.textContent = track.artist || '';
+                if (track.cover_url && track.cover_url.trim() !== '') {
+                    albumArtDiv.style.backgroundImage = `url('${track.cover_url}')`;
+                    albumArtDiv.classList.add('has-cover');
+                } else {
+                    albumArtDiv.style.backgroundImage = '';
+                    albumArtDiv.classList.remove('has-cover');
+                }
+                audio.src = track.audio_url;
+                audio.load();
+                progressBar.style.width = '0%';
+                currentTimeEl.textContent = '0:00';
+                durationEl.textContent = '-:--';
+                if (isPlaying) {
+                    audio.play().catch(e => console.log('自动播放失败:', e));
+                }
+            }
+
+            function updateProgress() {
+                if (!audio.duration) return;
+                const percent = (audio.currentTime / audio.duration) * 100;
+                progressBar.style.width = percent + '%';
+                currentTimeEl.textContent = formatTime(audio.currentTime);
+                durationEl.textContent = formatTime(audio.duration);
+            }
+
+            function clearProgressInterval() {
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+            }
+
+            function startProgressInterval() {
+                clearProgressInterval();
+                progressInterval = setInterval(updateProgress, 200);
+            }
+
+            function togglePlay() {
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        isPlaying = true;
+                        playIcon.className = 'fas fa-pause';
+                        startProgressInterval();
+                    }).catch(err => {
+                        console.warn('播放失败', err);
+                        isPlaying = false;
+                        playIcon.className = 'fas fa-play';
+                    });
+                } else {
+                    audio.pause();
+                    isPlaying = false;
+                    playIcon.className = 'fas fa-play';
+                    clearProgressInterval();
+                }
+            }
+
+            function prevTrack() {
+                currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+                loadTrack(currentTrackIndex);
+                if (isPlaying) {
+                    audio.play().catch(e => console.log('自动播放失败', e));
+                }
+            }
+
+            function nextTrack() {
+                if (playMode === 'once' && currentTrackIndex === playlist.length - 1) {
+                    audio.pause();
+                    isPlaying = false;
+                    playIcon.className = 'fas fa-play';
+                    clearProgressInterval();
+                    return;
+                }
+                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                loadTrack(currentTrackIndex);
+                if (isPlaying) {
+                    audio.play().catch(e => console.log('自动播放失败', e));
+                }
+            }
+
+            function seek(e) {
+                const rect = progressContainer.getBoundingClientRect();
+                const offsetX = e.clientX - rect.left;
+                const width = rect.width;
+                const percent = Math.max(0, Math.min(1, offsetX / width));
+                if (audio.duration) {
+                    audio.currentTime = percent * audio.duration;
+                }
+            }
+
+            let playMode = 'loop';
+            const modeBtn = document.getElementById('modeBtn');
+            const modeIcon = modeBtn.querySelector('i');
+            modeBtn.addEventListener('click', () => {
+                if (playMode === 'loop') {
+                    playMode = 'repeat-one';
+                    modeIcon.className = 'fas fa-repeat';
+                    modeBtn.title = '单曲循环';
+                } else if (playMode === 'repeat-one') {
+                    playMode = 'once';
+                    modeIcon.className = 'fas fa-play-circle';
+                    modeBtn.title = '单次播放';
+                } else {
+                    playMode = 'loop';
+                    modeIcon.className = 'fas fa-redo-alt';
+                    modeBtn.title = '列表循环';
+                }
+            });
+
+            audio.addEventListener('ended', () => {
+                if (playMode === 'repeat-one') {
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.log('播放失败', e));
+                } else if (playMode === 'loop') {
+                    nextTrack();
+                } else {
+                    isPlaying = false;
+                    playIcon.className = 'fas fa-play';
+                    clearProgressInterval();
+                }
+            });
+
+            playBtn.addEventListener('click', togglePlay);
+            prevBtn.addEventListener('click', prevTrack);
+            nextBtn.addEventListener('click', nextTrack);
+            progressContainer.addEventListener('click', seek);
+            musicVolume.addEventListener('input', (e) => { audio.volume = parseFloat(e.target.value); });
+            audio.volume = parseFloat(musicVolume.value);
+
+            audio.addEventListener('loadedmetadata', () => {
+                durationEl.textContent = formatTime(audio.duration);
+                updateProgress();
+                if (musicLoader.style.display !== 'none') {
+                    musicLoader.style.display = 'none';
+                    musicContent.style.display = 'block';
+                }
+            });
+
+            audio.addEventListener('error', (e) => {
+                console.warn('音频加载错误:', e);
+                durationEl.textContent = '0:00';
+            });
+
+            if (playlist.length > 0) loadTrack(0);
+        }
+        
+        // ========= 电台完整初始化 =========
+        function initRadio(programs) {
+            console.log('initRadio 接收到的原始数据:', programs);
+            if (!programs || programs.length === 0) {
+                console.warn('电台节目数据为空');
+                document.getElementById('radioStatus').innerHTML = '暂无节目数据';
+                return;
+            }
+            if (window.radioTimer) clearInterval(window.radioTimer);
+
+            const schedule = programs.map(p => {
+                const [hour, minute] = p.time.split(':').map(Number);
+                const startSec = hour * 3600 + minute * 60;
+                const endSec = startSec + (Number(p.duration_minutes) * 60);
+                console.log(`节目 ${p.name}: 时间=${p.time}, 开始秒=${startSec}, 结束秒=${endSec}, 模式=${p.play_mode}`);
+                return {
+                    ...p,
+                    startSec,
+                    endSec,
+                    audio_url: p.audio_url,
+                    play_mode: p.play_mode || 'loop',
+                    playedOnce: false,
+                    strict_end: p.strict_end !== undefined ? p.strict_end : true
+                };
+            }).sort((a, b) => a.time.localeCompare(b.time));
+
+            const tbody = document.getElementById('radioScheduleBody');
+            tbody.innerHTML = schedule.map(item => `<tr><td>${item.time}</td><td>${item.name}</td></tr>`).join('');
+            document.getElementById('radioLoader').style.display = 'none';
+            document.getElementById('radioContent').style.display = 'block';
+
+            const radioPlayer = new Audio();
+            let radioActive = false;
+            let currentPlayingItem = null;
+            let isLoading = false;
+            let currentStatus = '';
+            const radioToggleBtn = document.getElementById('radioToggleBtn');
+            const radioVolume = document.getElementById('radioVolume');
+            const statusDiv = document.getElementById('radioStatus');
+
+            const FADE_DURATION = 3;
+            let fadeInterval = null;
+            let isFadingOut = false;
+            let originalVolumeForFade = parseFloat(radioVolume.value);
+            let pendingSwitch = null;
+
+            radioVolume.addEventListener('input', (e) => {
+                const vol = parseFloat(e.target.value);
+                if (isFadingOut) stopFadeOut(false);
+                radioPlayer.volume = vol;
+            });
+            radioPlayer.volume = parseFloat(radioVolume.value);
+
+            function stopFadeOut(resetVolume = true) {
+                if (fadeInterval) {
+                    clearInterval(fadeInterval);
+                    fadeInterval = null;
+                }
+                if (isFadingOut) {
+                    isFadingOut = false;
+                    if (resetVolume) radioPlayer.volume = parseFloat(radioVolume.value);
+                }
+            }
+
+            function performFadeOut() {
+                if (!isFadingOut) return;
+                const step = originalVolumeForFade / (FADE_DURATION * 10);
+                let newVolume = radioPlayer.volume - step;
+                if (newVolume <= 0.01) {
+                    radioPlayer.volume = 0;
+                    stopFadeOut(false);
+                    if (pendingSwitch !== undefined) {
+                        radioPlayer.pause();
+                        radioPlayer.src = '';
+                        radioPlayer.load();
+                        switchToProgram(pendingSwitch);
+                        pendingSwitch = null;
+                        if (radioActive && !window.radioTimer) {
+                            window.radioTimer = setInterval(() => checkAndUpdate(), 1000);
+                        }
+                    }
+                    return;
+                }
+                radioPlayer.volume = newVolume;
+            }
+
+            function setStatus(newStatus) {
+                if (newStatus !== currentStatus) {
+                    console.log(`状态变更: "${currentStatus}" -> "${newStatus}"`);
+                    statusDiv.innerHTML = newStatus;
+                    currentStatus = newStatus;
+                }
+            }
+
+            function startRadio() {
+                if (emergencyMode) {
+                    console.log('紧急模式下禁止启动电台');
+                    return;
+                }
+                console.log('启动电台');
+                if (window.radioTimer) clearInterval(window.radioTimer);
+                radioPlayer.pause();
+                radioPlayer.src = '';
+                radioActive = true;
+                window.radioActive = true;
+                currentPlayingItem = null;
+                isLoading = false;
+                pendingSwitch = null;
+                schedule.forEach(item => item.playedOnce = false);
+                radioToggleBtn.innerHTML = '<i class="fas fa-stop"></i> 停止电台';
+                checkAndUpdate();
+                window.radioTimer = setInterval(() => checkAndUpdate(), 1000);
+                
+                if (calibrateInterval) clearInterval(calibrateInterval);
+                calibrateInterval = setInterval(() => {
+                    if (radioActive && !isLoading && !isFadingOut) {
+                        calibrateRadioPosition();
+                    }
+                }, 30000);
+            }
+
+            function stopRadio() {
+                if (emergencyMode) return;
+                console.log('停止电台');
+                stopFadeOut(true);
+                if (window.radioTimer) clearInterval(window.radioTimer);
+                radioPlayer.pause();
+                radioPlayer.src = '';
+                radioActive = false;
+                window.radioActive = false;
+                currentPlayingItem = null;
+                isLoading = false;
+                pendingSwitch = null;
+                schedule.forEach(item => item.playedOnce = false);
+                radioToggleBtn.innerHTML = '<i class="fas fa-play"></i> 开始电台';
+                setStatus('⏸️ 电台已停止');
+                if (calibrateInterval) {
+                    clearInterval(calibrateInterval);
+                    calibrateInterval = null;
+                }
+            }
+
+            function getCurrentMatchedItem() {
+                const now = getCurrentBeijingTime();
+                const currentSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+                console.log('当前时间秒数:', currentSec);
+
+                const candidates = schedule.filter(item => {
+                    if (item.play_mode === 'once' && item.playedOnce === true) return false;
+                    const start = item.startSec;
+                    const end = item.endSec;
+                    if (end <= 86400) {
+                        return currentSec >= start && currentSec < end;
+                    } else {
+                        return (currentSec >= start && currentSec < 86400) || (currentSec >= 0 && currentSec < end - 86400);
+                    }
+                });
+
+                if (candidates.length === 0) return null;
+                const loopCandidate = candidates.find(c => c.play_mode === 'loop');
+                if (loopCandidate) {
+                    console.log('优先选择 loop 节目:', loopCandidate.name);
+                    return loopCandidate;
+                }
+                console.log('无 loop 节目，选择第一个 once:', candidates[0].name);
+                return candidates[0];
+            }
+
+            function switchToProgram(newItem) {
+                if (!radioActive) return;
+                console.log('执行切换，新节目:', newItem ? newItem.name : '无节目');
+                if (isFadingOut) {
+                    console.warn('正在淡出，忽略切换请求');
+                    return;
+                }
+                radioPlayer.pause();
+                radioPlayer.src = '';
+                radioPlayer.load();
+                radioPlayer.volume = parseFloat(radioVolume.value);
+                stopFadeOut(true);
+                currentPlayingItem = null;
+                isLoading = false;
+                if (!newItem) {
+                    setStatus('📡 当前无节目');
+                    return;
+                }
+                isLoading = true;
+                setStatus(`⏳ 加载 ${newItem.name}...`);
+
+                radioPlayer.src = newItem.audio_url;
+                radioPlayer.load();
+
+                const now = getCurrentBeijingTime();
+                const currentSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+                let programOffset = 0;
+                if (newItem.endSec > 86400 && currentSec < newItem.startSec) {
+                    programOffset = (86400 - newItem.startSec) + currentSec;
+                } else {
+                    programOffset = currentSec - newItem.startSec;
+                }
+                console.log(`节目时段偏移量: ${programOffset} 秒`);
+
+                const onMetadata = function() {
+                    if (!radioActive || currentPlayingItem !== newItem) {
+                        console.log('加载完成但节目已变更或电台已停，忽略');
+                        isLoading = false;
+                        return;
+                    }
+                    const audioDuration = radioPlayer.duration;
+                    if (isNaN(audioDuration) || audioDuration <= 0) {
+                        console.error('音频时长无效');
+                        setStatus('⚠️ 音频时长无效');
+                        isLoading = false;
+                        return;
+                    }
+                    console.log(`音频实际时长: ${audioDuration} 秒`);
+
+                    let playOffset;
+                    if (newItem.play_mode === 'loop') {
+                        playOffset = programOffset % audioDuration;
+                        console.log(`循环模式，取余后偏移量: ${playOffset} 秒`);
+                    } else {
+                        playOffset = Math.min(programOffset, audioDuration - 0.1);
+                        console.log(`一次模式，限制后偏移量: ${playOffset} 秒`);
+                    }
+
+                    try {
+                        console.log(`设置播放位置到 ${playOffset} 秒`);
+                        radioPlayer.currentTime = playOffset;
+                        radioPlayer.play().catch(e => {
+                            console.error('播放失败', e);
+                            setStatus('⚠️ 播放失败');
+                        });
+                        setStatus(`📻 正在播放: ${newItem.name} (${newItem.time})`);
+                    } catch (e) {
+                        console.error('设置播放时间失败', e);
+                        setStatus('⚠️ 播放时间设置失败');
+                    } finally {
+                        isLoading = false;
+                    }
+                };
+                radioPlayer.addEventListener('loadedmetadata', onMetadata, { once: true });
+
+                newItem.playedOnce = false;
+                currentPlayingItem = newItem;
+            }
+
+            function fadeOutAndSwitch(newItem) {
+                if (isFadingOut) return;
+                console.log(`准备淡出，将切换到:`, newItem ? newItem.name : '无节目');
+                if (window.radioTimer) {
+                    clearInterval(window.radioTimer);
+                    window.radioTimer = null;
+                }
+                stopFadeOut(true);
+                isFadingOut = true;
+                originalVolumeForFade = parseFloat(radioVolume.value);
+                if (fadeInterval) clearInterval(fadeInterval);
+                fadeInterval = setInterval(performFadeOut, 100);
+                pendingSwitch = newItem;
+
+                setTimeout(() => {
+                    if (isFadingOut && pendingSwitch !== undefined) {
+                        stopFadeOut(false);
+                        switchToProgram(pendingSwitch);
+                        pendingSwitch = null;
+                    }
+                    if (radioActive && !window.radioTimer) {
+                        window.radioTimer = setInterval(() => checkAndUpdate(), 1000);
+                    }
+                }, FADE_DURATION * 1000);
+            }
+
+            function getNextItem(currentItem) {
+                if (!currentItem) return null;
+                const currentIndex = schedule.findIndex(item => item.id === currentItem.id);
+                if (currentIndex === -1) return null;
+                let nextIndex = (currentIndex + 1) % schedule.length;
+                return schedule[nextIndex];
+            }
+
+            function checkAndUpdate() {
+                if (emergencyMode) return;
+                if (!radioActive || isLoading || isFadingOut) return;
+
+                const now = getCurrentBeijingTime();
+                const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+                const matchedItem = getCurrentMatchedItem();
+
+                if (!matchedItem) {
+                    if (currentPlayingItem) {
+                        console.log('当前时段无节目，停止播放');
+                        radioPlayer.pause();
+                        radioPlayer.src = '';
+                        currentPlayingItem = null;
+                        setStatus('📡 当前无节目');
+                    } else if (currentStatus !== '📡 当前无节目') {
+                        setStatus('📡 当前无节目');
+                    }
+                    return;
+                }
+
+                if (currentPlayingItem) {
+                    const currentEndSec = currentPlayingItem.endSec;
+                    let timeRemaining;
+                    if (currentEndSec <= 86400) {
+                        timeRemaining = currentEndSec - nowSec;
+                    } else {
+                        if (nowSec < currentPlayingItem.startSec) {
+                            timeRemaining = currentEndSec - 86400 - nowSec;
+                        } else {
+                            timeRemaining = currentEndSec - nowSec;
+                        }
+                    }
+
+                    console.log(`节目时段剩余时间: ${timeRemaining.toFixed(1)} 秒`);
+
+                    if (currentPlayingItem.strict_end) {
+                        if (timeRemaining > 0 && timeRemaining <= FADE_DURATION) {
+                            const nextItem = getNextItem(currentPlayingItem);
+                            console.log(`🎵 严格模式：时段剩余 ${timeRemaining.toFixed(1)} 秒，启动淡出，切换到 ${nextItem.name}`);
+                            fadeOutAndSwitch(nextItem);
+                            return;
+                        }
+                        if (timeRemaining <= 0 || matchedItem !== currentPlayingItem) {
+                            console.log('时间表变化或节目结束，直接切换');
+                            switchToProgram(matchedItem);
+                            return;
+                        }
+                    } else {
+                        if (matchedItem && matchedItem !== currentPlayingItem) {
+                            let nextStart = matchedItem.startSec;
+                            let timeToNext;
+                            if (nextStart <= 86400) {
+                                timeToNext = nextStart - nowSec;
+                            } else {
+                                if (nowSec < matchedItem.startSec) {
+                                    timeToNext = nextStart - nowSec;
+                                } else {
+                                    timeToNext = (nextStart - 86400) - nowSec;
+                                }
+                            }
+                            console.log(`下一节目将在 ${timeToNext.toFixed(1)} 秒后开始`);
+
+                            if (timeToNext > 0 && timeToNext <= FADE_DURATION) {
+                                console.log(`🎵 非严格模式：下一节目即将开始，提前淡出切换到 ${matchedItem.name}`);
+                                fadeOutAndSwitch(matchedItem);
+                                return;
+                            }
+                            if (timeToNext <= 0) {
+                                console.log(`非严格模式：下一节目已开始，立即切换`);
+                                switchToProgram(matchedItem);
+                                return;
+                            }
+                        }
+                    }
+                } else {
+                    if (matchedItem) {
+                        switchToProgram(matchedItem);
+                    }
+                }
+            }
+
+            radioPlayer.addEventListener('ended', () => {
+                if (isFadingOut) return;
+                if (!radioActive || !currentPlayingItem) return;
+                const item = currentPlayingItem;
+                console.log(`节目 ${item.name} 播放结束，模式: ${item.play_mode}`);
+
+                if (item.play_mode === 'loop') {
+                    if (item.strict_end) {
+                        console.log('严格模式，音频结束，重新加载当前节目');
+                        radioPlayer.pause();
+                        radioPlayer.src = '';
+                        switchToProgram(item);
+                    } else {
+                        const nextItem = getCurrentMatchedItem();
+                        if (nextItem) {
+                            radioPlayer.pause();
+                            radioPlayer.src = '';
+                            currentPlayingItem = null;
+                            switchToProgram(nextItem);
+                        } else {
+                            radioPlayer.pause();
+                            radioPlayer.src = '';
+                            currentPlayingItem = null;
+                            setStatus('📡 当前无节目');
+                        }
+                    }
+                } else if (item.play_mode === 'once') {
+                    item.playedOnce = true;
+                    radioPlayer.pause();
+                    radioPlayer.src = '';
+                    currentPlayingItem = null;
+                    checkAndUpdate();
+                }
+            });
+
+            radioPlayer.addEventListener('pause', () => {
+                if (isFadingOut) stopFadeOut(true);
+            });
+
+            let calibrateInterval = null;
+
+const setEmergencyMode = (active, streamUrl, name) => {
+    const banner = document.getElementById('emergencyBanner');
+    const bannerText = document.getElementById('emergencyBannerText');
+    const playBtn = document.getElementById('playEmergencyBtn');
+    const emergencyStatus = document.getElementById('emergencyStatus');
+    const emergencyNowPlaying = document.getElementById('emergencyNowPlaying');
+
+    if (active && !emergencyMode) {
+        // 进入紧急模式
+        console.log('🔴 进入紧急广播模式:', name);
+        emergencyMode = true;
+        emergencyStreamUrl = streamUrl;
+        emergencyName = name;
+
+        // 停止并清除所有电台定时器
+        if (window.radioTimer) {
+            clearInterval(window.radioTimer);
+            window.radioTimer = null;
+        }
+        if (calibrateInterval) {
+            clearInterval(calibrateInterval);
+            calibrateInterval = null;
+        }
+        // 强制停止电台活动
+        radioActive = false;
+        currentPlayingItem = null;
+
+        radioToggleBtn.innerHTML = '<i class="fas fa-play"></i> 开始电台';
+        radioToggleBtn.classList.add('disabled'); // 禁用电台按钮
+
+        // 停止当前播放的任何音频
+        radioPlayer.pause();
+        radioPlayer.src = '';
+
+        // 设置紧急流
+        radioPlayer.src = emergencyStreamUrl;
+        radioPlayer.loop = true;
+        radioPlayer.load();
+
+        // 定义设置播放偏移量的函数
+        const setEmergencyOffset = () => {
+            const now = getCurrentBeijingTime();
+            const currentSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            const duration = radioPlayer.duration;
+            if (duration && !isNaN(duration) && duration > 0) {
+                const offset = currentSec % duration;
+                radioPlayer.currentTime = offset;
+                console.log(`紧急流播放偏移量设置为: ${offset}秒 (音频时长 ${duration}秒)`);
+            }
+        };
+
+        radioPlayer.volume = parseFloat(radioVolume.value);
+        console.log('紧急流音量设置为:', radioPlayer.volume);
+
+        // 显示紧急状态条
+        if (emergencyStatus) {
+            emergencyStatus.style.display = 'flex';
+            emergencyNowPlaying.innerText = `📢 紧急广播: ${name}`;
+        }
+
+        // 显示横幅
+        if (banner) {
+            banner.style.display = 'flex';
+            bannerText.innerText = `紧急广播：${name}`;
+            console.log('紧急横幅已显示');
+        }
+
+        // 定义播放/暂停切换函数
+        const togglePlayback = () => {
+            if (radioPlayer.paused) {
+                // 尝试播放
+                setEmergencyOffset();
+                radioPlayer.play().then(() => {
+                    console.log('紧急流播放成功');
+                    playBtn.innerHTML = '<i class="fas fa-stop"></i> 停止播放';
+                    playBtn.onclick = togglePlayback;
+                    if (emergencyNowPlaying) emergencyNowPlaying.innerText = `📢 正在播放: ${name}`;
+                }).catch(e => {
+                    console.error('播放失败', e);
+                    alert('播放失败，请检查音频源');
+                });
+            } else {
+                // 暂停
+                radioPlayer.pause();
+                console.log('紧急流已暂停');
+                playBtn.innerHTML = '<i class="fas fa-play"></i> 开始播放';
+                playBtn.onclick = togglePlayback;
+                if (emergencyNowPlaying) emergencyNowPlaying.innerText = `📢 紧急广播: ${name} (暂停)`;
+            }
+        };
+
+        // 尝试自动播放
+        const playPromise = radioPlayer.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log('紧急流自动播放成功');
+                playBtn.innerHTML = '<i class="fas fa-stop"></i> 停止播放';
+                playBtn.onclick = togglePlayback;
+                playBtn.style.display = 'inline-block';
+                if (emergencyNowPlaying) emergencyNowPlaying.innerText = `📢 正在播放: ${name}`;
+            }).catch(error => {
+                console.warn('自动播放失败，显示开始按钮', error);
+                playBtn.innerHTML = '<i class="fas fa-play"></i> 开始播放';
+                playBtn.onclick = togglePlayback;
+                playBtn.style.display = 'inline-block';
+                if (emergencyNowPlaying) emergencyNowPlaying.innerText = `📢 紧急广播: ${name}`;
+            });
+        }
+
+        setStatus(`🚨 紧急广播模式已激活`);
+    } else if (!active && emergencyMode) {
+        // 退出紧急模式
+        console.log('🟢 退出紧急广播模式，恢复电台');
+        emergencyMode = false;
+        emergencyStreamUrl = '';
+        emergencyName = '';
+
+        // 停止紧急流
+        radioPlayer.pause();
+        radioPlayer.src = '';
+        radioPlayer.loop = false;
+
+        // 隐藏紧急状态条
+        if (emergencyStatus) {
+            emergencyStatus.style.display = 'none';
+        }
+
+        // 隐藏横幅和按钮
+        if (banner) {
+            banner.style.display = 'none';
+            console.log('紧急横幅已隐藏');
+        }
+        playBtn.style.display = 'none';
+
+        // 恢复电台按钮状态
+        radioToggleBtn.classList.remove('disabled');
+        radioToggleBtn.innerHTML = '<i class="fas fa-play"></i> 开始电台';
+
+        // 恢复电台调度（但不自动播放）
+        radioActive = false;
+        if (window.radioTimer) {
+            clearInterval(window.radioTimer);
+            window.radioTimer = null;
+        }
+        if (calibrateInterval) {
+            clearInterval(calibrateInterval);
+            calibrateInterval = null;
+        }
+        setStatus('⏸️ 电台已停止（紧急广播结束）');
+    }
+};
+
+            window.setEmergencyMode = setEmergencyMode;
+
+            const calibrateRadioPosition = () => {
+                if (!radioActive || !currentPlayingItem || isLoading || isFadingOut) return;
+                const now = getCurrentBeijingTime();
+                const currentSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+                const item = currentPlayingItem;
+                let programOffset;
+                if (item.endSec > 86400 && currentSec < item.startSec) {
+                    programOffset = (86400 - item.startSec) + currentSec;
+                } else {
+                    programOffset = currentSec - item.startSec;
+                }
+                if (item.play_mode === 'loop') {
+                    programOffset = programOffset % radioPlayer.duration;
+                } else {
+                    programOffset = Math.min(programOffset, radioPlayer.duration - 0.1);
+                }
+                const currentPos = radioPlayer.currentTime;
+                if (Math.abs(currentPos - programOffset) > 2.0) {
+                    console.log(`校准电台: 当前 ${currentPos.toFixed(1)}s，预期 ${programOffset.toFixed(1)}s，偏差过大，调整位置`);
+                    radioPlayer.currentTime = programOffset;
+                    setStatus(`📻 正在播放: ${item.name} (已校准)`);
+                }
+            };
+
+            window.radioActive = radioActive;
+            window.calibrateRadioPosition = calibrateRadioPosition;
+
+            radioToggleBtn.addEventListener('click', () => {
+                radioActive ? stopRadio() : startRadio();
+            });
+
+            if (schedule.length > 0) {
+                setTimeout(() => { startRadio(); }, 100);
+            }
+        }
+        
+        // ========= 北京时间完整实现 =========
+        let beijingTimeInterval = null;
+        let beijingSyncTime = null;
+        let beijingSyncTimestamp = 0;
+        let beijingRetryCount = 0;
+
+        async function fetchBeijingTime() {
+            const primaryApi = {
+                url: 'https://timeapi.io/api/Time/current/zone?timeZone=Asia/Shanghai',
+                parser: (data) => data.dateTime ? new Date(data.dateTime) : null
+            };
+            const fallbackApi = {
+                url: 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2?_=' + Date.now(),
+                parser: (_, response) => {
+                    const dateStr = response.headers.get('Date');
+                    if (!dateStr) return null;
+                    const gmtDate = new Date(dateStr);
+                    return new Date(gmtDate.getTime() + 8 * 60 * 60 * 1000);
+                },
+                method: 'HEAD'
+            };
+
+            try {
+                const startTime = performance.now();
+                const response = await fetch(primaryApi.url, { cache: 'no-cache', mode: 'cors' });
+                const endTime = performance.now();
+                if (!response.ok) throw new Error('HTTP error');
+
+                const data = await response.json();
+                const serverTime = primaryApi.parser(data);
+                if (!serverTime) throw new Error('Invalid time');
+
+                const latency = (endTime - startTime) / 2;
+                const correctedTime = new Date(serverTime.getTime() + latency);
+                console.log(`主要API成功，原始服务器时间: ${serverTime.toISOString()}, 延迟: ${latency.toFixed(0)}ms, 校正后: ${correctedTime.toISOString()}`);
+                return correctedTime;
+            } catch (primaryError) {
+                console.warn('主要API失败，尝试备用方案:', primaryError);
+
+                try {
+                    const startTime = performance.now();
+                    const fallbackResponse = await fetch(fallbackApi.url, { method: fallbackApi.method, cache: 'no-cache', mode: 'cors' });
+                    const endTime = performance.now();
+                    const fallbackTime = await fallbackApi.parser(null, fallbackResponse);
+                    if (!fallbackTime) throw new Error('Invalid fallback time');
+
+                    const latency = (endTime - startTime) / 2;
+                    const correctedTime = new Date(fallbackTime.getTime() + latency);
+                    console.log(`备用API成功，原始时间: ${fallbackTime.toISOString()}, 延迟: ${latency.toFixed(0)}ms, 校正后: ${correctedTime.toISOString()}`);
+                    return correctedTime;
+                } catch (fallbackError) {
+                    console.error('所有时间获取方式均失败:', fallbackError);
+                    return null;
+                }
+            }
+        }
+
+        function getCurrentBeijingTime() {
+            if (beijingSyncTime && beijingSyncTimestamp) {
+                const elapsed = performance.now() - beijingSyncTimestamp;
+                return new Date(beijingSyncTime.getTime() + elapsed);
+            }
+            return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+        }
+
+        function updateBeijingDisplay(date) {
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const seconds = date.getSeconds().toString().padStart(2, '0');
+            const displayEl = document.getElementById('beijingTimeDisplay');
+            if (displayEl) {
+                displayEl.innerText = `${hours}:${minutes}:${seconds}`;
+            }
+        }
+
+        async function syncBeijingTime() {
+            try {
+                const bjTime = await fetchBeijingTime();
+                if (bjTime) {
+                    beijingSyncTime = bjTime;
+                    beijingSyncTimestamp = performance.now();
+                    updateBeijingDisplay(bjTime);
+                    document.getElementById('beijingTimeNote').innerText = '网络同步 (延迟校正)';
+                    beijingRetryCount = 0;
+                    console.log('北京时间同步成功:', bjTime.toLocaleString());
+                } else {
+                    throw new Error('获取时间失败');
+                }
+            } catch (error) {
+                beijingRetryCount++;
+                console.warn('北京时间同步失败，使用设备时间', error);
+                const fallback = getCurrentBeijingTime();
+                updateBeijingDisplay(fallback);
+                document.getElementById('beijingTimeNote').innerText =
+                    beijingRetryCount > 3 ? '⚠️ 无法同步，使用设备时间' : '设备时间（未同步）';
+            }
+        }
+
+        function startBeijingTime() {
+            const now = getCurrentBeijingTime();
+            updateBeijingDisplay(now);
+            syncBeijingTime();
+            if (beijingTimeInterval) clearInterval(beijingTimeInterval);
+            beijingTimeInterval = setInterval(() => {
+                const current = getCurrentBeijingTime();
+                updateBeijingDisplay(current);
+            }, 200);
+            setInterval(syncBeijingTime, 300000);
+        }
+
+        // ========= 应用控制器 =========
+        const app = {
+            lastRadioSnapshot: null,
+            lastCommentSnapshot: null,
+            updateCheckInterval: null,
+            cachedImages: null,
+            cachedAudios: null,
+            async init() {
+                utils.applySettings(utils.getCurrentSettings());
+                document.getElementById('currentYear').textContent = getCurrentBeijingTime().getFullYear();
+                try { supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key, SUPABASE_CONFIG.options); } catch (error) { console.error('Supabase初始化失败:', error); }
+                currentUser = utils.getCurrentUser();
+                const announcement = await dataService.getAnnouncement();
+                renderer.renderAnnouncement(announcement);
+                const profile = await dataService.getBlogProfile();
+                renderer.renderProfile(profile);
+                await renderer.renderComments();
+                this.setupEventListeners();
+                await this.loadMusicSongs();
+                await this.loadRadioPrograms();
+
+                // 监听紧急广播
+                const EMERGENCY_ID = '00000000-0000-0000-0000-000000000001';
+
+                const { data: emergencyData } = await supabaseClient
+                    .from('emergency_broadcast')
+                    .select('*')
+                    .eq('id', EMERGENCY_ID)
+                    .maybeSingle();
+                if (emergencyData && emergencyData.active && window.setEmergencyMode) {
+                    window.setEmergencyMode(true, emergencyData.stream_url, emergencyData.name);
+                }
+
+                // 备用轮询函数
+                let emergencyPollTimer = null;
+                function startEmergencyPolling() {
+                    if (emergencyPollTimer) clearInterval(emergencyPollTimer);
+                    emergencyPollTimer = setInterval(async () => {
+                        const { data } = await supabaseClient
+                            .from('emergency_broadcast')
+                            .select('*')
+                            .eq('id', EMERGENCY_ID)
+                            .maybeSingle();
+                        if (data && window.setEmergencyMode) {
+                            if (data.active !== emergencyMode) {
+                                window.setEmergencyMode(data.active, data.stream_url, data.name);
+                            }
+                        }
+                    }, 10000);
+                }
+
+                supabaseClient
+                    .channel('emergency-broadcast')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'emergency_broadcast', filter: `id=eq.${EMERGENCY_ID}` },
+                        (payload) => {
+                            console.log('🚨 紧急广播变更:', payload);
+                            const newRecord = payload.new;
+                            if (window.setEmergencyMode) {
+                                window.setEmergencyMode(newRecord.active, newRecord.stream_url, newRecord.name);
+                            }
+                        }
+                    )
+                    .subscribe((status) => console.log('订阅状态:', status));
+
+                startEmergencyPolling();
+                startBeijingTime();
+            },
+            setupEventListeners() {
+                document.getElementById('submitBlogComment').addEventListener('click', () => { this.submitComment(); });
+                document.getElementById('submitMusicBtn').addEventListener('click', () => { this.openSubmitModal(); });
+                document.getElementById('closeSubmitModal').addEventListener('click', () => { this.closeSubmitModal(); });
+                document.getElementById('submitMusicBtnAction').addEventListener('click', () => { this.submitMusic(); });
+                document.getElementById('submitModal').addEventListener('click', (e) => { if (e.target === document.getElementById('submitModal')) this.closeSubmitModal(); });
+                document.getElementById('blogImageUpload').addEventListener('change', (e) => { const file = e.target.files[0]; if (file) { selectedImageFile = file; const reader = new FileReader(); reader.onload = (e) => { document.getElementById('previewImg').src = e.target.result; document.getElementById('imagePreview').style.display = 'inline-block'; }; reader.readAsDataURL(file); } });
+                document.querySelector('.lightbox-close').addEventListener('click', () => { document.getElementById('lightbox').classList.remove('active'); });
+                document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.getElementById('lightbox').classList.contains('active')) { document.getElementById('lightbox').classList.remove('active'); } });
+                document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target === document.getElementById('lightbox')) { document.getElementById('lightbox').classList.remove('active'); } });
+                document.getElementById('systemBtn').addEventListener('click', () => this.openSystem());
+                document.getElementById('closeSystemBtn').addEventListener('click', () => this.closeSystem());
+            },
+            
+            removeImage() { selectedImageFile = null; document.getElementById('imagePreview').style.display = 'none'; document.getElementById('blogImageUpload').value = ''; },
+            async loadMusicSongs() {
+                if (!supabaseClient) return;
+                const { data, error } = await supabaseClient.from('music_songs').select('*').order('sort_order');
+                if (error) console.error('加载音乐失败', error);
+                window.musicPlaylist = data || [];
+                if (window.musicPlaylist.length === 0) {
+                    window.musicPlaylist = [{ title: "Frutiger Aero", artist: "Mii Editor", cover_url: "image/Frutiger Areo_Mii Editor-Mii Maker.png", audio_url: "audio/Frutiger Areo_Mii Editor-Mii Maker.mp3" }];
+                }
+                initMusicPlayer(window.musicPlaylist);
+            },
+            
+            async loadRadioPrograms() {
+                if (!supabaseClient) return;
+
+                const today = getCurrentBeijingTime().getDay();
+                const weekDay = today === 0 ? 7 : today;
+
+                const { data: playlists, error } = await supabaseClient
+                    .from('radio_playlists')
+                    .select('*');
+                if (error) {
+                    console.error('获取播放列表失败', error);
+                    return;
+                }
+
+                let matchedList = playlists.find(p => p.days_of_week && p.days_of_week.includes(weekDay));
+                if (!matchedList) {
+                    matchedList = playlists.find(p => p.is_default === true);
+                }
+
+                if (!matchedList) {
+                    console.warn('没有可用的电台列表');
+                    document.getElementById('radioStatus').innerHTML = '暂无电台节目';
+                    return;
+                }
+
+                const { data: programs, error: progError } = await supabaseClient
+                    .from('radio_programs')
+                    .select('*')
+                    .eq('playlist_id', matchedList.id)
+                    .order('time');
+                if (progError) {
+                    console.error('加载节目失败', progError);
+                    return;
+                }
+
+                window.radioSchedule = programs || [];
+                initRadio(window.radioSchedule);
+            },
+            
+            async submitComment() {
+                const user = utils.getCurrentUser();
+                if (!user) { alert('请先登录后再留言'); window.location.href = 'index.html'; return; }
+                const content = document.getElementById('blogCommentContent').value.trim();
+                if (!content) { alert('请输入留言内容'); return; }
+                const submitBtn = document.getElementById('submitBlogComment');
+                submitBtn.disabled = true; submitBtn.textContent = '发布中...';
+                try {
+                    let imageData = null;
+                    if (selectedImageFile) imageData = await utils.compressImage(selectedImageFile, 800, 800, 0.7);
+                    const success = await dataService.addBlogComment(user.username, content, imageData);
+                    if (success) {
+                        document.getElementById('blogCommentContent').value = '';
+                        this.removeImage();
+                        await renderer.renderComments();
+                        alert('留言发布成功！');
+                    } else alert('发布失败，请重试');
+                } catch (error) { console.error('提交失败:', error); alert('发布失败：' + error.message); } finally { submitBtn.disabled = false; submitBtn.textContent = '发布留言'; }
+            },
+            openLightbox(src) { document.getElementById('lightbox-img').src = src; document.getElementById('lightbox').classList.add('active'); },
+            openSubmitModal() {
+                const user = utils.getCurrentUser();
+                if (!user) { alert('请先登录后再投稿'); window.location.href = 'index.html'; return; }
+                document.getElementById('submitModal').classList.add('active');
+            },
+            closeSubmitModal() {
+                document.getElementById('submitModal').classList.remove('active');
+                document.getElementById('submitTitle').value = ''; document.getElementById('submitArtist').value = ''; document.getElementById('submitCover').value = ''; document.getElementById('submitAudio').value = '';
+            },
+            async submitMusic() {
+                const user = utils.getCurrentUser();
+                if (!user) { alert('请先登录'); return; }
+                const title = document.getElementById('submitTitle').value.trim();
+                const audio = document.getElementById('submitAudio').value.trim();
+                if (!title || !audio) { alert('标题和音频URL为必填项'); return; }
+                const artist = document.getElementById('submitArtist').value.trim() || '';
+                const cover = document.getElementById('submitCover').value.trim() || '';
+                const submission = { user_id: user.id, user_name: user.username, title, artist, cover_url: cover, audio_url: audio, status: 'unread', created_at: getCurrentBeijingTime().toISOString() };
+                const btn = document.getElementById('submitMusicBtnAction');
+                btn.disabled = true; btn.textContent = '提交中...';
+                const success = await dataService.submitMusic(submission);
+                if (success) { alert('投稿成功！感谢您的分享，等待管理员审核。'); this.closeSubmitModal(); } else alert('投稿失败，请稍后重试');
+                btn.disabled = false; btn.textContent = '提交投稿';
+            },
+            async checkForUpdates() { /* 可选实现 */ },
+            async openSystem() {
+                const overlay = document.getElementById('win8System');
+                this.applyUserBackgroundToSystem();
+                overlay.classList.add('show');
+                if (!this.cachedImages || !this.cachedAudios) {
+                    this.cachedImages = await dataService.getSystemImages();
+                    this.cachedAudios = await dataService.getSystemSongs();
+                }
+                this.renderSystemImages(this.cachedImages);
+                this.renderSystemAudios(this.cachedAudios);
+            },
+            closeSystem() {
+                const overlay = document.getElementById('win8System');
+                overlay.classList.remove('show');
+                const sysAudio = document.getElementById('systemAudioPlayer');
+                sysAudio.pause();
+                sysAudio.src = '';
+                document.getElementById('systemPlayerBar').style.display = 'none';
+            },
+            renderSystemImages(images) {
+                const container = document.getElementById('systemImageTiles');
+                let songs = this.cachedAudios || [];
+                const covers = songs.filter(s => s.cover_url && s.cover_url.trim() !== '').map(s => ({
+                    user_name: '🎵 ' + s.title,
+                    image_data: s.cover_url,
+                    created_at: s.updated_at || getCurrentBeijingTime().toISOString()
+                }));
+                const allImages = [...images, ...covers];
+                if (allImages.length === 0) {
+                    container.innerHTML = '<div style="color:#ccc;padding:20px;">暂无图像资源</div>';
+                    return;
+                }
+                container.innerHTML = '';
+                allImages.forEach((item) => {
+                    const tile = document.createElement('div');
+                    tile.className = 'metro-tile';
+                    tile.style.backgroundImage = `url('${item.image_data}')`;
+                    tile.style.backgroundColor = '#2c3e50';
+                    tile.innerHTML = `<i class="fas fa-image"></i><div class="tile-title">${item.user_name || '匿名'}</div><div class="tile-sub">${utils.formatDate(item.created_at)}</div>`;
+                    tile.addEventListener('click', () => { this.openLightbox(item.image_data); });
+                    container.appendChild(tile);
+                });
+            },
+            renderSystemAudios(songs) {
+                const container = document.getElementById('systemAudioTiles');
+                if (!songs.length) {
+                    container.innerHTML = '<div style="color:#ccc;padding:20px;">暂无音频数据</div>';
+                    return;
+                }
+                container.innerHTML = '';
+                songs.forEach((song) => {
+                    const tile = document.createElement('div');
+                    tile.className = 'metro-tile';
+                    if (song.cover_url) tile.style.backgroundImage = `url('${song.cover_url}')`;
+                    else tile.style.backgroundColor = '#16a085';
+                    tile.innerHTML = `<i class="fas fa-music"></i><div class="tile-title">${song.title}</div><div class="tile-sub">${song.artist || '未知'}</div><span class="play-indicator"><i class="fas fa-play"></i></span>`;
+                    tile.addEventListener('click', () => {
+                        const player = document.getElementById('systemAudioPlayer');
+                        const bar = document.getElementById('systemPlayerBar');
+                        player.src = song.audio_url;
+                        player.play();
+                        document.getElementById('nowPlayingLabel').innerText = `播放: ${song.title} - ${song.artist || ''}`;
+                        bar.style.display = 'flex';
+                    });
+                    container.appendChild(tile);
+                });
+            },
+            applyUserBackgroundToSystem() {
+                const overlay = document.getElementById('win8System');
+                const settings = utils.getCurrentSettings();
+                if (settings.bgColor) {
+                    overlay.style.backgroundColor = settings.bgColor;
+                } else {
+                    overlay.style.backgroundColor = '#1a2634';
+                }
+                if (settings.bgImageUrl && settings.bgImageUrl.trim() !== '') {
+                    overlay.style.backgroundImage = `url('${settings.bgImageUrl}')`;
+                    overlay.style.backgroundSize = 'cover';
+                    overlay.style.backgroundPosition = 'center';
+                } else {
+                    overlay.style.backgroundImage = '';
+                }
+            },
+        };
+        
+        window.app = app;
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>

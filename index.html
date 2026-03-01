@@ -1,0 +1,3456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人物投票与留言系统</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* 全局重置 - 更简洁的样式 */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    
+    body {
+        background-color: #f5f5f5;
+        color: #333;
+        line-height: 1.6;
+        padding: 20px;
+    }
+    
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+    }
+    
+@media (max-width: 992px) {
+    .comments-panel {
+        max-height: none;
+        position: static;
+    }
+    
+    .comments-list {
+        max-height: 400px;
+    }
+}
+    
+    /* 头部 - 简洁风格 */
+    header {
+        grid-column: 1 / -1;
+        margin-bottom: 20px;
+        padding: 20px 0;
+        background: white;
+        border-radius: 8px;
+        color: #333;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        position: relative;
+        border: 1px solid #e5e5e5;
+        text-align: center;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #222;
+    }
+    
+    .subtitle {
+        font-size: 0.95rem;
+        color: #999;
+        font-weight: 400;
+    }
+    
+    /* 标签切换 - 简洁 */
+    .tab-switcher {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 15px 0;
+    }
+    
+    .tab-btn {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 20px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: #f5f5f5;
+        color: #666;
+    }
+    
+    .tab-btn.active {
+        background: #00a1d6;  /* B站蓝 */
+        color: white;
+    }
+    
+    .tab-btn:hover {
+        background: #e5e5e5;
+    }
+    
+    .tab-btn.active:hover {
+        background: #0085b3;
+    }
+    
+    /* 签到按钮 */
+    .checkin-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10;
+        background: #f5f5f5;
+        color: #666;
+        border: 1px solid #ddd;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .checkin-btn:hover {
+        background: #e5e5e5;
+    }
+    
+    .vote-count-badge {
+        background: #00a1d6;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        margin-left: 5px;
+    }
+    
+    /* 登录状态 */
+    .auth-btn {
+        background: #f5f5f5;
+        color: #666;
+        border: 1px solid #ddd;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 10;
+        font-size: 0.9rem;
+    }
+    
+    .auth-btn:hover {
+        background: #e5e5e5;
+    }
+    
+    .logged-in {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 10;
+        background: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        border: 1px solid #e5e5e5;
+    }
+    
+    .logged-in span {
+        font-weight: 500;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    
+    .settings-btn {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    
+    .settings-btn:hover {
+        color: #00a1d6;
+    }
+    
+    .logout-btn {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    
+    .logout-btn:hover {
+        color: #f25d8e;
+    }
+    
+    /* 主内容区 - 简洁卡片 */
+    .main-content {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid #e5e5e5;
+    }
+    
+    /* 搜索和分页 */
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: center;
+    }
+    
+    .search-container {
+        flex: 1;
+        min-width: 250px;
+        position: relative;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 10px 15px 10px 40px;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+        background: #fafafa;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #00a1d6;
+        background: white;
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        font-size: 0.9rem;
+    }
+    
+    .pagination {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 20px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .page-btn {
+        padding: 6px 12px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .page-btn:hover:not(:disabled) {
+        background: #00a1d6;
+        color: white;
+        border-color: #00a1d6;
+    }
+    
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #f5f5f5;
+    }
+    
+    .page-info {
+        margin: 0 8px;
+        font-size: 0.9rem;
+        color: #999;
+    }
+    
+    /* 候选人卡片 - 简洁 */
+    .candidates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .candidates-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .candidate-card {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+        border: 1px solid #e5e5e5;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .candidate-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .image-container {
+        width: 100%;
+        height: 180px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #f5f5f5;
+        overflow: hidden;
+        border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .candidate-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    
+    .candidate-info {
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+    
+    .candidate-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #222;
+    }
+    
+    .candidate-description {
+        color: #666;
+        margin-bottom: 12px;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        flex-grow: 1;
+    }
+    
+    .vote-count {
+        display: flex;
+        align-items: center;
+        font-size: 0.95rem;
+        color: #999;
+        margin-bottom: 12px;
+    }
+    
+    .vote-count i {
+        margin-right: 5px;
+        color: #f25d8e;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 5px;
+    }
+    
+    .vote-btn, .detail-btn {
+        flex: 1;
+        padding: 8px;
+        text-align: center;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        font-size: 0.9rem;
+    }
+    
+    .vote-btn {
+        background-color: #00a1d6;
+        color: white;
+    }
+    
+    .vote-btn:hover:not(:disabled) {
+        background-color: #0085b3;
+    }
+    
+    .vote-btn:disabled {
+        background-color: #ddd;
+        color: #999;
+        cursor: not-allowed;
+    }
+    
+    .detail-btn {
+        background-color: white;
+        color: #666;
+        border: 1px solid #ddd;
+    }
+    
+    .detail-btn:hover {
+        background-color: #f5f5f5;
+    }
+    
+    /* ===== 论坛风格留言板 ===== */
+    .comments-panel {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+        border: 1px solid #e5e5e5;
+    }
+    
+    .panel-header {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .panel-header i {
+        color: #00a1d6;
+        font-size: 1rem;
+    }
+    
+    /* 评论表单 - 简洁 */
+    .comment-form {
+        margin-bottom: 20px;
+        background: #fafafa;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 12px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #555;
+        font-size: 0.9rem;
+    }
+    
+    .form-textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        background: white;
+        transition: all 0.2s ease;
+        resize: vertical;
+        min-height: 80px;
+    }
+    
+    .form-textarea:focus {
+        outline: none;
+        border-color: #00a1d6;
+        background: white;
+    }
+    
+    .submit-btn {
+        padding: 8px 20px;
+        background: #00a1d6;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+        font-size: 0.9rem;
+        width: auto;
+        float: right;
+    }
+    
+    .submit-btn:hover {
+        background: #0085b3;
+    }
+    
+    .comment-form::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+    
+    /* 评论列表 - B站风格 */
+.comments-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 500px;
+    min-height: 300px;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f5f5f5;
+}
+
+.comments-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.comments-list::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    border-radius: 3px;
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.comments-list::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+    
+    .comment-item {
+        padding: 15px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .comment-item:last-child {
+        border-bottom: none;
+    }
+    
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        align-items: center;
+    }
+    
+    .comment-author {
+        font-weight: 600;
+        color: #00a1d6;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .comment-author i {
+        color: #999;
+        font-size: 0.8rem;
+    }
+    
+    .global-comment-label {
+        font-size: 0.7rem;
+        color: #999;
+        background: #f0f0f0;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-weight: 400;
+        margin-left: 5px;
+    }
+    
+    .comment-date {
+        color: #999;
+        font-size: 0.8rem;
+    }
+    
+    .comment-content {
+        color: #333;
+        line-height: 1.5;
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+        padding-left: 24px;
+        word-break: break-word;
+    }
+    
+    .comment-content a {
+        color: #00a1d6;
+        text-decoration: none;
+    }
+    
+    .comment-content a:hover {
+        text-decoration: underline;
+    }
+    
+    .comment-actions {
+        display: flex;
+        gap: 15px;
+        padding-left: 24px;
+    }
+    
+    .reply-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #999;
+        font-size: 0.8rem;
+        padding: 0;
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .reply-btn:hover {
+        color: #00a1d6;
+    }
+    
+    .floor-number {
+        color: #ccc;
+        font-size: 0.7rem;
+        margin-left: 5px;
+    }
+    
+    /* 论坛视图样式 - 简洁 */
+    .forum-view {
+        display: none;
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid #e5e5e5;
+    }
+    
+    .forum-view.active {
+        display: block;
+    }
+    
+    .new-post-btn {
+        background: white;
+        color: #00a1d6;
+        border: 1px solid #00a1d6;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .new-post-btn:hover {
+        background: #00a1d6;
+        color: white;
+    }
+    
+    .forum-post {
+        padding: 15px;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .forum-post:hover {
+        background: #fafafa;
+    }
+    
+    .forum-post-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .forum-post-author {
+        font-weight: 600;
+        color: #00a1d6;
+    }
+    
+    .forum-post-date {
+        color: #999;
+    }
+    
+    .forum-post-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    
+    .forum-post-content {
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 10px;
+    }
+    
+    .forum-post-stats {
+        display: flex;
+        gap: 15px;
+        color: #999;
+        font-size: 0.8rem;
+    }
+    
+    .forum-post-stats i {
+        margin-right: 3px;
+    }
+    
+    /* 加载状态 */
+    .loading-container {
+        text-align: center;
+        padding: 40px;
+    }
+    
+    .loading-spinner {
+        border: 3px solid #f0f0f0;
+        border-top: 3px solid #00a1d6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+    
+    .no-results i {
+        font-size: 2rem;
+        color: #ddd;
+        margin-bottom: 10px;
+    }
+    
+    /* 确认对话框 - 简洁 */
+    .confirmation-dialog {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        display: none;
+    }
+    
+    .dialog-content {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    }
+    
+    .dialog-header {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+        color: #333;
+        font-weight: 600;
+    }
+    
+    .dialog-message {
+        margin-bottom: 20px;
+        color: #666;
+    }
+    
+    .dialog-warning {
+        background: #fff9e6;
+        border: 1px solid #ffe58f;
+        border-radius: 4px;
+        padding: 12px;
+        margin: 15px 0;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .dialog-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+    
+    .dialog-btn {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+    }
+    
+    .dialog-confirm {
+        background: #00a1d6;
+        color: white;
+    }
+    
+    .dialog-confirm:hover {
+        background: #0085b3;
+    }
+    
+    .dialog-cancel {
+        background: #f5f5f5;
+        color: #666;
+    }
+    
+    .dialog-cancel:hover {
+        background: #e5e5e5;
+    }
+    
+    /* 登录模态框 */
+    .auth-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1001;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .auth-content {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        width: 380px;
+        max-width: 90%;
+        position: relative;
+    }
+    
+    .close-auth {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 20px;
+        cursor: pointer;
+        color: #999;
+    }
+    
+    .auth-tabs {
+        display: flex;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .auth-tab {
+        padding: 8px 20px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        color: #999;
+        position: relative;
+    }
+    
+    .auth-tab.active {
+        color: #00a1d6;
+    }
+    
+    .auth-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: #00a1d6;
+    }
+    
+    .auth-form .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .auth-form label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #555;
+        font-size: 0.9rem;
+    }
+    
+    .auth-form input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .auth-submit-btn {
+        width: 100%;
+        padding: 10px;
+        background: #00a1d6;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    
+    .auth-submit-btn:hover {
+        background: #0085b3;
+    }
+    
+    /* 设置模态框 */
+    .settings-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .settings-content {
+        background: white;
+        border-radius: 8px;
+        width: 450px;
+        max-width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    }
+    
+    .settings-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #e5e5e5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        background: white;
+    }
+    
+    .settings-header h2 {
+        color: #333;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    
+    .close-settings {
+        font-size: 24px;
+        cursor: pointer;
+        color: #999;
+    }
+    
+    .settings-body {
+        padding: 20px;
+    }
+    
+    .settings-section {
+        margin-bottom: 25px;
+    }
+    
+    .settings-section h3 {
+        color: #333;
+        margin-bottom: 15px;
+        font-size: 1rem;
+        font-weight: 600;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .settings-section label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .settings-section input[type="color"] {
+        width: 100%;
+        height: 40px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 2px;
+    }
+    
+    .settings-section input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 8px;
+    }
+    
+    .apply-bg-btn {
+        padding: 6px 12px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    
+    .apply-bg-btn:hover {
+        background: #e5e5e5;
+    }
+    
+    .settings-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+    
+    .save-settings-btn {
+        padding: 8px 20px;
+        background: #00a1d6;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .reset-settings-btn {
+        padding: 8px 20px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        color: #666;
+    }
+    
+    .opacity-control {
+        margin-bottom: 12px;
+    }
+    
+    .opacity-control span {
+        float: right;
+        color: #999;
+        font-size: 0.8rem;
+    }
+    
+    footer {
+        grid-column: 1 / -1;
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e5e5e5;
+        color: #999;
+        font-size: 0.8rem;
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        body {
+            padding: 10px;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+        }
+        
+        .auth-btn, .logged-in {
+            top: 10px;
+            right: 10px;
+        }
+        
+        .checkin-btn {
+            top: 10px;
+            left: 10px;
+        }
+    }
+
+    .header-btn {
+    background: #f5f5f5;
+    color: #666;
+    border: 1px solid #ddd;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+}
+.header-btn:hover {
+    background: #e5e5e5;
+}
+
+</style>
+
+</head>
+<body>
+
+    <!-- 设置模态框 -->
+<div class="settings-modal" id="settingsModal">
+    <div class="settings-content">
+        <div class="settings-header">
+            <h2>界面设置</h2>
+            <span class="close-settings">&times;</span>
+        </div>
+        
+        <div class="settings-body">
+            <div class="settings-section">
+                <h3>背景设置</h3>
+                <div class="color-picker">
+                    <label>背景颜色</label>
+                    <input type="color" id="bgColor" value="#f9fafb">
+                </div>
+                <div class="bg-image">
+                    <label>背景图片URL</label>
+                    <input type="text" id="bgImageUrl" placeholder="输入图片URL">
+                    <button class="apply-bg-btn" id="applyBgImage">应用图片</button>
+                </div>
+                <div class="bg-blur">
+                    <label>背景模糊度 <span id="bgBlurValue">0px</span></label>
+                    <input type="range" id="bgBlur" min="0" max="20" step="1" value="0">
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>板块透明度</h3>
+                <div class="opacity-control">
+                    <label>头部透明度 <span id="headerOpacityValue">100%</span></label>
+                    <input type="range" id="headerOpacity" min="0" max="1" step="0.1" value="1">
+                </div>
+                <div class="opacity-control">
+                    <label>主内容透明度 <span id="mainOpacityValue">100%</span></label>
+                    <input type="range" id="mainOpacity" min="0" max="1" step="0.1" value="1">
+                </div>
+                <div class="opacity-control">
+                    <label>留言板透明度 <span id="commentsOpacityValue">100%</span></label>
+                    <input type="range" id="commentsOpacity" min="0" max="1" step="0.1" value="1">
+                </div>
+                <div class="opacity-control">
+                    <label>卡片透明度 <span id="cardOpacityValue">100%</span></label>
+                    <input type="range" id="cardOpacity" min="0" max="1" step="0.1" value="1">
+                </div>
+            </div>
+
+            <div id="avatar-preview" style="width: 60px; height: 60px; border-radius: 50%; background: #00a1d6; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; border: 2px solid #00a1d6;">
+                ?
+            </div>
+            
+            <div class="settings-actions">
+                <button class="save-settings-btn" id="saveSettings">保存设置</button>
+                <button class="reset-settings-btn" id="resetSettings">恢复默认</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="container">
+<div class="announcement" id="announcement" style="background: #fff9e6; border: 1px solid #ffe58f; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: none; align-items: flex-start; gap: 10px; position: relative; grid-column: 1 / -1;">
+    <i class="fas fa-bullhorn" style="color: #faad14; font-size: 1.2rem; margin-top: 2px;"></i>
+    <div class="announcement-content" id="announcementContent" style="flex: 1; color: #666;">
+        <!-- 公告内容将通过JS动态加载 -->
+    </div>
+    <button class="close-announcement" onclick="document.getElementById('announcement').style.display='none'" style="background: none; border: none; color: #999; cursor: pointer; font-size: 1.2rem;">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
+        <header>
+            <div class="tab-switcher">
+                <button class="tab-btn active" id="voteTab">投票</button>
+                <button class="tab-btn" id="forumTab">论坛</button>
+            </div>
+<!-- 左上角按钮组 -->
+<div class="header-buttons" style="position: absolute; left: 20px; top: 20px; display: flex; gap: 10px; z-index: 20;">
+    <button id="checkinBtn" class="header-btn" style="display: none;">
+        <i class="fas fa-calendar-check"></i> 签到
+        <span id="voteCountBadge" class="vote-count-badge" style="display: none;">0</span>
+    </button>
+    <button id="feedbackBtn" class="header-btn">
+        <i class="fas fa-bug"></i> 反馈bug
+    </button>
+</div>
+            <h1>人物投票与留言系统</h1>
+            <p class="subtitle">为您喜爱的人物投票并留下宝贵意见</p>
+            <div id="authStatus">
+                <button id="authBtn" class="auth-btn">登录/注册</button>
+            </div>
+        </header>
+        
+        <!-- 主列表视图 -->
+        <div class="main-content" id="listView">
+            <div class="controls">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        id="searchInput" 
+                        placeholder="搜索人物名称或描述..."
+                    >
+                </div>
+                
+                <div class="pagination">
+                    <button class="page-btn" id="prevPage" disabled>
+                        <i class="fas fa-chevron-left"></i> 上一页
+                    </button>
+                    <span class="page-info" id="pageInfo">第 1 页，共 1 页</span>
+                    <button class="page-btn" id="nextPage" disabled>
+                        下一页 <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="loadingContainer" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>正在加载人物数据，请稍候...</p>
+            </div>
+            
+            <div class="candidates-grid" id="candidatesContainer" style="display: none;">
+                <!-- 候选人卡片将通过JavaScript动态生成 -->
+            </div>
+            
+            <div class="pagination">
+                <button class="page-btn" id="prevPageBottom" disabled>
+                    <i class="fas fa-chevron-left"></i> 上一页
+                </button>
+                <span class="page-info" id="pageInfoBottom">第 1 页，共 1 页</span>
+                <button class="page-btn" id="nextPageBottom" disabled>
+                    下一页 <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+<!-- 论坛视图 -->
+<div class="forum-view" id="forumView">
+    <div class="forum-header" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <button class="new-post-btn" id="newPostBtn">
+            <i class="fas fa-plus"></i> 发布新帖
+        </button>
+        <div style="flex: 1; min-width: 200px;">
+            <input type="text" id="forumSearchInput" class="search-input" placeholder="搜索帖子标题或内容..." style="width: 100%;">
+        </div>
+        <select id="forumSortSelect" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd; background: white;">
+            <option value="time">按时间排序</option>
+            <option value="likes">按点赞数排序</option>
+        </select>
+    </div>
+    
+    <div id="forumPostsContainer">
+        <!-- 论坛帖子将通过JavaScript动态生成 -->
+    </div>
+    
+    <div id="forumLoading" class="loading-container" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>正在加载帖子...</p>
+    </div>
+</div>
+        
+        <!-- 留言面板 (在右侧) -->
+        <div class="comments-panel">
+            <div class="panel-header">
+                <i class="fas fa-comments"></i> 留言板
+            </div>
+            
+            <div id="commentsLoading" class="loading-container" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>正在加载留言...</p>
+            </div>
+            
+            <div class="comment-form">
+                <div class="form-group">
+                    <label class="form-label" for="commentContent">留言内容</label>
+                    <textarea 
+                        class="form-textarea" 
+                        id="commentContent" 
+                        placeholder="写下您的留言..."
+                    ></textarea>
+                </div>
+                
+                <button class="submit-btn" id="submitComment">
+                    <i class="fas fa-paper-plane"></i> 发布留言
+                </button>
+            </div>
+            
+            <div class="comments-list" id="commentsList">
+                <!-- 留言将通过JavaScript动态生成 -->
+            </div>
+        </div>
+        
+        <footer>
+            <p>© <span id="currentYear"></span> 人物投票系统 | 所有留言公开可见</p>
+        </footer>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div class="confirmation-dialog" id="confirmationDialog">
+        <div class="dialog-content">
+            <h3 class="dialog-header">确认发布留言</h3>
+            <p class="dialog-message">
+                发布评论后无法修改，您确定要发布吗？
+            </p>
+            <div class="dialog-warning">
+                <i class="fas fa-exclamation-circle"></i> 请注意：发布后无法编辑或删除您的留言
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-btn dialog-cancel" id="dialogCancel">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button class="dialog-btn dialog-confirm" id="dialogConfirm">
+                    <i class="fas fa-check"></i> 确定发布
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录/注册模态框 -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-content">
+            <span class="close-auth">&times;</span>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">登录</button>
+                <button class="auth-tab" data-tab="register">注册</button>
+            </div>
+            
+            <div id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="loginUsername" placeholder="输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="输入密码">
+                </div>
+                <button id="loginBtn" class="auth-submit-btn">登录</button>
+            </div>
+            
+            <div id="registerForm" class="auth-form" style="display: none;">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="registerUsername" placeholder="输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="registerPassword" placeholder="输入密码">
+                </div>
+                <button id="registerBtn" class="auth-submit-btn">注册</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 先加载Supabase库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+    // Supabase配置
+    const SUPABASE_CONFIG = {
+        url: 'https://btwykwtvstjhgchldwez.supabase.co',
+        key: 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
+        options: {
+            headers: {
+                'apikey': 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
+                'Authorization': 'Bearer sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY'
+            },
+            db: {
+                schema: 'public'
+            },
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false
+            }
+        }
+    };
+    
+    // 应用程序代码
+    let supabaseClient;
+    let currentDetailId = null;
+    let pendingComment = null;
+    let isCheckingIn = false; // 防止重复签到
+    
+function initializeSupabase() {
+    try {
+        // 确保 Supabase 库已加载
+        if (typeof supabase === 'undefined') {
+            console.error('Supabase库未加载');
+            return false;
+        }
+        
+        supabaseClient = supabase.createClient(
+            SUPABASE_CONFIG.url,
+            SUPABASE_CONFIG.key,
+            SUPABASE_CONFIG.options
+        );
+        console.log('Supabase初始化成功');
+        return true;
+    } catch (error) {
+        console.error('Supabase初始化失败:', error);
+        return false;
+    }
+}
+    
+    // 工具函数
+    const utils = {
+
+        updateAvatarDisplay: (avatarUrl) => {
+    // 更新登录状态中的头像
+    const loggedInDiv = document.querySelector('.logged-in img');
+    if (loggedInDiv) {
+        loggedInDiv.src = avatarUrl || 'https://via.placeholder.com/30x30?text=头像';
+    }
+    
+    // 更新设置中的预览
+    const avatarPreview = document.getElementById('avatar-preview');
+    if (avatarPreview) {
+        avatarPreview.src = avatarUrl || 'https://via.placeholder.com/60x60?text=头像';
+    }
+},
+
+        getCurrentYear: () => new Date().getFullYear(),
+        debounce: (func, wait) => {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        },
+        formatDate: (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
+        showLoading: (elementId) => {
+            const element = document.getElementById(elementId);
+            if (element) element.style.display = 'block';
+        },
+        hideLoading: (elementId) => {
+            const element = document.getElementById(elementId);
+            if (element) element.style.display = 'none';
+        },
+        showDialog: (callback) => {
+            document.getElementById('confirmationDialog').style.display = 'flex';
+            
+            document.getElementById('dialogConfirm').onclick = () => {
+                document.getElementById('confirmationDialog').style.display = 'none';
+                if (callback) callback(true);
+            };
+            
+            document.getElementById('dialogCancel').onclick = () => {
+                document.getElementById('confirmationDialog').style.display = 'none';
+                if (callback) callback(false);
+            };
+        },
+
+setAuthStatus: (username) => {
+    const authStatus = document.getElementById('authStatus');
+    if (username) {
+        // 生成头像首字母
+        const avatarLetter = username.charAt(0).toUpperCase();
+        authStatus.innerHTML = `
+            <div class="logged-in">
+                <div style="width: 30px; height: 30px; border-radius: 50%; background: #00a1d6; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
+                    ${avatarLetter}
+                </div>
+                <span style="margin: 0 5px;">${username}</span>
+                <button class="settings-btn" id="settingsBtn" style="background: none; border: none; color: #999; cursor: pointer; padding: 0 5px;">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="logout-btn" id="logoutBtn" style="background: none; border: none; color: #999; cursor: pointer; padding: 0 5px;">
+                    登出
+                </button>
+            </div>
+        `;
+        // 重新绑定事件
+        setTimeout(() => {
+            document.getElementById('logoutBtn')?.addEventListener('click', app.logout);
+            document.getElementById('settingsBtn')?.addEventListener('click', () => {
+                app.showSettings();
+            });
+        }, 0);
+        // 显示签到按钮
+        const checkinBtn = document.getElementById('checkinBtn');
+        if (checkinBtn) {
+            checkinBtn.style.display = 'flex';
+        }
+        // 检查签到状态
+        app.checkCheckinStatus();
+    } else {
+        authStatus.innerHTML = '<button id="authBtn" class="auth-btn">登录/注册</button>';
+        document.getElementById('authBtn')?.addEventListener('click', () => app.showAuthModal());
+        // 隐藏签到按钮
+        const checkinBtn = document.getElementById('checkinBtn');
+        if (checkinBtn) {
+            checkinBtn.style.display = 'none';
+        }
+        const voteBadge = document.getElementById('voteCountBadge');
+        if (voteBadge) {
+            voteBadge.style.display = 'none';
+        }
+    }
+},
+        getAuthToken: () => localStorage.getItem('authToken'),
+        setAuthToken: (token) => localStorage.setItem('authToken', token),
+        removeAuthToken: () => localStorage.removeItem('authToken'),
+        getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
+        setCurrentUser: (user) => localStorage.setItem('currentUser', JSON.stringify(user)),
+        removeCurrentUser: () => localStorage.removeItem('currentUser'),
+    getLastCheckinDate: () => {
+        const user = utils.getCurrentUser();
+        return user ? localStorage.getItem(`lastCheckinDate_${user.id}`) : null;
+    },
+    setLastCheckinDate: (date) => {
+        const user = utils.getCurrentUser();
+        if (user) localStorage.setItem(`lastCheckinDate_${user.id}`, date);
+    },
+    getVoteCount: () => {
+        const user = utils.getCurrentUser();
+        return user ? parseInt(localStorage.getItem(`voteCount_${user.id}`) || '0') : 0;
+    },
+    setVoteCount: (count) => {
+        const user = utils.getCurrentUser();
+        if (user) localStorage.setItem(`voteCount_${user.id}`, count.toString());
+    },
+    incrementVoteCount: () => {
+        const count = utils.getVoteCount() + 1;
+        utils.setVoteCount(count);
+        return count;
+    },
+isSameDay: (date1, date2) => {
+    return date1 === date2; // 直接比较字符串
+},
+compressImage: (file, maxWidth = 800, maxHeight = 800, quality = 0.7, isAvatar = false) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                // 计算缩放比例，保持宽高比
+                let width = img.width;
+                let height = img.height;
+                
+                // 头像使用固定尺寸
+                if (isAvatar) {
+                    width = 100;
+                    height = 100;
+                } else {
+                    // 普通图片，限制最大尺寸但保持比例
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round(height * (maxWidth / width));
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round(width * (maxHeight / height));
+                            height = maxHeight;
+                        }
+                    }
+                }
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                // 设置白色背景（防止透明背景变黑）
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // 压缩质量
+                const compressedQuality = isAvatar ? 0.6 : quality;
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', compressedQuality);
+                
+                // 生成缩略图
+                const thumbCanvas = document.createElement('canvas');
+                const thumbSize = isAvatar ? 50 : 200;
+                thumbCanvas.width = thumbSize;
+                thumbCanvas.height = thumbSize;
+                const thumbCtx = thumbCanvas.getContext('2d');
+                thumbCtx.fillStyle = '#FFFFFF';
+                thumbCtx.fillRect(0, 0, thumbSize, thumbSize);
+                
+                // 计算缩略图比例
+                let thumbWidth, thumbHeight;
+                if (img.width > img.height) {
+                    thumbWidth = thumbSize;
+                    thumbHeight = Math.round(img.height * (thumbSize / img.width));
+                } else {
+                    thumbHeight = thumbSize;
+                    thumbWidth = Math.round(img.width * (thumbSize / img.height));
+                }
+                const thumbX = (thumbSize - thumbWidth) / 2;
+                const thumbY = (thumbSize - thumbHeight) / 2;
+                thumbCtx.drawImage(img, thumbX, thumbY, thumbWidth, thumbHeight);
+                
+                const thumbDataUrl = thumbCanvas.toDataURL('image/jpeg', 0.5);
+                
+                resolve({
+                    full: compressedDataUrl,
+                    thumb: thumbDataUrl
+                });
+            };
+            img.onerror = reject;
+        };
+        reader.onerror = reject;
+    });
+},
+
+    async saveUserAvatar(userId, file) {
+    if (!supabaseClient) return false;
+    
+    try {
+        const compressed = await this.compressImage(file, 200, 200, 0.6, true);
+        
+        // 检查是否已有头像
+        const { data: existing } = await supabaseClient
+            .from('user_avatars')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+        
+        if (existing) {
+            // 更新
+            const { error } = await supabaseClient
+                .from('user_avatars')
+                .update({
+                    avatar_data: compressed.full,
+                    avatar_thumb: compressed.thumb,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', userId);
+            
+            if (error) throw error;
+        } else {
+            // 插入
+            const { error } = await supabaseClient
+                .from('user_avatars')
+                .insert([{
+                    user_id: userId,
+                    avatar_data: compressed.full,
+                    avatar_thumb: compressed.thumb
+                }]);
+            
+            if (error) throw error;
+        }
+        
+        // 更新本地存储
+        const user = this.getCurrentUser();
+        user.avatar_thumb = compressed.thumb;
+        this.setCurrentUser(user);
+        
+        // 更新界面
+        this.updateAvatarDisplay(compressed.thumb);
+        
+        return true;
+    } catch (error) {
+        console.error('保存头像失败:', error);
+        return false;
+    }
+},
+
+updateAvatarDisplay(avatarUrl) {
+    // 更新所有显示头像的地方
+    document.querySelectorAll('.user-avatar').forEach(el => {
+        el.src = avatarUrl || 'https://via.placeholder.com/40x40?text=头像';
+    });
+},
+    };
+    
+// 数据服务
+const dataService = {
+    currentPage: 1,
+    itemsPerPage: 9,
+    totalItems: 0,
+    searchTerm: '',
+
+    // 在 dataService 对象内部添加
+allForumPosts: [], // 用于缓存所有帖子
+
+async loadAllForumPosts() {
+    if (!supabaseClient) return [];
+    try {
+        const { data: posts, error } = await supabaseClient
+            .from('forum_posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        this.allForumPosts = posts || [];
+        return this.allForumPosts;
+    } catch (error) {
+        console.error('获取所有帖子失败:', error);
+        return [];
+    }
+},
+
+getFilteredPosts(searchTerm, sortBy) {
+    let posts = [...this.allForumPosts];
+    
+    // 搜索过滤
+    if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        posts = posts.filter(p => 
+            (p.title && p.title.toLowerCase().includes(term)) || 
+            (p.content && p.content.toLowerCase().includes(term))
+        );
+    }
+    
+    // 排序
+    if (sortBy === 'likes') {
+        posts.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    } else {
+        // 默认时间倒序
+        posts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    
+    return posts;
+},
+    
+    async getCandidates(page = 1) {
+        if (!supabaseClient) return [];
+        
+        try {
+            // 首先获取所有候选人和他们的票数
+            const { data: votesData, error: votesError } = await supabaseClient
+                .from('votes')
+                .select('candidate_id');
+            
+            if (votesError) throw votesError;
+            
+            // 计算每个候选人的票数
+            const voteCounts = {};
+            (votesData || []).forEach(v => {
+                voteCounts[v.candidate_id] = (voteCounts[v.candidate_id] || 0) + 1;
+            });
+            
+            // 获取候选人数据并按票数排序
+            let query = supabaseClient
+                .from('candidates')
+                .select('*', { count: 'exact' });
+            
+            if (this.searchTerm) {
+                query = query.or(`name.ilike.%${this.searchTerm}%,description.ilike.%${this.searchTerm}%`);
+            }
+            
+            const { data, count, error } = await query;
+            
+            if (error) throw error;
+            
+            // 为每个候选人添加票数并排序
+            const candidatesWithVotes = (data || []).map(candidate => ({
+                ...candidate,
+                votes: voteCounts[candidate.id] || 0
+            })).sort((a, b) => b.votes - a.votes);
+            
+            this.totalItems = count;
+            this.currentPage = page;
+            
+            // 分页处理
+            const offset = (page - 1) * this.itemsPerPage;
+            return candidatesWithVotes.slice(offset, offset + this.itemsPerPage);
+        } catch (error) {
+            console.error('获取候选人失败:', error);
+            return [];
+        }
+    },
+    
+    async getCandidateDetail(id) {
+        if (!supabaseClient) return null;
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('candidates')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('获取候选人详情失败:', error);
+            return null;
+        }
+    },
+    
+    async getVotes() {
+        if (!supabaseClient) return {};
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('votes')
+                .select('candidate_id');
+            
+            if (error) throw error;
+            
+            const counts = {};
+            (data || []).forEach(v => {
+                counts[v.candidate_id] = (counts[v.candidate_id] || 0) + 1;
+            });
+            return counts;
+        } catch (error) {
+            console.error('获取票数失败:', error);
+            return {};
+        }
+    },
+    
+    async getComments(candidateId = null) {
+        if (!supabaseClient) return [];
+        
+        try {
+            let query = supabaseClient
+                .from('comments')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (candidateId) {
+                query = query.eq('candidate_id', candidateId);
+            } else {
+                query = query.is('candidate_id', null);
+            }
+            
+            const { data, error } = await query;
+            
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('获取留言失败:', error);
+            return [];
+        }
+    },
+    
+    async getLatestComments(limit = 10) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('comments')
+                .select('*')
+                .is('candidate_id', null)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+            
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('获取最新留言失败:', error);
+            return [];
+        }
+    },
+    
+async submitVote(candidateId) {
+    if (!supabaseClient) return false;
+    const user = utils.getCurrentUser();
+    if (!user) {
+        alert('请先登录后再投票');
+        return false;
+    }
+
+    try {
+        // 获取今天的日期范围
+        const today = new Date().toISOString().split('T')[0]; // 例如 "2026-02-27"
+        const startOfDay = today + 'T00:00:00.000Z';
+        const endOfDay = today + 'T23:59:59.999Z';
+
+        // 检查今天是否已经投过该候选人
+        const { data: existingVote, error: checkError } = await supabaseClient
+            .from('votes')
+            .select('id')
+            .eq('candidate_id', candidateId)
+            .eq('user_id', user.id)
+            .gte('created_at', startOfDay)
+            .lte('created_at', endOfDay)
+            .maybeSingle();
+
+        if (checkError) throw checkError;
+        if (existingVote) {
+            alert('您今天已经为该候选人投过票了，请明天再来！');
+            return false;
+        }
+
+        // 插入投票记录
+        const { error: insertError } = await supabaseClient
+            .from('votes')
+            .insert([{
+                candidate_id: candidateId,
+                user_id: user.id,
+                created_at: new Date().toISOString()
+            }]);
+
+        if (insertError) throw insertError;
+
+        // 扣除一次投票机会（可选，根据您的设计）
+        const currentCount = utils.getVoteCount();
+        if (currentCount > 0) {
+            utils.setVoteCount(currentCount - 1);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('投票失败:', error);
+        alert('投票失败: ' + (error.message || '未知错误'));
+        return false;
+    }
+},
+    
+    async submitComment(candidateId, userName, content) {
+        if (!supabaseClient) return false;
+        if (!userName || !content) return false;
+        
+        try {
+            const { error } = await supabaseClient
+                .from('comments')
+                .insert([{
+                    candidate_id: candidateId,
+                    user_name: userName,
+                    content: content
+                }]);
+            
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('提交留言失败:', error);
+            alert('提交留言失败: ' + error.message);
+            return false;
+        }
+    },
+    
+async login(username, password) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('*')
+            .eq('username', username)
+            .eq('password', password)
+            .single();
+        
+        if (error) throw error;
+        if (!data) throw new Error('用户名或密码错误');
+        
+        // 直接使用 data.id，不要转换
+        const user = {
+            id: data.id,  // 保持UUID格式
+            username: data.username,
+            password: data.password
+        };
+        
+        const fakeToken = `fake-jwt-token-${Date.now()}`;
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('authToken', fakeToken);
+        
+        return { user, token: fakeToken };
+    } catch (error) {
+        console.error('登录失败:', error);
+        throw error;
+    }
+    // 检查签到状态
+this.checkCheckinStatus();
+},
+    
+    async register(username, password) {
+        try {
+            // 检查用户名是否已存在
+            const { data: existingUser } = await supabaseClient
+                .from('users')
+                .select('username')
+                .eq('username', username)
+                .single();
+            
+            if (existingUser) throw new Error('用户名已存在');
+            
+            // 创建新用户 - 让数据库自动生成UUID
+            const { data, error } = await supabaseClient
+                .from('users')
+                .insert([{ username, password }])
+                .select()
+                .single();
+            
+            if (error) throw error;
+            
+            // 保存用户信息
+            const user = {
+                id: data.id,  // 数据库生成的UUID
+                username: data.username,
+                password: data.password
+            };
+            
+            const fakeToken = `fake-jwt-token-${Date.now()}`;
+            
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem('authToken', fakeToken);
+            
+            return { user, token: fakeToken };
+        } catch (error) {
+            console.error('注册失败:', error);
+            throw error;
+        }
+        // 检查签到状态
+this.checkCheckinStatus();
+    },
+
+    async getForumPosts() {
+        if (!supabaseClient) return [];
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('forum_posts')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('获取论坛帖子失败:', error);
+            return [];
+        }
+    },
+    
+    async createForumPost(title, content, userId, userName, imageCount = 0) {
+        if (!supabaseClient) return false;
+        
+        try {
+            // 从 localStorage 获取当前用户
+            const userStr = localStorage.getItem('currentUser');
+            if (!userStr) {
+                alert('用户未登录');
+                return false;
+            }
+            
+            const user = JSON.parse(userStr);
+            
+            // 直接使用用户的UUID字符串
+            const userIdStr = user.id;
+            
+            console.log('创建帖子 - 用户ID:', userIdStr, '类型:', typeof userIdStr);
+            
+            // 生成帖子ID
+            const postId = crypto.randomUUID ? crypto.randomUUID() : 
+                           'post-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            
+            // 创建帖子数据 - 直接使用UUID字符串
+            const postData = {
+                id: postId,
+                title: title || '无标题',
+                content: content || '',
+                user_id: userIdStr,  // 直接使用UUID字符串
+                user_name: user.username || userName || '匿名用户',
+                created_at: new Date().toISOString(),
+                views: 0,
+                comments: 0,
+                likes: 0,
+                image_count: imageCount || 0
+            };
+            
+            console.log('正在创建帖子:', postData);
+            
+            const { data, error } = await supabaseClient
+                .from('forum_posts')
+                .insert([postData])
+                .select();
+            
+            if (error) {
+                console.error('数据库错误:', error);
+                alert('发布失败：' + error.message);
+                return false;
+            }
+            
+            console.log('帖子创建成功:', data);
+            return postId;
+        } catch (error) {
+            console.error('创建论坛帖子失败:', error);
+            alert('发布失败：' + error.message);
+            return false;
+        }
+    },
+
+    async savePostImages(postId, images) {
+        if (!supabaseClient) return false;
+        
+        try {
+            const imageRecords = images.map((img, index) => ({
+                post_id: postId,
+                image_data: img.full,
+                image_thumb: img.thumb,
+                sort_order: index
+            }));
+            
+            const { error } = await supabaseClient
+                .from('forum_images')
+                .insert(imageRecords);
+            
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('保存图片失败:', error);
+            return false;
+        }
+    },
+
+    async getForumPostImages(postId) {
+        if (!supabaseClient) return [];
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('forum_images')
+                .select('*')
+                .eq('post_id', postId)
+                .order('sort_order');
+            
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('获取帖子图片失败:', error);
+            return [];
+        }
+    },
+    
+    async addPostComment(postId, userId, userName, content) {
+        if (!supabaseClient) return false;
+        
+        try {
+            const { error } = await supabaseClient
+                .from('post_comments')
+                .insert([{
+                    post_id: postId,
+                    user_id: userId,
+                    user_name: userName,
+                    content: content,
+                    created_at: new Date().toISOString()
+                }]);
+            
+            if (error) throw error;
+            
+            // 获取当前评论数
+            const { data: postData } = await supabaseClient
+                .from('forum_posts')
+                .select('comments')
+                .eq('id', postId)
+                .single();
+            
+            // 更新评论数
+            await supabaseClient
+                .from('forum_posts')
+                .update({ comments: (postData?.comments || 0) + 1 })
+                .eq('id', postId);
+            
+            return true;
+        } catch (error) {
+            console.error('添加评论失败:', error);
+            return false;
+        }
+    },
+
+    async getPostComments(postId) {
+        if (!supabaseClient) return [];
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('post_comments')
+                .select('*')
+                .eq('post_id', postId)
+                .order('created_at', { ascending: true });
+            
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('获取评论失败:', error);
+            return [];
+        }
+    },
+
+    
+    
+    getTotalPages() {
+        return Math.ceil(this.totalItems / this.itemsPerPage);
+    },
+    
+    updatePagination() {
+        const totalPages = this.getTotalPages();
+        const pageInfo = `第 ${this.currentPage} 页，共 ${totalPages} 页`;
+        
+        document.getElementById('pageInfo').textContent = pageInfo;
+        document.getElementById('pageInfoBottom').textContent = pageInfo;
+        
+        document.getElementById('prevPage').disabled = this.currentPage <= 1;
+        document.getElementById('prevPageBottom').disabled = this.currentPage <= 1;
+        document.getElementById('nextPage').disabled = this.currentPage >= totalPages;
+        document.getElementById('nextPageBottom').disabled = this.currentPage >= totalPages;
+    }
+    
+};
+    
+    // UI渲染器
+    const renderer = {
+        async renderCandidates() {
+            const container = document.getElementById('candidatesContainer');
+            const loading = document.getElementById('loadingContainer');
+            if (!container || !loading) return;
+            
+            try {
+                utils.showLoading('loadingContainer');
+                
+                const [candidates, votes] = await Promise.all([
+                    dataService.getCandidates(dataService.currentPage),
+                    dataService.getVotes(),
+                ]);
+                
+                dataService.updatePagination();
+                
+                if (candidates.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-results">
+                            <i class="fas fa-search"></i>
+                            <h3>未找到匹配的人物</h3>
+                            <p>尝试使用不同的搜索词或浏览其他页面</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = candidates.map(candidate => {
+                        return `
+                            <div class="candidate-card" data-id="${candidate.id}">
+                                <div class="image-container">
+                                    <img src="${candidate.image_url || 'https://via.placeholder.com/400x250?text=无图片'}" 
+                                         alt="${candidate.name}" 
+                                         class="candidate-image"
+                                         onerror="this.onerror=null;this.src='https://via.placeholder.com/400x250?text=图片加载失败'">
+                                </div>
+                                <div class="candidate-info">
+                                    <h3 class="candidate-name">${candidate.name}</h3>
+                                    <p class="candidate-description">${candidate.description || '暂无描述'}</p>
+                                    
+                                    <div class="vote-count">
+                                        <i class="fas fa-vote-yea"></i> 票数: ${candidate.votes || 0}
+                                    </div>
+                                    
+                                    <div class="action-buttons">
+                                        <button class="vote-btn" onclick="app.voteForCandidate(${candidate.id})" 
+                                            ${utils.getVoteCount() <= 0 ? 'disabled' : ''}>
+                                            ${utils.getVoteCount() <= 0 ? '无投票机会' : '投票'}
+                                        </button>
+                                        <button class="detail-btn" onclick="app.showDetail(${candidate.id})">
+                                            详情 <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                
+                document.getElementById('currentYear').textContent = utils.getCurrentYear();
+                container.style.display = 'grid';
+            } catch (error) {
+                console.error('渲染候选人失败:', error);
+                container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:red;padding:20px;">数据加载失败，请刷新页面</p>';
+                container.style.display = 'block';
+            } finally {
+                utils.hideLoading('loadingContainer');
+            }
+        },
+        
+async renderComments() {
+    const container = document.getElementById('commentsList');
+    const loading = document.getElementById('commentsLoading');
+    if (!container || !loading) return;
+    
+    try {
+        utils.showLoading('commentsLoading');
+        
+        const comments = await dataService.getLatestComments(20);
+        
+        if (comments.length === 0) {
+            container.innerHTML = `
+                <div class="comment-item" style="text-align: center; padding: 30px;">
+                    <i class="fas fa-comment-dots" style="font-size: 2rem; color: #ddd; margin-bottom: 10px;"></i>
+                    <p style="color: #999;">暂无留言，成为第一个留言的人吧！</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = comments.map((comment, index) => {
+                // 自动识别并转换链接
+                const contentWithLinks = comment.content.replace(
+                    /(https?:\/\/[^\s]+)/g, 
+                    '<a href="$1" target="_blank" rel="nofollow">$1</a>'
+                );
+                
+                // 楼层号（倒序）
+                const floor = comments.length - index;
+                
+                return `
+                    <div class="comment-item" id="comment-${comment.id}">
+                        <div class="comment-header">
+                            <span class="comment-author">
+                                <i class="fas fa-user-circle"></i> ${comment.user_name}
+                                <span class="global-comment-label">全局</span>
+                                <span class="floor-number">#${floor}</span>
+                            </span>
+                            <span class="comment-date">
+                                ${utils.formatDate(comment.created_at)}
+                            </span>
+                        </div>
+                        <div class="comment-content">
+                            ${contentWithLinks}
+                        </div>
+                        <div class="comment-actions">
+                            <button class="reply-btn" onclick="app.setReplyTarget('${comment.user_name}')">
+                                <i class="fas fa-reply"></i> 回复
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (error) {
+        console.error('渲染留言失败:', error);
+        container.innerHTML = '<p style="text-align:center;color:red;padding:10px;">留言加载失败</p>';
+    } finally {
+        utils.hideLoading('commentsLoading');
+    }
+},
+
+async renderForumPosts() {
+    const container = document.getElementById('forumPostsContainer');
+    const loading = document.getElementById('forumLoading');
+    if (!container || !loading) return;
+    
+    try {
+        loading.style.display = 'block';
+        container.innerHTML = '';
+        
+        // 获取搜索和排序参数
+        const searchTerm = document.getElementById('forumSearchInput')?.value || '';
+        const sortBy = document.getElementById('forumSortSelect')?.value || 'time';
+        
+        // 如果尚未加载所有帖子，则加载
+        if (dataService.allForumPosts.length === 0) {
+            await dataService.loadAllForumPosts();
+        }
+        
+        const posts = dataService.getFilteredPosts(searchTerm, sortBy);
+        
+        if (posts.length === 0) {
+            container.innerHTML = `
+                <div class="no-results">
+                    <i class="fas fa-comments"></i>
+                    <h3>暂无帖子</h3>
+                    <p>成为第一个发布帖子的人吧！</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = posts.map(post => {
+                // 保持原有帖子渲染代码不变
+                const imageHtml = post.image_count > 0 ? 
+                    `<div style="display: flex; gap: 5px; margin: 10px 0; flex-wrap: wrap;">
+                        ${Array(post.image_count).fill(0).map((_, i) => `
+                            <div style="width: 60px; height: 60px; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #999; border: 1px solid #ddd;">
+                                <i class="fas fa-image" style="font-size: 20px;"></i>
+                            </div>
+                        `).join('')}
+                    </div>` : '';
+                
+                return `
+                    <div class="forum-post" onclick="window.location.href='forum-detail.html?id=${post.id}'">
+                        <div class="forum-post-header">
+                            <span class="forum-post-author">
+                                <i class="fas fa-user-circle"></i> ${post.user_name}
+                            </span>
+                            <span class="forum-post-date">
+                                ${utils.formatDate(post.created_at)}
+                            </span>
+                        </div>
+                        <h3 class="forum-post-title">${post.title}</h3>
+                        <p class="forum-post-content">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
+                        ${imageHtml}
+                        <div class="forum-post-stats">
+                            <span><i class="fas fa-eye"></i> ${post.views || 0}</span>
+                            <span><i class="fas fa-comment"></i> ${post.comments || 0}</span>
+                            <span><i class="fas fa-heart"></i> ${post.likes || 0}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (error) {
+        console.error('渲染论坛帖子失败:', error);
+        container.innerHTML = '<p style="text-align:center;color:red;padding:20px;">加载失败</p>';
+    } finally {
+        loading.style.display = 'none';
+    }
+},
+
+        updateVoteButtons() {
+            const voteCount = utils.getVoteCount();
+            document.querySelectorAll('.vote-btn').forEach(btn => {
+                btn.disabled = voteCount <= 0;
+                btn.textContent = voteCount <= 0 ? '无投票机会' : '投票';
+            });
+            
+            const badge = document.getElementById('voteCountBadge');
+            if (voteCount > 0) {
+                badge.textContent = voteCount;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    };
+    
+    // 应用控制器
+    const app = {
+            isCheckingIn: false,
+
+            // 打开反馈模态框
+openFeedbackModal() {
+    const user = utils.getCurrentUser();
+    if (!user) {
+        alert('请先登录后再提交反馈');
+        this.showAuthModal();
+        return;
+    }
+    document.getElementById('feedbackModal').style.display = 'flex';
+    document.getElementById('feedbackTitle').value = '';
+    document.getElementById('feedbackContent').value = '';
+},
+
+// 提交反馈
+async submitFeedback() {
+    const user = utils.getCurrentUser();
+    if (!user) {
+        alert('登录已过期，请重新登录');
+        this.showAuthModal();
+        return;
+    }
+    const title = document.getElementById('feedbackTitle').value.trim();
+    const content = document.getElementById('feedbackContent').value.trim();
+    if (!title || !content) {
+        alert('标题和内容都不能为空');
+        return;
+    }
+    const btn = document.getElementById('submitFeedbackBtn');
+    btn.disabled = true;
+    btn.textContent = '提交中...';
+
+    try {
+        const { error } = await supabaseClient
+            .from('bug_reports')
+            .insert([{
+                user_id: user.id,
+                user_name: user.username,
+                title: title,
+                content: content,
+                status: 'unread',
+                created_at: new Date().toISOString()
+            }]);
+        if (error) throw error;
+        alert('反馈提交成功！感谢您的支持。');
+        document.getElementById('feedbackModal').style.display = 'none';
+    } catch (err) {
+        console.error('提交反馈失败:', err);
+        alert('提交失败：' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '提交反馈';
+    }
+},
+
+async checkin() {
+    if (this.isCheckingIn) return;
+    this.isCheckingIn = true;
+    const user = utils.getCurrentUser();
+    if (!user) {
+        alert('请先登录后再签到');
+        this.showAuthModal();
+        this.isCheckingIn = false;
+        return;
+    }
+    const lastCheckinDate = utils.getLastCheckinDate();
+    const today = new Date().toISOString().split('T')[0];
+    if (lastCheckinDate && utils.isSameDay(lastCheckinDate, today)) {
+        alert('您今天已经签到过了，明天再来吧！');
+        this.isCheckingIn = false;
+        return;
+    }
+    try {
+        utils.setLastCheckinDate(today);
+        const newCount = utils.incrementVoteCount();
+        renderer.updateVoteButtons();
+        alert(`签到成功！您获得了1次投票机会，当前共有${newCount}次投票机会`);
+    } catch (error) {
+        console.error('签到失败:', error);
+        alert('签到失败，请重试');
+    } finally {
+        setTimeout(() => { this.isCheckingIn = false; }, 1000);
+    }
+},
+
+async init() {
+    document.getElementById('currentYear').textContent = utils.getCurrentYear();
+
+    // 定义 loadAnnouncement 函数（移到调用前）
+    async function loadAnnouncement() {
+        if (!supabaseClient) {
+            console.log('Supabase未初始化，使用模拟公告');
+            const mockAnnouncement = {
+                id: 'mock-' + Date.now(),
+                content: '<div style="padding: 15px;"><h3 style="color: #00a1d6; margin-bottom: 10px;">📢 欢迎使用投票系统</h3><p>每日签到可获得投票机会！</p><p>论坛支持发帖和评论！</p></div>'
+            };
+            const closedAnnouncements = JSON.parse(localStorage.getItem('closedAnnouncements') || '[]');
+            if (!closedAnnouncements.includes(mockAnnouncement.id)) {
+                const announcementDiv = document.getElementById('announcement');
+                const contentDiv = document.getElementById('announcementContent');
+                contentDiv.innerHTML = mockAnnouncement.content;
+                announcementDiv.style.display = 'flex';
+                const closeBtn = announcementDiv.querySelector('.close-announcement');
+                closeBtn.onclick = () => {
+                    announcementDiv.style.display = 'none';
+                    closedAnnouncements.push(mockAnnouncement.id);
+                    localStorage.setItem('closedAnnouncements', JSON.stringify(closedAnnouncements));
+                };
+            }
+            return;
+        }
+        try {
+            const { data, error } = await supabaseClient
+                .from('announcements')
+                .select('*')
+                .eq('active', true)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            let announcementData = data;
+            if (error || !data) {
+                console.log('使用模拟公告数据（数据库无数据）');
+                announcementData = {
+                    id: 'test-' + Date.now(),
+                    content: '<div style="padding: 15px;"><h3 style="color: #00a1d6; margin-bottom: 10px;">📢 欢迎使用投票系统</h3><p>这是模拟公告，请在Supabase中创建announcements表！</p><p>每日签到可获得投票机会！</p></div>'
+                };
+            }
+            if (announcementData) {
+                const closedAnnouncements = JSON.parse(localStorage.getItem('closedAnnouncements') || '[]');
+                if (!closedAnnouncements.includes(announcementData.id)) {
+                    const announcementDiv = document.getElementById('announcement');
+                    const contentDiv = document.getElementById('announcementContent');
+                    contentDiv.innerHTML = announcementData.content;
+                    announcementDiv.style.display = 'flex';
+                    const closeBtn = announcementDiv.querySelector('.close-announcement');
+                    closeBtn.onclick = () => {
+                        announcementDiv.style.display = 'none';
+                        closedAnnouncements.push(announcementData.id);
+                        localStorage.setItem('closedAnnouncements', JSON.stringify(closedAnnouncements));
+                    };
+                }
+            }
+        } catch (error) {
+            console.error('加载公告失败:', error);
+            const mockAnnouncement = {
+                id: 'mock-error-' + Date.now(),
+                content: '<div style="padding: 15px;"><h3 style="color: #00a1d6;">📢 公告</h3><p>公告加载失败，但您可以正常使用系统！</p></div>'
+            };
+            const closedAnnouncements = JSON.parse(localStorage.getItem('closedAnnouncements') || '[]');
+            if (!closedAnnouncements.includes(mockAnnouncement.id)) {
+                const announcementDiv = document.getElementById('announcement');
+                const contentDiv = document.getElementById('announcementContent');
+                contentDiv.innerHTML = mockAnnouncement.content;
+                announcementDiv.style.display = 'flex';
+                const closeBtn = announcementDiv.querySelector('.close-announcement');
+                closeBtn.onclick = () => {
+                    announcementDiv.style.display = 'none';
+                    closedAnnouncements.push(mockAnnouncement.id);
+                    localStorage.setItem('closedAnnouncements', JSON.stringify(closedAnnouncements));
+                };
+            }
+        }
+    }
+
+    // 初始化 Supabase
+    if (!initializeSupabase()) {
+        console.warn('Supabase初始化失败，将使用本地存储模式');
+    }
+
+    // 加载公告
+    await loadAnnouncement();
+
+    // 恢复标签页状态
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab === 'forum') {
+        setTimeout(() => {
+            document.getElementById('forumTab').click();
+        }, 100);
+    }
+
+    // 恢复之前的状态
+    const savedState = localStorage.getItem('listState');
+    if (savedState) {
+        const state = JSON.parse(savedState);
+        dataService.currentPage = state.page || 1;
+        dataService.searchTerm = state.searchTerm || '';
+        document.getElementById('searchInput').value = dataService.searchTerm;
+        localStorage.removeItem('listState');
+        setTimeout(() => {
+            window.scrollTo(0, state.scrollY || 0);
+        }, 100);
+    }
+
+    // 确保签到按钮显示
+    const checkinBtn = document.getElementById('checkinBtn');
+    if (checkinBtn && utils.getCurrentUser()) {
+        checkinBtn.style.display = 'flex';
+        this.checkCheckinStatus();
+    }
+
+    // 加载用户设置
+    const user = utils.getCurrentUser();
+    if (user) {
+        const userSettingsKey = `userSettings_${user.id}`;
+        const savedSettings = localStorage.getItem(userSettingsKey);
+        if (savedSettings) {
+            try {
+                const settings = JSON.parse(savedSettings);
+                setTimeout(() => {
+                    this.applySettings(settings);
+                }, 50);
+            } catch (e) {
+                console.error('加载设置失败:', e);
+            }
+        }
+    } else {
+        const defaultSettings = localStorage.getItem('userSettings_default');
+        if (defaultSettings) {
+            this.applySettings(JSON.parse(defaultSettings));
+        }
+    }
+
+    this.setupEventListeners();
+    this.setupTabListeners();
+
+    await renderer.renderCandidates();
+    await renderer.renderComments();
+    this.checkAuth();
+},
+
+        
+        setupEventListeners() {
+            document.getElementById('feedbackBtn').addEventListener('click', () => this.openFeedbackModal());
+
+// 关闭反馈模态框
+document.getElementById('closeFeedbackModal').addEventListener('click', () => {
+    document.getElementById('feedbackModal').style.display = 'none';
+});
+// 点击模态框外部关闭
+document.getElementById('feedbackModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('feedbackModal')) {
+        document.getElementById('feedbackModal').style.display = 'none';
+    }
+});
+document.getElementById('submitFeedbackBtn').addEventListener('click', () => this.submitFeedback());
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', utils.debounce(() => {
+                dataService.searchTerm = searchInput.value.trim();
+                dataService.currentPage = 1;
+                renderer.renderCandidates();
+            }, 500));
+            
+            document.getElementById('prevPage').addEventListener('click', () => this.changePage(-1));
+            document.getElementById('prevPageBottom').addEventListener('click', () => this.changePage(-1));
+            document.getElementById('nextPage').addEventListener('click', () => this.changePage(1));
+            document.getElementById('nextPageBottom').addEventListener('click', () => this.changePage(1));
+            
+            document.getElementById('submitComment').addEventListener('click', () => {
+                this.prepareSubmitComment(false);
+            });
+            
+            document.getElementById('authBtn')?.addEventListener('click', () => {
+                this.showAuthModal();
+            });
+            
+            document.getElementById('checkinBtn').addEventListener('click', () => {
+                this.checkin();
+            });
+        },
+
+        setupTabListeners() {
+        const voteTab = document.getElementById('voteTab');
+        const forumTab = document.getElementById('forumTab');
+        
+        if (voteTab && forumTab) {
+            voteTab.addEventListener('click', () => {
+                voteTab.classList.add('active');
+                forumTab.classList.remove('active');
+                document.getElementById('listView').style.display = 'block';
+                document.getElementById('forumView').classList.remove('active');
+            });
+            
+forumTab.addEventListener('click', () => {
+    forumTab.classList.add('active');
+    voteTab.classList.remove('active');
+    document.getElementById('listView').style.display = 'none';
+    document.getElementById('forumView').classList.add('active');
+    
+    // 加载所有帖子并渲染
+    dataService.loadAllForumPosts().then(() => {
+        renderer.renderForumPosts();
+    });
+});
+
+// 监听搜索输入（防抖）
+document.getElementById('forumSearchInput')?.addEventListener('input', utils.debounce(() => {
+    renderer.renderForumPosts();
+}, 300));
+
+// 监听排序变化
+document.getElementById('forumSortSelect')?.addEventListener('change', () => {
+    renderer.renderForumPosts();
+});
+        }
+        
+        // 新帖按钮
+        const newPostBtn = document.getElementById('newPostBtn');
+        if (newPostBtn) {
+            newPostBtn.addEventListener('click', () => {
+                this.showNewPostForm();
+            });
+        }
+    },
+    
+showNewPostForm() {
+    const user = utils.getCurrentUser();
+    if (!user) {
+        alert('请先登录后再发帖');
+        app.showAuthModal();
+        return;
+    }
+    
+    // 创建弹窗表单
+    const modal = document.createElement('div');
+    modal.className = 'auth-modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="auth-content" style="width: 650px; max-width: 95%;">
+            <span class="close-auth">&times;</span>
+            <h2 style="margin-bottom: 20px; color: #00a1d6;">发布新帖</h2>
+            <div class="auth-form">
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" id="postTitle" placeholder="请输入标题" style="width:100%;">
+                </div>
+                <div class="form-group">
+                    <label>内容</label>
+                    <textarea id="postContent" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;" placeholder="请输入内容..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>图片上传</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="file" id="postImages" accept="image/*" multiple style="display: none;">
+                        <button type="button" id="selectImagesBtn" style="padding: 8px 16px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-images"></i> 选择图片
+                        </button>
+                        <span id="imageCount" style="color: #999; align-self: center;">已选择 0 张图片</span>
+                        <label style="display: flex; align-items: center; gap: 5px; margin-left: 10px;">
+                            <input type="checkbox" id="saveOriginalCheckbox"> 
+                            <span style="color: #666; font-size: 0.9rem;">保留原图（高清）</span>
+                        </label>
+                    </div>
+                    <div id="imagePreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;"></div>
+                    <div id="originalSizeWarning" style="color: #f25d8e; font-size: 0.8rem; margin-top: 5px; display: none;">
+                        <i class="fas fa-exclamation-triangle"></i> 原图模式将保留更高清画质，但加载可能较慢
+                    </div>
+                </div>
+                <button id="submitPostBtn" class="auth-submit-btn" style="background: #00a1d6;">发布</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    let selectedFiles = [];
+    let compressedImages = [];
+    let saveOriginal = false;
+    
+    // 原图复选框事件
+    const originalCheckbox = modal.querySelector('#saveOriginalCheckbox');
+    const originalWarning = modal.querySelector('#originalSizeWarning');
+    originalCheckbox.addEventListener('change', (e) => {
+        saveOriginal = e.target.checked;
+        originalWarning.style.display = saveOriginal ? 'block' : 'none';
+    });
+    
+    // 选择图片按钮
+    modal.querySelector('#selectImagesBtn').onclick = () => {
+        modal.querySelector('#postImages').click();
+    };
+    
+    // 图片选择事件
+    modal.querySelector('#postImages').onchange = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 9) {
+            alert('最多只能上传9张图片');
+            return;
+        }
+        
+        selectedFiles = files;
+        modal.querySelector('#imageCount').textContent = `已选择 ${files.length} 张图片`;
+        
+        const preview = modal.querySelector('#imagePreview');
+        preview.innerHTML = '';
+        compressedImages = [];
+        
+        for (let file of files) {
+            try {
+                // 根据复选框决定压缩质量
+                const quality = saveOriginal ? 0.95 : 0.7;
+                const maxSize = saveOriginal ? 1920 : 800;
+                
+                const compressed = await utils.compressImage(file, maxSize, maxSize, quality);
+                compressedImages.push(compressed);
+                
+                const imgContainer = document.createElement('div');
+                imgContainer.style.cssText = 'position: relative; width: 80px; height: 80px;';
+                
+                // 添加原图标记
+                const originalBadge = saveOriginal ? 
+                    '<span style="position: absolute; top: -5px; left: -5px; background: #00a1d6; color: white; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px;" title="原图">H</span>' : '';
+                
+                imgContainer.innerHTML = `
+                    ${originalBadge}
+                    <img src="${compressed.thumb}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                    <span style="position: absolute; top: -5px; right: -5px; background: red; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer;" onclick="this.parentElement.remove()">×</span>
+                `;
+                preview.appendChild(imgContainer);
+            } catch (error) {
+                console.error('图片压缩失败:', error);
+            }
+        }
+    };
+    
+    modal.querySelector('.close-auth').onclick = () => {
+        modal.remove();
+    };
+    
+    modal.querySelector('#submitPostBtn').onclick = async () => {
+        const title = modal.querySelector('#postTitle').value.trim();
+        const content = modal.querySelector('#postContent').value.trim();
+        
+        if (!title || !content) {
+            alert('标题和内容都不能为空');
+            return;
+        }
+        
+        const newPostId = await dataService.createForumPost(
+            title, 
+            content, 
+            user.id, 
+            user.username,
+            compressedImages.length
+        );
+        if (newPostId) {
+            if (compressedImages.length > 0) {
+                await dataService.savePostImages(newPostId, compressedImages);
+            }
+            alert('发布成功！' + (saveOriginal ? '（原图模式已启用）' : ''));
+            modal.remove();
+            dataService.allForumPosts = [];
+            renderer.renderForumPosts();
+        }
+    };
+},
+    
+    showForumPost(postId) {
+        // 这里可以跳转到帖子详情页，后续可以扩展
+        alert('帖子详情功能开发中...');
+    },
+        
+        async changePage(direction) {
+            const newPage = dataService.currentPage + direction;
+            const totalPages = dataService.getTotalPages();
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                dataService.currentPage = newPage;
+                await renderer.renderCandidates();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        },
+        
+        async voteForCandidate(candidateId) {
+            const user = utils.getCurrentUser();
+            if (!user) {
+                alert('请先登录后再投票');
+                this.showAuthModal();
+                return;
+            }
+            
+            if (utils.getVoteCount() <= 0) {
+                alert('您没有投票机会，请先签到获取投票机会');
+                return;
+            }
+            
+            const success = await dataService.submitVote(candidateId);
+            if (success) {
+                const newCount = utils.getVoteCount() - 1;
+                utils.setVoteCount(newCount);
+                
+                alert('投票成功！');
+                renderer.updateVoteButtons();
+                await renderer.renderCandidates();
+            }
+        },
+        
+        async showDetail(candidateId) {
+            // 保存当前状态到 localStorage
+            const currentState = {
+                page: dataService.currentPage,
+                searchTerm: dataService.searchTerm,
+                scrollY: window.scrollY
+            };
+            localStorage.setItem('listState', JSON.stringify(currentState));
+            
+            // 跳转到详情页
+            window.location.href = `detail.html?id=${candidateId}`;
+        },
+        
+        prepareSubmitComment(isDetail) {
+            const user = utils.getCurrentUser();
+            if (!user) {
+                alert('请先登录后再发表评论');
+                this.showAuthModal();
+                return;
+            }
+            
+            const contentField = isDetail 
+                ? document.getElementById('detailCommentContent')
+                : document.getElementById('commentContent');
+            
+            const content = contentField.value.trim();
+            
+            if (!content) {
+                alert('请输入留言内容');
+                return;
+            }
+            
+            pendingComment = { isDetail, content };
+            
+            utils.showDialog((confirmed) => {
+                if (confirmed) {
+                    this.submitComment(isDetail, user.username, content);
+                }
+            });
+        },
+        
+        async submitComment(isDetail, username, content) {
+            const candidateId = isDetail ? currentDetailId : null;
+            const success = await dataService.submitComment(candidateId, username, content);
+            
+            if (success) {
+                const newComment = {
+                    id: Date.now(),
+                    user_name: username,
+                    content: content,
+                    created_at: new Date().toISOString(),
+                    candidate_id: candidateId
+                };
+                
+                const container = document.getElementById(isDetail ? 'detailCommentsContainer' : 'commentsList');
+                
+                if (container) {
+                    const newElement = document.createElement('div');
+                    newElement.className = isDetail ? 'detail-comment-item' : 'comment-item';
+                    
+                    if (isDetail) {
+                        newElement.innerHTML = `
+                            <div class="detail-comment-header">
+                                <span class="detail-comment-author">${newComment.user_name}</span>
+                                <span class="detail-comment-date">刚刚</span>
+                            </div>
+                            <p class="detail-comment-content">${newComment.content}</p>
+                            <div class="detail-comment-actions">
+                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}')">
+                                    <i class="fas fa-reply"></i> 回复
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        newElement.innerHTML = `
+                            <div class="comment-header">
+                                <div>
+                                    <span class="comment-author">
+                                        ${newComment.user_name}
+                                        ${!candidateId ? '<span class="global-comment-label">全局留言</span>' : ''}
+                                    </span>
+                                </div>
+                                <span class="comment-date">刚刚</span>
+                            </div>
+                            <p class="comment-content">${newComment.content}</p>
+                            <div class="comment-actions">
+                                <button class="reply-btn" onclick="app.setReplyTarget('${newComment.user_name}')">
+                                    <i class="fas fa-reply"></i> 回复
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
+                    if (container.firstChild) {
+                        container.insertBefore(newElement, container.firstChild);
+                    } else {
+                        container.appendChild(newElement);
+                    }
+                }
+                
+                if (isDetail) {
+                    document.getElementById('detailCommentContent').value = '';
+                } else {
+                    document.getElementById('commentContent').value = '';
+                }
+                
+                setTimeout(async () => {
+                    if (isDetail) {
+                        const comments = await dataService.getComments(currentDetailId);
+                        renderer.renderDetailComments(comments);
+                    } else {
+                        await renderer.renderComments();
+                    }
+                }, 2000);
+            }
+        },
+        
+        showAuthModal() {
+            const modal = document.getElementById('authModal');
+            modal.style.display = 'flex';
+            
+            document.querySelector('.close-auth').onclick = () => {
+                modal.style.display = 'none';
+            };
+            
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    document.querySelectorAll('.auth-form').forEach(form => {
+                        form.style.display = 'none';
+                    });
+                    
+                    document.getElementById(`${tab.dataset.tab}Form`).style.display = 'block';
+                });
+            });
+            
+            document.getElementById('loginBtn').onclick = async () => {
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value.trim();
+                
+                if (!username || !password) {
+                    alert('请输入用户名和密码');
+                    return;
+                }
+                
+                try {
+                    const { user, token } = await dataService.login(username, password);
+                    utils.setAuthToken(token);
+                    utils.setCurrentUser(user);
+                    utils.setAuthStatus(user.username);
+                    // 加载用户设置
+                    const userSettingsKey = `userSettings_${user.id}`;
+                    const savedSettings = localStorage.getItem(userSettingsKey);
+                    if (savedSettings) {
+                        this.applySettings(JSON.parse(savedSettings));
+                    } else {
+                        // 可选：应用默认设置
+                        this.applySettings({});
+                    }
+                    
+                    document.getElementById('authModal').style.display = 'none';
+                    alert('登录成功！');
+                    
+                    // 检查签到状态
+                    this.checkCheckinStatus();
+                } catch (error) {
+                    alert(error.message || '登录失败');
+                }
+            };
+            
+            document.getElementById('registerBtn').onclick = async () => {
+                const username = document.getElementById('registerUsername').value.trim();
+                const password = document.getElementById('registerPassword').value.trim();
+                
+                if (!username || !password) {
+                    alert('请输入用户名和密码');
+                    return;
+                }
+                
+                try {
+                    const { user, token } = await dataService.register(username, password);
+                    utils.setAuthToken(token);
+                    utils.setCurrentUser(user);
+                    utils.setAuthStatus(user.username);
+                    // 加载用户设置
+                    const userSettingsKey = `userSettings_${user.id}`;
+                    const savedSettings = localStorage.getItem(userSettingsKey);
+                    if (savedSettings) {
+                        this.applySettings(JSON.parse(savedSettings));
+                    } else {
+                        // 可选：应用默认设置
+                        this.applySettings({});
+                    }
+                    
+                    // 新注册用户初始获得1次投票机会
+                    utils.setVoteCount(1);
+                    renderer.updateVoteButtons();
+                    
+                    document.getElementById('authModal').style.display = 'none';
+                    alert('注册成功！您获得了1次初始投票机会');
+                    
+                    // 设置签到状态
+                    utils.setLastCheckinDate(new Date().toISOString());
+                } catch (error) {
+                    alert(error.message || '注册失败');
+                }
+            };
+        },
+        
+logout() {
+    utils.removeAuthToken();
+    utils.removeCurrentUser();
+    utils.setAuthStatus(null);
+    this.applySettings({});   // 恢复默认样式
+    alert('已登出');
+},
+        
+checkAuth() {
+    const token = localStorage.getItem('authToken');
+    const userStr = localStorage.getItem('currentUser');
+    
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            if (user && user.username) {
+                utils.setAuthStatus(user.username);
+                
+                // 确保签到按钮显示
+                const checkinBtn = document.getElementById('checkinBtn');
+                if (checkinBtn) {
+                    checkinBtn.style.display = 'flex';
+                    this.checkCheckinStatus();
+                }
+                
+                // 确保有投票机会计数
+                if (!localStorage.getItem('voteCount')) {
+                    utils.setVoteCount(0);
+                }
+            }
+        } catch (e) {
+            console.error('解析用户数据失败:', e);
+            // 清除无效数据
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+        }
+    }
+},
+        
+        setReplyTarget(username) {
+            const contentField = document.getElementById('commentContent') || 
+                                document.getElementById('detailCommentContent');
+            
+            if (contentField) {
+                contentField.value = `@${username} `;
+                contentField.focus();
+            }
+        },
+        
+async checkin() {
+    if (this.isCheckingIn) return;
+    this.isCheckingIn = true;
+
+    const user = utils.getCurrentUser();
+    if (!user) {
+        alert('请先登录后再签到');
+        this.showAuthModal();
+        this.isCheckingIn = false;
+        return;
+    }
+
+    const lastCheckinDate = utils.getLastCheckinDate();
+    const today = new Date().toISOString().split('T')[0];
+
+    if (lastCheckinDate && utils.isSameDay(lastCheckinDate, today)) {
+        alert('您今天已经签到过了，明天再来吧！');
+        this.isCheckingIn = false;
+        return;
+    }
+
+    try {
+        utils.setLastCheckinDate(today);
+        const newCount = utils.incrementVoteCount();
+        renderer.updateVoteButtons();
+        alert(`签到成功！您获得了1次投票机会，当前共有${newCount}次投票机会`);
+    } catch (error) {
+        console.error('签到失败:', error);
+        alert('签到失败，请重试');
+    } finally {
+        setTimeout(() => { this.isCheckingIn = false; }, 1000);
+    }
+},
+        
+checkCheckinStatus() {
+    const user = utils.getCurrentUser();
+    if (!user) return;
+    
+    const lastCheckinDate = utils.getLastCheckinDate();
+    const today = new Date().toISOString().split('T')[0];
+    
+    const checkinBtn = document.getElementById('checkinBtn');
+    if (!checkinBtn) return;
+    
+    // 如果没有签到记录，或者上次签到不是今天
+    if (!lastCheckinDate || !utils.isSameDay(lastCheckinDate, today)) {
+        checkinBtn.disabled = false;
+    } else {
+        checkinBtn.disabled = true;
+    }
+    
+    // 更新投票机会显示
+    renderer.updateVoteButtons();
+},
+
+            // ===== 从这里开始插入设置相关方法 =====
+showSettings() {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+    
+    modal.style.display = 'flex';
+    
+    const user = utils.getCurrentUser();
+    const storageKey = user ? `userSettings_${user.id}` : 'userSettings_default';
+    const settings = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    
+    // 背景颜色
+    const bgColorInput = document.getElementById('bgColor');
+    if (bgColorInput) bgColorInput.value = settings.bgColor || '#f9fafb';
+    
+    // 背景图片URL
+    const bgImageUrlInput = document.getElementById('bgImageUrl');
+    if (bgImageUrlInput) bgImageUrlInput.value = settings.bgImageUrl || '';
+    
+    // 背景模糊
+    const bgBlurInput = document.getElementById('bgBlur');
+    if (bgBlurInput) bgBlurInput.value = settings.bgBlur || 0;
+    const bgBlurValue = document.getElementById('bgBlurValue');
+    if (bgBlurValue) bgBlurValue.textContent = (settings.bgBlur || 0) + 'px';
+    
+    // 板块透明度
+    const headerOpacityInput = document.getElementById('headerOpacity');
+    const mainOpacityInput = document.getElementById('mainOpacity');
+    const commentsOpacityInput = document.getElementById('commentsOpacity');
+    const cardOpacityInput = document.getElementById('cardOpacity');
+    
+    if (headerOpacityInput) headerOpacityInput.value = settings.headerOpacity || 1;
+    if (mainOpacityInput) mainOpacityInput.value = settings.mainOpacity || 1;
+    if (commentsOpacityInput) commentsOpacityInput.value = settings.commentsOpacity || 1;
+    if (cardOpacityInput) cardOpacityInput.value = settings.cardOpacity || 1;
+    
+    // 更新显示值
+    const headerOpacityValue = document.getElementById('headerOpacityValue');
+    const mainOpacityValue = document.getElementById('mainOpacityValue');
+    const commentsOpacityValue = document.getElementById('commentsOpacityValue');
+    const cardOpacityValue = document.getElementById('cardOpacityValue');
+    
+    if (headerOpacityValue) headerOpacityValue.textContent = Math.round((settings.headerOpacity || 1) * 100) + '%';
+    if (mainOpacityValue) mainOpacityValue.textContent = Math.round((settings.mainOpacity || 1) * 100) + '%';
+    if (commentsOpacityValue) commentsOpacityValue.textContent = Math.round((settings.commentsOpacity || 1) * 100) + '%';
+    if (cardOpacityValue) cardOpacityValue.textContent = Math.round((settings.cardOpacity || 1) * 100) + '%';
+    
+    // 头像预览
+    const avatarPreview = document.getElementById('avatar-preview');
+    if (user && user.username) {
+        const avatarLetter = user.username.charAt(0).toUpperCase();
+        avatarPreview.textContent = avatarLetter;
+        avatarPreview.style.background = '#00a1d6';
+    } else {
+        avatarPreview.textContent = '?';
+        avatarPreview.style.background = '#00a1d6';
+    }
+    
+    // 关闭按钮
+    const closeBtn = document.querySelector('.close-settings');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
+    
+    // 保存按钮
+    const saveBtn = document.getElementById('saveSettings');
+    if (saveBtn) {
+        saveBtn.onclick = () => {
+            const newSettings = {
+                bgColor: document.getElementById('bgColor')?.value || '#f9fafb',
+                bgImageUrl: document.getElementById('bgImageUrl')?.value || '',
+                bgBlur: parseFloat(document.getElementById('bgBlur')?.value || '0'),
+                headerOpacity: parseFloat(document.getElementById('headerOpacity')?.value || '1'),
+                mainOpacity: parseFloat(document.getElementById('mainOpacity')?.value || '1'),
+                commentsOpacity: parseFloat(document.getElementById('commentsOpacity')?.value || '1'),
+                cardOpacity: parseFloat(document.getElementById('cardOpacity')?.value || '1')
+            };
+            
+            const user = utils.getCurrentUser();
+            const storageKey = user ? `userSettings_${user.id}` : 'userSettings_default';
+            localStorage.setItem(storageKey, JSON.stringify(newSettings));
+            this.applySettings(newSettings);
+            modal.style.display = 'none';
+            alert('设置已保存！');
+        };
+    }
+    
+    // 重置按钮
+    const resetBtn = document.getElementById('resetSettings');
+    if (resetBtn) {
+        resetBtn.onclick = () => {
+            if (user) {
+                localStorage.removeItem(`userSettings_${user.id}`);
+            } else {
+                localStorage.removeItem('userSettings_default');
+            }
+            modal.style.display = 'none';
+            location.reload();
+        };
+    }
+    
+    // 应用背景图片按钮
+    const applyBgBtn = document.getElementById('applyBgImage');
+    if (applyBgBtn) {
+        applyBgBtn.onclick = () => {
+            const url = document.getElementById('bgImageUrl')?.value;
+            if (url) {
+                document.body.style.backgroundImage = `url('${url}')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundAttachment = 'fixed';
+            }
+        };
+    }
+    
+    // 点击外部关闭
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+},
+    
+applySettings(settings) {
+    if (!settings) return;
+    // 背景颜色
+    if (settings.bgColor) {
+        document.body.style.backgroundColor = settings.bgColor;
+    } else {
+        document.body.style.backgroundColor = '#f5f5f5';   // 默认灰色
+    }
+    // 背景图片
+    if (settings.bgImageUrl && settings.bgImageUrl.trim() !== '') {
+        document.body.style.backgroundImage = `url('${settings.bgImageUrl}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundAttachment = 'fixed';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundRepeat = 'no-repeat';
+    } else {
+        document.body.style.backgroundImage = '';
+        document.body.style.backgroundSize = '';
+        document.body.style.backgroundAttachment = '';
+        document.body.style.backgroundPosition = '';
+        document.body.style.backgroundRepeat = '';
+    }
+    // 背景模糊
+    if (settings.bgBlur) {
+        document.body.style.backdropFilter = `blur(${settings.bgBlur}px)`;
+    } else {
+        document.body.style.backdropFilter = '';
+    }
+    // 透明度设置（保持不变）
+    const header = document.querySelector('header');
+    if (header) {
+        header.style.backgroundColor = `rgba(255, 255, 255, ${settings.headerOpacity || 1})`;
+        header.style.backdropFilter = settings.headerOpacity < 1 ? 'blur(5px)' : 'none';
+    }
+    
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.backgroundColor = `rgba(255, 255, 255, ${settings.mainOpacity || 1})`;
+        mainContent.style.backdropFilter = settings.mainOpacity < 1 ? 'blur(5px)' : 'none';
+    }
+    
+    const commentsPanel = document.querySelector('.comments-panel');
+    if (commentsPanel) {
+        commentsPanel.style.backgroundColor = `rgba(255, 255, 255, ${settings.commentsOpacity || 1})`;
+        commentsPanel.style.backdropFilter = settings.commentsOpacity < 1 ? 'blur(5px)' : 'none';
+    }
+    
+    const cards = document.querySelectorAll('.candidate-card');
+    cards.forEach(card => {
+        card.style.backgroundColor = `rgba(255, 255, 255, ${settings.cardOpacity || 1})`;
+        card.style.backdropFilter = settings.cardOpacity < 1 ? 'blur(5px)' : 'none';
+    });
+}
+
+};  // ← 这里用分号结束
+    
+    // 启动应用
+    window.app = app;
+    document.addEventListener('DOMContentLoaded', () => app.init());
+</script>
+
+<!-- 右下角博客按钮 -->
+<div style="position: fixed; bottom: 20px; right: 20px; z-index: 100;">
+    <a href="blog.html" style="text-decoration: none; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.9); backdrop-filter: blur(5px); padding: 10px 16px; border-radius: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #e5e5e5; transition: all 0.2s;" onmouseover="this.style.background='white'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.15)';" onmouseout="this.style.background='rgba(255,255,255,0.9)'; this.style.boxShadow='0 2px 10px rgba(0,0,0,0.1)';">
+        <i class="fas fa-pencil-alt" style="color: #00a1d6;"></i>
+        <span style="color: #333; font-size: 0.9rem;">此网站由 Mohzka 提供，AI 制作</span>
+        <i class="fas fa-external-link-alt" style="color: #999; font-size: 0.8rem;"></i>
+    </a>
+</div>
+
+<!-- 反馈bug模态框 -->
+<div class="auth-modal" id="feedbackModal">
+    <div class="auth-content" style="width: 500px;">
+        <span class="close-auth" id="closeFeedbackModal">&times;</span>
+        <h2 style="margin-bottom: 20px; color: #00a1d6;">提交反馈</h2>
+        <div class="auth-form">
+            <div class="form-group">
+                <label>标题</label>
+                <input type="text" id="feedbackTitle" placeholder="简要描述问题或建议" maxlength="100">
+            </div>
+            <div class="form-group">
+                <label>详细内容</label>
+                <textarea id="feedbackContent" rows="5" placeholder="请详细描述您遇到的问题..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></textarea>
+            </div>
+            <button id="submitFeedbackBtn" class="auth-submit-btn">提交反馈</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
