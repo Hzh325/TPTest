@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <link rel="preconnect" href="https://btwykwtvstjhgchldwez.supabase.co">
+<link rel="dns-prefetch" href="https://btwykwtvstjhgchldwez.supabase.co">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>音乐与电台管理 · 投稿消息 (修复版)</title>
@@ -369,6 +373,8 @@
             font-size: 0.8rem;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="common.js"></script>
 </head>
 <body>
     <div class="container">
@@ -619,44 +625,11 @@
 <script src="js/supabase.js"></script>
 
     <script>
-        // Supabase配置
-        const SUPABASE_CONFIG = {
-            url: 'https://btwykwtvstjhgchldwez.supabase.co',
-            key: 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
-            options: {
-                headers: {
-                    'apikey': 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
-                    'Authorization': 'Bearer sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY'
-                },
-                db: { schema: 'public' },
-                auth: { persistSession: false }
-            }
-        };
 
-        let supabaseClient;
         let currentUser = null;
-        let musicList = [];          // 全局音乐库，包含新增的 duration_minutes
-
-        let playlistList = [];   // 存储所有播放列表
-        let currentPlaylistId = null; // 当前选中的列表ID（用于电台节目）
-
-        const utils = {
-            getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
-            formatDate: (dateString) => {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-            }
-        };
-
-        function initializeSupabase() {
-            try {
-                supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key, SUPABASE_CONFIG.options);
-                return true;
-            } catch (error) {
-                console.error('Supabase初始化失败:', error);
-                return false;
-            }
-        }
+let musicList = [];
+let playlistList = [];
+let currentPlaylistId = null;
 
         function checkAuth() {
             currentUser = utils.getCurrentUser();
@@ -1052,6 +1025,8 @@ window.deleteRadio = async (id) => {
                 document.getElementById('musicPanel').style.display = 'none';
                 document.getElementById('radioPanel').style.display = 'none';
                 document.getElementById('bugPanel').style.display = 'none';
+                    document.getElementById('playlistPanel').style.display = 'none';
+    document.getElementById('emergencyPanel').style.display = 'none';
             });
             document.getElementById('musicTabBtn').addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1060,6 +1035,8 @@ window.deleteRadio = async (id) => {
                 document.getElementById('submissionPanel').style.display = 'none';
                 document.getElementById('radioPanel').style.display = 'none';
                 document.getElementById('bugPanel').style.display = 'none';
+                    document.getElementById('playlistPanel').style.display = 'none';
+    document.getElementById('emergencyPanel').style.display = 'none';
             });
             document.getElementById('radioTabBtn').addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1068,6 +1045,8 @@ window.deleteRadio = async (id) => {
                 document.getElementById('submissionPanel').style.display = 'none';
                 document.getElementById('musicPanel').style.display = 'none';
                 document.getElementById('bugPanel').style.display = 'none';
+                    document.getElementById('playlistPanel').style.display = 'none';
+    document.getElementById('emergencyPanel').style.display = 'none';
             });
             document.getElementById('bugTabBtn').addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1076,6 +1055,8 @@ window.deleteRadio = async (id) => {
                 document.getElementById('submissionPanel').style.display = 'none';
                 document.getElementById('musicPanel').style.display = 'none';
                 document.getElementById('radioPanel').style.display = 'none';
+                    document.getElementById('playlistPanel').style.display = 'none';
+    document.getElementById('emergencyPanel').style.display = 'none';
                 loadBugReports();
             });
 

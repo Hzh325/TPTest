@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <link rel="preconnect" href="https://btwykwtvstjhgchldwez.supabase.co">
+<link rel="dns-prefetch" href="https://btwykwtvstjhgchldwez.supabase.co">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>人物详情 - 投票系统</title>
@@ -831,308 +835,12 @@
 
     <!-- 先加载Supabase库 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
     
     <script>
-        // Supabase配置
-        const SUPABASE_CONFIG = {
-            url: 'https://btwykwtvstjhgchldwez.supabase.co',
-            key: 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
-            options: {
-                headers: {
-                    'apikey': 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
-                    'Authorization': 'Bearer sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY'
-                },
-                db: {
-                    schema: 'public'
-                },
-                auth: {
-                    persistSession: false,
-                    autoRefreshToken: false
-                }
-            }
-        };
         
-        // 应用程序代码
-        let supabaseClient;
         let currentDetailId = null;
         let pendingComment = null;
-        
-        function initializeSupabase() {
-            try {
-                supabaseClient = supabase.createClient(
-                    SUPABASE_CONFIG.url,
-                    SUPABASE_CONFIG.key,
-                    SUPABASE_CONFIG.options
-                );
-                return true;
-            } catch (error) {
-                console.error('Supabase初始化失败:', error);
-                return false;
-            }
-        }
-        
-        // 工具函数
-        const utils = {
-            getCurrentYear: () => new Date().getFullYear(),
-            formatDate: (dateString) => {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            },
-            showLoading: (elementId) => {
-                const element = document.getElementById(elementId);
-                if (element) element.style.display = 'block';
-            },
-            hideLoading: (elementId) => {
-                const element = document.getElementById(elementId);
-                if (element) element.style.display = 'none';
-            },
-            showDialog: (callback) => {
-                document.getElementById('confirmationDialog').style.display = 'flex';
-                
-                document.getElementById('dialogConfirm').onclick = () => {
-                    document.getElementById('confirmationDialog').style.display = 'none';
-                    if (callback) callback(true);
-                };
-                
-                document.getElementById('dialogCancel').onclick = () => {
-                    document.getElementById('confirmationDialog').style.display = 'none';
-                    if (callback) callback(false);
-                };
-            },
-            setAuthStatus: (username) => {
-                const authStatus = document.getElementById('authStatus');
-                if (username) {
-                    authStatus.innerHTML = `
-                        <div class="logged-in">
-                            <span>欢迎, ${username}</span>
-                            <button class="logout-btn" id="logoutBtn">登出</button>
-                        </div>
-                    `;
-                    document.getElementById('logoutBtn').addEventListener('click', app.logout);
-                } else {
-                    authStatus.innerHTML = '<button id="authBtn" class="auth-btn">登录/注册</button>';
-                    document.getElementById('authBtn').addEventListener('click', app.showAuthModal);
-                }
-            },
-
-            getVoteCount: () => {
-    const user = utils.getCurrentUser();
-    return user ? parseInt(localStorage.getItem(`voteCount_${user.id}`) || '0') : 0;
-},
-setVoteCount: (count) => {
-    const user = utils.getCurrentUser();
-    if (user) localStorage.setItem(`voteCount_${user.id}`, count.toString());
-},
-incrementVoteCount: () => {
-    const count = utils.getVoteCount() + 1;
-    utils.setVoteCount(count);
-    return count;
-},
-            getAuthToken: () => localStorage.getItem('authToken'),
-            setAuthToken: (token) => localStorage.setItem('authToken', token),
-            removeAuthToken: () => localStorage.removeItem('authToken'),
-            getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
-            setCurrentUser: (user) => localStorage.setItem('currentUser', JSON.stringify(user)),
-            removeCurrentUser: () => localStorage.removeItem('currentUser')
-        };
-        
-        // 数据服务
-        const dataService = {
-            async getCandidateDetail(id) {
-                if (!supabaseClient) return null;
-                
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('candidates')
-                        .select('*')
-                        .eq('id', id)
-                        .single();
-                    
-                    if (error) throw error;
-                    return data;
-                } catch (error) {
-                    console.error('获取候选人详情失败:', error);
-                    return null;
-                }
-            },
-            
-            async getVotes() {
-                if (!supabaseClient) return {};
-                
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('votes')
-                        .select('candidate_id');
-                    
-                    if (error) throw error;
-                    
-                    const counts = {};
-                    (data || []).forEach(v => {
-                        counts[v.candidate_id] = (counts[v.candidate_id] || 0) + 1;
-                    });
-                    return counts;
-                } catch (error) {
-                    console.error('获取票数失败:', error);
-                    return {};
-                }
-            },
-            
-            async getComments(candidateId) {
-                if (!supabaseClient) return [];
-                
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('comments')
-                        .select('*')
-                        .eq('candidate_id', candidateId)
-                        .order('created_at', { ascending: false });
-                    
-                    if (error) throw error;
-                    return data || [];
-                } catch (error) {
-                    console.error('获取留言失败:', error);
-                    return [];
-                }
-            },
-            
-async submitVote(candidateId) {
-    if (!supabaseClient) return false;
-    const user = utils.getCurrentUser();
-    if (!user) {
-        alert('请先登录后再投票');
-        return false;
-    }
-
-    // 检查是否有投票机会
-    const voteCount = utils.getVoteCount();
-    if (voteCount <= 0) {
-        alert('您今天没有投票机会了，请先签到获取机会！');
-        return false;
-    }
-
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        const startOfDay = today + 'T00:00:00.000Z';
-        const endOfDay = today + 'T23:59:59.999Z';
-
-        // 检查今天是否已为该候选人投过票
-        const { data: existingVote, error: checkError } = await supabaseClient
-            .from('votes')
-            .select('id')
-            .eq('candidate_id', candidateId)
-            .eq('user_id', user.id)
-            .gte('created_at', startOfDay)
-            .lte('created_at', endOfDay)
-            .maybeSingle();
-
-        if (checkError) throw checkError;
-        if (existingVote) {
-            alert('您今天已经为该候选人投过票了，请明天再来！');
-            return false;
-        }
-
-        // 插入投票记录
-        const { error: insertError } = await supabaseClient
-            .from('votes')
-            .insert([{
-                candidate_id: candidateId,
-                user_id: user.id,
-                created_at: new Date().toISOString()
-            }]);
-
-        if (insertError) throw insertError;
-
-        // 扣除一次投票机会
-        utils.setVoteCount(voteCount - 1);
-        // 更新页面上的按钮状态（如果有显示机会的地方）
-        if (window.updateVoteUI) window.updateVoteUI(); // 可自定义函数
-
-        return true;
-    } catch (error) {
-        console.error('投票失败:', error);
-        alert('投票失败: ' + (error.message || '未知错误'));
-        return false;
-    }
-},
-            
-            async submitComment(candidateId, userName, content) {
-                if (!supabaseClient) return false;
-                if (!userName || !content) return false;
-                
-                try {
-                    const { error } = await supabaseClient
-                        .from('comments')
-                        .insert([{
-                            candidate_id: candidateId,
-                            user_name: userName,
-                            content: content
-                        }]);
-                    
-                    if (error) throw error;
-                    return true;
-                } catch (error) {
-                    console.error('提交留言失败:', error);
-                    alert('提交留言失败: ' + error.message);
-                    return false;
-                }
-            },
-            
-            async login(username, password) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select('*')
-                        .eq('username', username)
-                        .eq('password', password) // 注意: 实际应用中应该使用加密密码
-                        .single();
-                    
-                    if (error) throw error;
-                    if (!data) throw new Error('用户名或密码错误');
-                    
-                    // 在实际应用中，这里应该使用JWT或其他安全令牌
-                    const fakeToken = `fake-jwt-token-${Date.now()}`;
-                    return { user: data, token: fakeToken };
-                } catch (error) {
-                    console.error('登录失败:', error);
-                    throw error;
-                }
-            },
-            
-            async register(username, password) {
-                try {
-                    // 检查用户名是否已存在
-                    const { data: existingUser, error: checkError } = await supabaseClient
-                        .from('users')
-                        .select('username')
-                        .eq('username', username)
-                        .single();
-                    
-                    if (existingUser) throw new Error('用户名已存在');
-                    
-                    // 创建新用户
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .insert([{ username, password }]) // 注意: 实际应用中应该加密密码
-                        .select()
-                        .single();
-                    
-                    if (error) throw error;
-                    
-                    // 在实际应用中，这里应该使用JWT或其他安全令牌
-                    const fakeToken = `fake-jwt-token-${Date.now()}`;
-                    return { user: data, token: fakeToken };
-                } catch (error) {
-                    console.error('注册失败:', error);
-                    throw error;
-                }
-            }
-        };
         
         // UI渲染器
         const renderer = {
@@ -1239,6 +947,33 @@ renderDetailComments(comments) {
         
         // 应用控制器
         const app = {
+
+            updateVoteButton() {
+    const voteBtn = document.getElementById('detailVoteBtn');
+    if (!voteBtn) return;
+    const user = utils.getCurrentUser();
+    if (!user) {
+        voteBtn.disabled = true;
+        voteBtn.textContent = '请先登录';
+        return;
+    }
+    const voteCount = utils.getVoteCount();
+    voteBtn.disabled = voteCount <= 0;
+    voteBtn.textContent = voteCount <= 0 ? '今日无投票机会' : '投票支持';
+},
+
+checkCheckinStatus() {
+    const user = utils.getCurrentUser();
+    if (!user) return;
+    const lastCheckinDate = utils.getLastCheckinDate();
+    const today = new Date().toISOString().split('T')[0];
+    const checkinBtn = document.getElementById('checkinBtn');
+    if (checkinBtn) {
+        checkinBtn.disabled = !(!lastCheckinDate || !utils.isSameDay(lastCheckinDate, today));
+    }
+    this.updateVoteButton();  // 调用刚添加的方法
+},
+
 async init() {
     document.getElementById('currentYear').textContent = utils.getCurrentYear();
     
@@ -1293,19 +1028,6 @@ async init() {
         alert('未指定人物ID');
         window.location.href = 'index.html';
     }
-    function updateVoteButton() {
-    const voteBtn = document.getElementById('detailVoteBtn');
-    if (!voteBtn) return;
-    const user = utils.getCurrentUser();
-    if (!user) {
-        voteBtn.disabled = true;
-        voteBtn.textContent = '请先登录';
-        return;
-    }
-    const voteCount = utils.getVoteCount();
-    voteBtn.disabled = voteCount <= 0;
-    voteBtn.textContent = voteCount <= 0 ? '今日无投票机会' : '投票支持';
-}
 },
 
             

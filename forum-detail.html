@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <link rel="preconnect" href="https://btwykwtvstjhgchldwez.supabase.co">
+<link rel="dns-prefetch" href="https://btwykwtvstjhgchldwez.supabase.co">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>帖子详情 - 论坛</title>
@@ -394,162 +398,11 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
     <script>
-        // Supabase配置 - 使用和index.html相同的配置
-        const SUPABASE_CONFIG = {
-            url: 'https://btwykwtvstjhgchldwez.supabase.co',
-            key: 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
-            options: {
-                headers: {
-                    'apikey': 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
-                    'Authorization': 'Bearer sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY'
-                },
-                db: { schema: 'public' },
-                auth: { persistSession: false }
-            }
-        };
         
-        let supabaseClient;
         let currentPostId = null;
         let currentImages = [];
-        
-        function initializeSupabase() {
-            try {
-                supabaseClient = supabase.createClient(
-                    SUPABASE_CONFIG.url,
-                    SUPABASE_CONFIG.key,
-                    SUPABASE_CONFIG.options
-                );
-                return true;
-            } catch (error) {
-                console.error('Supabase初始化失败:', error);
-                return false;
-            }
-        }
-        
-        // 工具函数
-        const utils = {
-            formatDate: (dateString) => {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('zh-CN', {
-                    year: 'numeric', month: '2-digit', day: '2-digit',
-                    hour: '2-digit', minute: '2-digit'
-                });
-            },
-            getCurrentUser: () => JSON.parse(localStorage.getItem('currentUser')),
-            getAuthToken: () => localStorage.getItem('authToken')
-        };
-        
-        // 数据服务
-        const dataService = {
-            async getForumPost(postId) {
-                if (!supabaseClient) return null;
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('forum_posts')
-                        .select('*')
-                        .eq('id', postId)
-                        .single();
-                    if (error) throw error;
-                    
-                    // 更新浏览量
-                    await supabaseClient
-                        .from('forum_posts')
-                        .update({ views: (data.views || 0) + 1 })
-                        .eq('id', postId);
-                    
-                    return data;
-                } catch (error) {
-                    console.error('获取帖子失败:', error);
-                    return null;
-                }
-            },
-            
-            async getPostImages(postId) {
-                if (!supabaseClient) return [];
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('forum_images')
-                        .select('*')
-                        .eq('post_id', postId)
-                        .order('sort_order');
-                    if (error) throw error;
-                    return data || [];
-                } catch (error) {
-                    console.error('获取图片失败:', error);
-                    return [];
-                }
-            },
-
-                async hasUserLikedPost(postId, userId) {
-        if (!supabaseClient || !userId) return false;
-        try {
-            const { data, error } = await supabaseClient
-                .from('post_likes')
-                .select('id')
-                .eq('post_id', postId)
-                .eq('user_id', userId)
-                .maybeSingle();
-            if (error) throw error;
-            return !!data;
-        } catch (error) {
-            console.error('检查点赞失败:', error);
-            return false;
-        }
-    },
-
-async toggleLike(postId, userId) {
-    if (!supabaseClient || !userId) return;
-    try {
-        const liked = await this.hasUserLikedPost(postId, userId);
-        if (liked) {
-            // 取消点赞
-            const { error } = await supabaseClient
-                .from('post_likes')
-                .delete()
-                .eq('post_id', postId)
-                .eq('user_id', userId);
-            if (error) throw error;
-            // 更新 forum_posts 的 likes 字段 -1
-            await supabaseClient.rpc('decrement_likes', { row_id: postId });
-            return { liked: false, action: 'unliked' };
-        } else {
-            // 点赞
-            const { error } = await supabaseClient
-                .from('post_likes')
-                .insert([{ post_id: postId, user_id: userId }]);
-            if (error) throw error;
-            // 更新 forum_posts 的 likes 字段 +1
-            await supabaseClient.rpc('increment_likes', { row_id: postId });
-            return { liked: true, action: 'liked' };
-        }
-    } catch (error) {
-        console.error('切换点赞失败:', error);
-        throw error;
-    }
-},
-
-    async getPostLikesCount(postId) {
-        if (!supabaseClient) return 0;
-        try {
-            const { count, error } = await supabaseClient
-                .from('post_likes')
-                .select('*', { count: 'exact', head: true })
-                .eq('post_id', postId);
-            if (error) throw error;
-            return count || 0;
-        } catch (error) {
-            console.error('获取点赞数失败:', error);
-            return 0;
-        }
-    },
-            
-            async getPostComments(postId) {
-                // 这里可以扩展评论表
-                return [];
-            }
-        };
-        
 
 const renderer = {
 async renderPost(postId) {
@@ -852,15 +705,14 @@ async submitComment() {
     }
 },
 
-// 添加加载评论的方法
-// 添加加载评论的方法
+
 async loadComments() {
     try {
         const { data, error } = await supabaseClient
             .from('post_comments')
             .select('*')
             .eq('post_id', currentPostId)
-            .order('created_at', { ascending: true });
+            .order('created_at', { ascending: false });
         
         if (error) throw error;
         
