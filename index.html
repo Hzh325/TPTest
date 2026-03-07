@@ -1877,12 +1877,19 @@ if (tab === 'forum') {
         this.checkCheckinStatus();
     }
 
-    // 加载用户设置
-// 加载用户设置（从数据库获取风格）
 // 加载用户设置
-// 加载用户设置
-// 加载用户设置
-await styleService.loadAndApplyUserStyle();
+if (typeof styleService !== 'undefined' && styleService.loadAndApplyUserStyle) {
+} else {
+    console.warn('styleService 未定义，跳过风格加载');
+    // 可尝试从 localStorage 读取默认样式
+    const defaultCached = localStorage.getItem('userSettings_default');
+    if (defaultCached) {
+        try {
+            const settings = JSON.parse(defaultCached);
+            app.applySettings(settings);
+        } catch (e) {}
+    }
+}
 
     this.setupEventListeners();
     this.setupTabListeners();

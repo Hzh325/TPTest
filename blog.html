@@ -1596,8 +1596,7 @@ async init() {
         console.error('Supabase初始化失败');
         return;
     }
-// 加载用户设置
-await styleService.loadAndApplyUserStyle();
+
 
     utils.applySettings(utils.getCurrentSettings());   // 现在 utils 有 applySettings 了
     document.getElementById('currentYear').textContent = getCurrentBeijingTime().getFullYear();

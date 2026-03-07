@@ -508,8 +508,7 @@ async init() {
         return;
     }
     
-// 加载用户设置
-await styleService.loadAndApplyUserStyle();
+
     
     // 监听 localStorage 变化，当其他页面修改了设置时同步更新
     window.addEventListener('storage', (e) => {

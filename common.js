@@ -1,31 +1,24 @@
-    const SUPABASE_CONFIG = {
-        url: 'https://btwykwtvstjhgchldwez.supabase.co',
-        key: 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
-        options: {
-            headers: {
-                'apikey': 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
-                'Authorization': 'Bearer sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY'
-            },
-            db: {
-                schema: 'public'
-            },
-            auth: {
-                persistSession: false,
-                autoRefreshToken: false
-            }
-        }
-    };
+const SUPABASE_CONFIG = {
+    url: 'https://btwykwtvstjhgchldwez.supabase.co',
+    key: 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
+    options: {
+        headers: {
+            'apikey': 'sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY',
+            'Authorization': 'Bearer sb_publishable_GJL_9tAXvcsTXA2nOQEHPA_2r9JSfFY'
+        },
+        db: { schema: 'public' },
+        auth: { persistSession: false, autoRefreshToken: false }
+    }
+};
 
     let supabaseClient;
 
 function initializeSupabase() {
     try {
-        // 确保 Supabase 库已加载
         if (typeof supabase === 'undefined') {
             console.error('Supabase库未加载');
             return false;
         }
-        
         supabaseClient = supabase.createClient(
             SUPABASE_CONFIG.url,
             SUPABASE_CONFIG.key,
@@ -1097,49 +1090,65 @@ async getSystemSongs() {
     
 };
 
-// 风格服务
 const styleService = {
     // 获取当前用户选择的风格对象（数据库格式）
     async getCurrentUserStyle() {
+        if (!supabaseClient) {
+            console.warn('Supabase 未初始化，返回默认风格');
+            return await this.getDefaultStyle();
+        }
         const user = utils.getCurrentUser();
         if (!user) return await this.getDefaultStyle();
 
-        // 从 user_preferences 查询用户选择的 style_id
-        const { data: pref, error } = await supabaseClient
-            .from('user_preferences')
-            .select('style_id')
-            .eq('user_id', user.id)
-            .maybeSingle();
-        if (error) console.error('获取用户偏好失败', error);
+        try {
+            const { data: pref, error } = await supabaseClient
+                .from('user_preferences')
+                .select('style_id')
+                .eq('user_id', user.id)
+                .maybeSingle();
+            if (error) throw error;
 
-        let styleId = pref?.style_id;
-        if (!styleId) {
-            // 未选择风格，获取默认风格
+            const styleId = pref?.style_id;
+            if (!styleId) return await this.getDefaultStyle();
+
+            const { data: style, error: styleError } = await supabaseClient
+                .from('styles')
+                .select('*')
+                .eq('id', styleId)
+                .single();
+            if (styleError || !style) return await this.getDefaultStyle();
+            return style;
+        } catch (error) {
+            console.error('获取用户风格失败', error);
             return await this.getDefaultStyle();
         }
-
-        // 根据 styleId 获取完整风格对象
-        const { data: style, error: styleError } = await supabaseClient
-            .from('styles')
-            .select('*')
-            .eq('id', styleId)
-            .single();
-        if (styleError || !style) {
-            // 风格可能已被删除，回退到默认
-            return await this.getDefaultStyle();
-        }
-        return style;
     },
 
     // 获取系统默认风格（数据库格式）
     async getDefaultStyle() {
-        const { data } = await supabaseClient
-            .from('styles')
-            .select('*')
-            .eq('is_default', true)
-            .maybeSingle();
-        if (data) return data;
-        // 如果没有默认风格，返回一个硬编码的默认设置（数据库格式）
+        if (!supabaseClient) {
+            // 无数据库连接时返回硬编码默认值
+            return {
+                bg_color: '#f5f5f5',
+                bg_image_url: null,
+                bg_blur: 0,
+                header_opacity: 1,
+                main_opacity: 1,
+                comments_opacity: 1,
+                card_opacity: 1
+            };
+        }
+        try {
+            const { data } = await supabaseClient
+                .from('styles')
+                .select('*')
+                .eq('is_default', true)
+                .maybeSingle();
+            if (data) return data;
+        } catch (error) {
+            console.error('获取默认风格失败', error);
+        }
+        // 回退硬编码默认值
         return {
             bg_color: '#f5f5f5',
             bg_image_url: null,
@@ -1147,67 +1156,90 @@ const styleService = {
             header_opacity: 1,
             main_opacity: 1,
             comments_opacity: 1,
-            card_opacity: 1,
-            playlist_id: null
+            card_opacity: 1
         };
     },
 
     // 加载并应用用户风格（适用于所有页面）
     async loadAndApplyUserStyle() {
-    if (!supabaseClient) return;
-    const user = utils.getCurrentUser();
-    if (user) {
-        const cached = localStorage.getItem(`userSettings_${user.id}`);
-        if (cached) {
-            try {
-                const settings = JSON.parse(cached);
-                utils.applySettings(settings);
-                return;
-            } catch (e) {}
+        if (!supabaseClient) {
+            console.warn('Supabase 未初始化，应用默认样式');
+            utils.applySettings({});
+            return;
         }
-        const { data: pref } = await supabaseClient
-            .from('user_preferences')
-            .select('style_id, custom_settings')
-            .eq('user_id', user.id)
-            .maybeSingle();
-        if (pref) {
-            if (pref.custom_settings) {
-                utils.applySettings(pref.custom_settings);
-                localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(pref.custom_settings));
-                return;
-            } else if (pref.style_id) {
-                const style = await this.getCurrentUserStyle();
-                if (style) {
-                    const frontendStyle = utils.convertDbStyleToFrontend(style);
+        try {
+            const user = utils.getCurrentUser();
+            if (user) {
+                // 尝试从缓存读取
+                const cached = localStorage.getItem(`userSettings_${user.id}`);
+                if (cached) {
+                    try {
+                        const settings = JSON.parse(cached);
+                        utils.applySettings(settings);
+                        return;
+                    } catch (e) {}
+                }
+                // 从数据库读取偏好
+                const { data: pref } = await supabaseClient
+                    .from('user_preferences')
+                    .select('style_id, custom_settings')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+                if (pref) {
+                    if (pref.custom_settings) {
+                        utils.applySettings(pref.custom_settings);
+                        localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(pref.custom_settings));
+                        return;
+                    } else if (pref.style_id) {
+                        const style = await this.getCurrentUserStyle();
+                        if (style) {
+                            const frontendStyle = utils.convertDbStyleToFrontend(style);
+                            utils.applySettings(frontendStyle);
+                            localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(frontendStyle));
+                        }
+                        return;
+                    }
+                }
+                // 无偏好，使用默认风格
+                const defaultStyle = await this.getDefaultStyle();
+                if (defaultStyle) {
+                    const frontendStyle = utils.convertDbStyleToFrontend(defaultStyle);
                     utils.applySettings(frontendStyle);
                     localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(frontendStyle));
                 }
-                return;
+            } else {
+                // 未登录用户
+                const defaultCached = localStorage.getItem('userSettings_default');
+                if (defaultCached) {
+                    try {
+                        const settings = JSON.parse(defaultCached);
+                        utils.applySettings(settings);
+                        return;
+                    } catch (e) {}
+                }
+                const defaultStyle = await this.getDefaultStyle();
+                if (defaultStyle) {
+                    const frontendStyle = utils.convertDbStyleToFrontend(defaultStyle);
+                    utils.applySettings(frontendStyle);
+                    localStorage.setItem('userSettings_default', JSON.stringify(frontendStyle));
+                }
             }
-        }
-        const defaultStyle = await this.getDefaultStyle();
-        if (defaultStyle) {
-            const frontendStyle = utils.convertDbStyleToFrontend(defaultStyle);
-            utils.applySettings(frontendStyle);
-            localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(frontendStyle));
-        }
-        } else {
-            // 未登录，从 localStorage 读取默认缓存
-            const defaultCached = localStorage.getItem('userSettings_default');
-            if (defaultCached) {
-                try {
-                    const settings = JSON.parse(defaultCached);
-                    utils.applySettings(settings);
-                    return;
-                } catch (e) {}
-            }
-            // 无缓存，加载数据库默认风格
-            const defaultStyle = await this.getDefaultStyle();
-            if (defaultStyle) {
-                const frontendStyle = utils.convertDbStyleToFrontend(defaultStyle);
-                utils.applySettings(frontendStyle);
-                localStorage.setItem('userSettings_default', JSON.stringify(frontendStyle));
-            }
+        } catch (error) {
+            console.error('加载并应用风格失败', error);
+            utils.applySettings({});
         }
     }
 };
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // 先初始化 Supabase（如果可能）
+    initializeSupabase();
+    // 加载并应用风格（内部已做容错）
+    await styleService.loadAndApplyUserStyle();
+});
+
+// 导出供全局使用
+window.utils = utils;
+window.supabaseClient = supabaseClient;
+window.dataService = dataService;   // 注意：原有 dataService 定义需保留（此处省略，实际文件需包含）
+window.styleService = styleService;
