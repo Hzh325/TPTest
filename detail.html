@@ -982,23 +982,8 @@ async init() {
         return;
     }
     
-    // 加载用户设置 - 按用户区分
-    const user = utils.getCurrentUser();
-    if (user) {
-        const userSettingsKey = `userSettings_${user.id}`;
-        const savedSettings = localStorage.getItem(userSettingsKey);
-        if (savedSettings) {
-            try {
-                const settings = JSON.parse(savedSettings);
-                this.applySettings(settings);
-            } catch (e) {
-                console.error('加载设置失败:', e);
-            }
-        }
-    } else {
-        // 未登录时恢复默认背景
-        this.applySettings({});
-    }
+// 加载用户设置
+await styleService.loadAndApplyUserStyle();
     
     // 监听 localStorage 变化，同步设置
     window.addEventListener('storage', (e) => {

@@ -374,9 +374,21 @@ applySettings: (settings) => {
         card.style.backgroundColor = `rgba(255, 255, 255, ${settings.cardOpacity || 1})`;
         card.style.backdropFilter = settings.cardOpacity < 1 ? 'blur(5px)' : 'none';
     });
-}
+},
 
+convertDbStyleToFrontend: (dbStyle) => {
+    if (!dbStyle) return {};
+    return {
+        bgColor: dbStyle.bg_color,
+        bgImageUrl: dbStyle.bg_image_url,
+        bgBlur: dbStyle.bg_blur,
+        headerOpacity: dbStyle.header_opacity,
+        mainOpacity: dbStyle.main_opacity,
+        commentsOpacity: dbStyle.comments_opacity,
+        cardOpacity: dbStyle.card_opacity
     };
+}
+};
 
 const dataService = {
     currentPage: 1,
@@ -1083,4 +1095,119 @@ async getSystemSongs() {
     return data || [];
 },
     
+};
+
+// 风格服务
+const styleService = {
+    // 获取当前用户选择的风格对象（数据库格式）
+    async getCurrentUserStyle() {
+        const user = utils.getCurrentUser();
+        if (!user) return await this.getDefaultStyle();
+
+        // 从 user_preferences 查询用户选择的 style_id
+        const { data: pref, error } = await supabaseClient
+            .from('user_preferences')
+            .select('style_id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+        if (error) console.error('获取用户偏好失败', error);
+
+        let styleId = pref?.style_id;
+        if (!styleId) {
+            // 未选择风格，获取默认风格
+            return await this.getDefaultStyle();
+        }
+
+        // 根据 styleId 获取完整风格对象
+        const { data: style, error: styleError } = await supabaseClient
+            .from('styles')
+            .select('*')
+            .eq('id', styleId)
+            .single();
+        if (styleError || !style) {
+            // 风格可能已被删除，回退到默认
+            return await this.getDefaultStyle();
+        }
+        return style;
+    },
+
+    // 获取系统默认风格（数据库格式）
+    async getDefaultStyle() {
+        const { data } = await supabaseClient
+            .from('styles')
+            .select('*')
+            .eq('is_default', true)
+            .maybeSingle();
+        if (data) return data;
+        // 如果没有默认风格，返回一个硬编码的默认设置（数据库格式）
+        return {
+            bg_color: '#f5f5f5',
+            bg_image_url: null,
+            bg_blur: 0,
+            header_opacity: 1,
+            main_opacity: 1,
+            comments_opacity: 1,
+            card_opacity: 1,
+            playlist_id: null
+        };
+    },
+
+    // 加载并应用用户风格（适用于所有页面）
+    async loadAndApplyUserStyle() {
+    if (!supabaseClient) return;
+    const user = utils.getCurrentUser();
+    if (user) {
+        const cached = localStorage.getItem(`userSettings_${user.id}`);
+        if (cached) {
+            try {
+                const settings = JSON.parse(cached);
+                utils.applySettings(settings);
+                return;
+            } catch (e) {}
+        }
+        const { data: pref } = await supabaseClient
+            .from('user_preferences')
+            .select('style_id, custom_settings')
+            .eq('user_id', user.id)
+            .maybeSingle();
+        if (pref) {
+            if (pref.custom_settings) {
+                utils.applySettings(pref.custom_settings);
+                localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(pref.custom_settings));
+                return;
+            } else if (pref.style_id) {
+                const style = await this.getCurrentUserStyle();
+                if (style) {
+                    const frontendStyle = utils.convertDbStyleToFrontend(style);
+                    utils.applySettings(frontendStyle);
+                    localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(frontendStyle));
+                }
+                return;
+            }
+        }
+        const defaultStyle = await this.getDefaultStyle();
+        if (defaultStyle) {
+            const frontendStyle = utils.convertDbStyleToFrontend(defaultStyle);
+            utils.applySettings(frontendStyle);
+            localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(frontendStyle));
+        }
+        } else {
+            // 未登录，从 localStorage 读取默认缓存
+            const defaultCached = localStorage.getItem('userSettings_default');
+            if (defaultCached) {
+                try {
+                    const settings = JSON.parse(defaultCached);
+                    utils.applySettings(settings);
+                    return;
+                } catch (e) {}
+            }
+            // 无缓存，加载数据库默认风格
+            const defaultStyle = await this.getDefaultStyle();
+            if (defaultStyle) {
+                const frontendStyle = utils.convertDbStyleToFrontend(defaultStyle);
+                utils.applySettings(frontendStyle);
+                localStorage.setItem('userSettings_default', JSON.stringify(frontendStyle));
+            }
+        }
+    }
 };

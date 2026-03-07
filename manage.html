@@ -402,6 +402,7 @@
             <button class="tab-btn" id="bugTabBtn">Bug反馈</button>
             <button class="tab-btn" id="playlistTabBtn">播放列表</button>
             <button class="tab-btn" id="emergencyTabBtn">紧急广播</button>
+            <button class="tab-btn" id="styleTabBtn">风格管理</button>
             <!-- 已移除 系统主题 标签 -->
         </div>
 
@@ -517,6 +518,31 @@
     </div>
 </div>
 
+<!-- 风格管理面板 -->
+<div class="manage-panel" id="stylePanel" style="display: none;">
+    <div class="panel-header">
+        <h2><i class="fas fa-palette" style="color:#00a1d6;"></i> 预设风格列表</h2>
+        <button class="add-btn" id="addStyleBtn"><i class="fas fa-plus"></i> 添加风格</button>
+    </div>
+    <table id="styleTable">
+        <thead>
+            <tr>
+                <th>名称</th>
+                <th>背景色</th>
+                <th>背景图</th>
+                <th>模糊度</th>
+                <th>头部透明度</th>
+                <th>主内容透明度</th>
+                <th>留言板透明度</th>
+                <th>卡片透明度</th>
+                <th>默认</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="styleTableBody"></tbody>
+    </table>
+</div>
+
         <footer>
             <p>© <span id="currentYear"></span> 管理后台 | 投稿消息实时更新</p>
         </footer>
@@ -617,6 +643,58 @@
                     <label><input type="checkbox" id="playlistIsDefault"> 设为默认列表（只能有一个默认）</label>
                 </div>
                 <button type="submit" class="submit-btn">保存</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 风格编辑模态框 -->
+<div class="modal" id="styleModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="styleModalTitle">添加风格</h3>
+            <span class="close-modal" id="closeStyleModal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="styleForm">
+                <input type="hidden" id="styleId">
+                <div class="form-group">
+                    <label>风格名称 *</label>
+                    <input type="text" id="styleName" required>
+                </div>
+                <div class="form-group">
+                    <label>背景颜色 (例如 #f5f5f5)</label>
+                    <input type="color" id="styleBgColor" value="#f5f5f5">
+                </div>
+                <div class="form-group">
+                    <label>背景图片URL</label>
+                    <input type="text" id="styleBgImageUrl" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>背景模糊 (px)</label>
+                    <input type="number" id="styleBgBlur" min="0" max="20" value="0">
+                </div>
+                <div class="form-group">
+                    <label>头部透明度 (0-1)</label>
+                    <input type="number" id="styleHeaderOpacity" min="0" max="1" step="0.1" value="1">
+                </div>
+                <div class="form-group">
+                    <label>主内容透明度 (0-1)</label>
+                    <input type="number" id="styleMainOpacity" min="0" max="1" step="0.1" value="1">
+                </div>
+                <div class="form-group">
+                    <label>留言板透明度 (0-1)</label>
+                    <input type="number" id="styleCommentsOpacity" min="0" max="1" step="0.1" value="1">
+                </div>
+                <div class="form-group">
+                    <label>卡片透明度 (0-1)</label>
+                    <input type="number" id="styleCardOpacity" min="0" max="1" step="0.1" value="1">
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="styleIsDefault"> 设为默认风格</label>
+                    <small style="color:#999;">默认风格将应用于未登录用户和新用户</small>
+                </div>
+                <button type="submit" class="submit-btn">保存风格</button>
             </form>
         </div>
     </div>
@@ -908,6 +986,149 @@ async function loadRadio(playlistId) {
                 document.getElementById('notificationBar').style.display = 'flex';
             }
         }
+
+        // ========= 风格管理 =========
+let stylesList = [];
+
+async function loadStyles() {
+    const { data, error } = await supabaseClient
+        .from('styles')
+        .select('*')
+        .order('created_at');
+    if (error) { console.error('加载风格失败', error); return; }
+    stylesList = data || [];
+    renderStyleTable();
+}
+
+function renderStyleTable() {
+    const tbody = document.getElementById('styleTableBody');
+    tbody.innerHTML = stylesList.map(style => `
+        <tr>
+            <td>${style.name}</td>
+            <td><span style="display:inline-block; width:20px; height:20px; background:${style.bg_color}; border:1px solid #ccc;"></span> ${style.bg_color}</td>
+            <td>${style.bg_image_url ? '✓' : '-'}</td>
+            <td>${style.bg_blur || 0}px</td>
+            <td>${style.header_opacity}</td>
+            <td>${style.main_opacity}</td>
+            <td>${style.comments_opacity}</td>
+            <td>${style.card_opacity}</td>
+            <td>${style.is_default ? '⭐' : ''}</td>
+            <td>
+                <div class="action-btns">
+                    <button class="edit-btn" onclick="editStyle('${style.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="delete-btn" onclick="deleteStyle('${style.id}')" ${style.is_default ? 'disabled' : ''}><i class="fas fa-trash"></i></button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+window.editStyle = (id) => {
+    const style = stylesList.find(s => s.id === id);
+    if (!style) return;
+    document.getElementById('styleModalTitle').textContent = '编辑风格';
+    document.getElementById('styleId').value = style.id;
+    document.getElementById('styleName').value = style.name || '';
+    document.getElementById('styleBgColor').value = style.bg_color || '#f5f5f5';
+    document.getElementById('styleBgImageUrl').value = style.bg_image_url || '';
+    document.getElementById('styleBgBlur').value = style.bg_blur || 0;
+    document.getElementById('styleHeaderOpacity').value = style.header_opacity || 1;
+    document.getElementById('styleMainOpacity').value = style.main_opacity || 1;
+    document.getElementById('styleCommentsOpacity').value = style.comments_opacity || 1;
+    document.getElementById('styleCardOpacity').value = style.card_opacity || 1;
+    document.getElementById('styleIsDefault').checked = style.is_default || false;
+    document.getElementById('styleModal').style.display = 'flex';
+};
+
+window.deleteStyle = async (id) => {
+    const style = stylesList.find(s => s.id === id);
+    if (style.is_default) {
+        alert('默认风格不能删除！');
+        return;
+    }
+    if (!confirm('确定删除该风格吗？')) return;
+    const { error } = await supabaseClient.from('styles').delete().eq('id', id);
+    if (error) { alert('删除失败：' + error.message); return; }
+    loadStyles();
+};
+
+// 添加按钮事件
+document.getElementById('addStyleBtn').addEventListener('click', () => {
+    document.getElementById('styleModalTitle').textContent = '添加风格';
+    document.getElementById('styleId').value = '';
+    document.getElementById('styleName').value = '';
+    document.getElementById('styleBgColor').value = '#f5f5f5';
+    document.getElementById('styleBgImageUrl').value = '';
+    document.getElementById('styleBgBlur').value = '0';
+    document.getElementById('styleHeaderOpacity').value = '1';
+    document.getElementById('styleMainOpacity').value = '1';
+    document.getElementById('styleCommentsOpacity').value = '1';
+    document.getElementById('styleCardOpacity').value = '1';
+    document.getElementById('styleIsDefault').checked = false;
+    document.getElementById('styleModal').style.display = 'flex';
+});
+
+// 关闭模态框
+document.getElementById('closeStyleModal').addEventListener('click', () => {
+    document.getElementById('styleModal').style.display = 'none';
+});
+
+// 表单提交
+document.getElementById('styleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('styleId').value;
+    const name = document.getElementById('styleName').value.trim();
+    if (!name) { alert('请输入风格名称'); return; }
+
+    const isDefault = document.getElementById('styleIsDefault').checked;
+
+    const styleData = {
+        name,
+        bg_color: document.getElementById('styleBgColor').value,
+        bg_image_url: document.getElementById('styleBgImageUrl').value.trim() || null,
+        bg_blur: parseInt(document.getElementById('styleBgBlur').value) || 0,
+        header_opacity: parseFloat(document.getElementById('styleHeaderOpacity').value) || 1,
+        main_opacity: parseFloat(document.getElementById('styleMainOpacity').value) || 1,
+        comments_opacity: parseFloat(document.getElementById('styleCommentsOpacity').value) || 1,
+        card_opacity: parseFloat(document.getElementById('styleCardOpacity').value) || 1,
+        is_default: isDefault
+    };
+
+    // 如果设为默认，需要先取消其他默认
+    if (isDefault) {
+        const { error: updateError } = await supabaseClient
+            .from('styles')
+            .update({ is_default: false })
+            .neq('id', id || '00000000-0000-0000-0000-000000000000');
+        if (updateError) { alert('操作失败：' + updateError.message); return; }
+    }
+
+    let error;
+    if (id) {
+        ({ error } = await supabaseClient.from('styles').update(styleData).eq('id', id));
+    } else {
+        ({ error } = await supabaseClient.from('styles').insert([styleData]));
+    }
+    if (error) { alert('保存失败：' + error.message); return; }
+
+    document.getElementById('styleModal').style.display = 'none';
+    loadStyles();
+});
+
+// 在标签切换中增加风格面板
+// 找到原有标签切换的监听，添加新的 case
+document.getElementById('styleTabBtn').addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('styleTabBtn').classList.add('active');
+    document.getElementById('stylePanel').style.display = 'block';
+    document.getElementById('submissionPanel').style.display = 'none';
+    document.getElementById('musicPanel').style.display = 'none';
+    document.getElementById('radioPanel').style.display = 'none';
+    document.getElementById('bugPanel').style.display = 'none';
+    document.getElementById('playlistPanel').style.display = 'none';
+    document.getElementById('emergencyPanel').style.display = 'none';
+    loadStyles();
+});
 
         // 标记已读
         window.markBugAsRead = async (id) => {

@@ -255,6 +255,64 @@
             opacity: 0.6;
             cursor: not-allowed;
         }
+        .system-style-btn {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+}
+.system-style-btn:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: rgba(255,255,255,0.5);
+}
+
+.style-dropdown {
+    position: absolute;
+    top: 80px; /* 根据头部高度调整 */
+    right: 20px;
+    width: 400px;
+    max-width: calc(100% - 40px);
+    background: rgba(30,30,40,0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    z-index: 10001;
+    padding: 15px;
+    color: white;
+}
+
+.style-dropdown-header {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.style-dropdown-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.style-dropdown-grid .metro-tile {
+    width: 120px;
+    height: 120px;
+    font-size: 0.8rem;
+}
+.style-dropdown-grid .metro-tile i {
+    font-size: 2rem;
+}
     </style>
 </head>
 <body>
@@ -447,10 +505,20 @@
 
     <!-- Win8 系统浮层 -->
     <div class="system-overlay" id="win8System">
-        <div class="system-header">
-            <span><i class="fas fa-th"></i> 系统 · Metro</span>
-            <button class="close-system-btn" id="closeSystemBtn"><i class="fas fa-times"></i></button>
-        </div>
+<div class="system-header">
+    <span><i class="fas fa-th"></i> 系统 · Metro</span>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <button class="system-style-btn" id="systemStyleBtn" title="切换风格">
+            <i class="fas fa-palette"></i> 风格
+        </button>
+        <button class="close-system-btn" id="closeSystemBtn"><i class="fas fa-times"></i></button>
+    </div>
+</div>
+<!-- 风格下拉面板 -->
+<div class="style-dropdown" id="styleDropdown" style="display: none;">
+    <div class="style-dropdown-header">选择界面风格</div>
+    <div class="style-dropdown-grid" id="styleDropdownGrid"></div>
+</div>
         <div class="system-content">
             <div class="system-section" id="imageSection">
                 <div class="section-header" id="toggleImageSection">
@@ -1431,11 +1499,106 @@ const setEmergencyMode = (active, streamUrl, name) => {
             updateCheckInterval: null,
             cachedImages: null,
             cachedAudios: null,
+
+            cachedStyles: null,
+
+async loadStyles() {
+    if (!supabaseClient) return;
+    const { data, error } = await supabaseClient.from('styles').select('*').order('name');
+    if (error) {
+        console.error('加载风格失败', error);
+        return [];
+    }
+    this.cachedStyles = data || [];
+    return this.cachedStyles;
+},
+
+renderSystemStyles(styles) {
+    const container = document.getElementById('systemStyleTiles');
+    if (!styles || styles.length === 0) {
+        container.innerHTML = '<div style="color:#ccc;padding:20px;">暂无风格</div>';
+        return;
+    }
+    container.innerHTML = '';
+    styles.forEach(style => {
+        const tile = document.createElement('div');
+        tile.className = 'metro-tile';
+        // 设置背景色作为预览
+        tile.style.backgroundColor = style.bg_color || '#2c3e50';
+        if (style.bg_image_url) {
+            tile.style.backgroundImage = `url('${style.bg_image_url}')`;
+            tile.style.backgroundSize = 'cover';
+        }
+        tile.innerHTML = `
+            <i class="fas fa-paint-brush"></i>
+            <div class="tile-title">${style.name}</div>
+            ${style.is_default ? '<div class="tile-sub">默认</div>' : ''}
+        `;
+        tile.addEventListener('click', () => this.applyStyle(style));
+        container.appendChild(tile);
+    });
+},
+
+async applyStyle(style) {
+    if (!style) return;
+    // 如果传入的是前端格式（包含 bgColor 等），转换为数据库格式以便保存
+    let dbStyle;
+    if (style.bgColor !== undefined) {
+        // 前端格式，转换为数据库格式
+        dbStyle = {
+            name: style.name || '自定义',
+            bg_color: style.bgColor,
+            bg_image_url: style.bgImageUrl || null,
+            bg_blur: style.bgBlur || 0,
+            header_opacity: style.headerOpacity || 1,
+            main_opacity: style.mainOpacity || 1,
+            comments_opacity: style.commentsOpacity || 1,
+            card_opacity: style.cardOpacity || 1
+        };
+    } else {
+        dbStyle = style;
+    }
+    const frontendStyle = utils.convertDbStyleToFrontend(dbStyle);
+    utils.applySettings(frontendStyle);
+    const user = utils.getCurrentUser();
+    if (user) {
+        if (dbStyle.name === '自定义') {
+            // 自定义风格：保存到 custom_settings
+            await supabaseClient
+                .from('user_preferences')
+                .upsert({
+                    user_id: user.id,
+                    style_id: null,
+                    custom_settings: frontendStyle,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+        } else {
+            // 预设风格：保存 style_id
+            await supabaseClient
+                .from('user_preferences')
+                .upsert({
+                    user_id: user.id,
+                    style_id: dbStyle.id,
+                    custom_settings: null,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+        }
+        localStorage.setItem(`userSettings_${user.id}`, JSON.stringify(frontendStyle));
+    } else {
+        localStorage.setItem('userSettings_default', JSON.stringify(frontendStyle));
+    }
+    alert(`已应用风格：${dbStyle.name}`);
+},
+
 async init() {
+
     if (!initializeSupabase()) {   // 使用 common.js 中的初始化函数
         console.error('Supabase初始化失败');
         return;
     }
+// 加载用户设置
+await styleService.loadAndApplyUserStyle();
+
     utils.applySettings(utils.getCurrentSettings());   // 现在 utils 有 applySettings 了
     document.getElementById('currentYear').textContent = getCurrentBeijingTime().getFullYear();
     
@@ -1507,6 +1670,39 @@ async init() {
                 document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target === document.getElementById('lightbox')) { document.getElementById('lightbox').classList.remove('active'); } });
                 document.getElementById('systemBtn').addEventListener('click', () => this.openSystem());
                 document.getElementById('closeSystemBtn').addEventListener('click', () => this.closeSystem());
+                // 风格下拉按钮
+document.getElementById('systemStyleBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    this.toggleStyleDropdown();
+});
+
+// 点击系统浮层其他地方关闭下拉面板（可选）
+document.getElementById('win8System')?.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('styleDropdown');
+    if (dropdown && !dropdown.contains(e.target) && e.target.id !== 'systemStyleBtn') {
+        dropdown.style.display = 'none';
+    }
+});
+
+// 图像库折叠
+const toggleImage = document.getElementById('toggleImageSection');
+const imageGrid = document.getElementById('systemImageTiles');
+if (toggleImage && imageGrid) {
+    toggleImage.addEventListener('click', () => {
+        toggleImage.classList.toggle('collapsed');
+        imageGrid.classList.toggle('collapsed');
+    });
+}
+
+// 音频库折叠
+const toggleAudio = document.getElementById('toggleAudioSection');
+const audioGrid = document.getElementById('systemAudioTiles');
+if (toggleAudio && audioGrid) {
+    toggleAudio.addEventListener('click', () => {
+        toggleAudio.classList.toggle('collapsed');
+        audioGrid.classList.toggle('collapsed');
+    });
+}
             },
             
             removeImage() { selectedImageFile = null; document.getElementById('imagePreview').style.display = 'none'; document.getElementById('blogImageUpload').value = ''; },
@@ -1612,12 +1808,16 @@ async submitComment() {
                 const overlay = document.getElementById('win8System');
                 this.applyUserBackgroundToSystem();
                 overlay.classList.add('show');
-                if (!this.cachedImages || !this.cachedAudios) {
-                    this.cachedImages = await dataService.getSystemImages();
-                    this.cachedAudios = await dataService.getSystemSongs();
-                }
-                this.renderSystemImages(this.cachedImages);
-                this.renderSystemAudios(this.cachedAudios);
+                // 隐藏风格下拉面板（如果有）
+const styleDropdown = document.getElementById('styleDropdown');
+if (styleDropdown) styleDropdown.style.display = 'none';
+if (!this.cachedImages || !this.cachedAudios || !this.cachedStyles) {
+    this.cachedImages = await dataService.getSystemImages();
+    this.cachedAudios = await dataService.getSystemSongs();
+    this.cachedStyles = await this.loadStyles();
+}
+this.renderSystemImages(this.cachedImages);
+this.renderSystemAudios(this.cachedAudios);
             },
             closeSystem() {
                 const overlay = document.getElementById('win8System');
@@ -1626,6 +1826,7 @@ async submitComment() {
                 sysAudio.pause();
                 sysAudio.src = '';
                 document.getElementById('systemPlayerBar').style.display = 'none';
+                document.getElementById('styleDropdown').style.display = 'none';
             },
             renderSystemImages(images) {
                 const container = document.getElementById('systemImageTiles');
@@ -1691,7 +1892,140 @@ async submitComment() {
                     overlay.style.backgroundImage = '';
                 }
             },
+            toggleStyleDropdown() {
+    const dropdown = document.getElementById('styleDropdown');
+    if (!dropdown) return;
+
+    if (dropdown.style.display === 'flex') {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+    // 显示下拉面板
+    dropdown.style.display = 'flex';
+    dropdown.style.flexDirection = 'column';
+
+    // 如果风格数据尚未加载，先加载
+    if (!this.cachedStyles) {
+        this.loadStyles().then(() => {
+            this.renderStyleDropdown();
+        });
+    } else {
+        this.renderStyleDropdown();
+    }
+},
+
+renderStyleDropdown() {
+    const grid = document.getElementById('styleDropdownGrid');
+    if (!grid || !this.cachedStyles) return;
+
+    grid.innerHTML = '';
+
+    // 添加自定义磁贴
+    const customTile = document.createElement('div');
+    customTile.className = 'metro-tile';
+    customTile.style.backgroundColor = '#2c3e50';
+    customTile.style.backgroundImage = 'linear-gradient(45deg, #3498db 25%, #9b59b6 75%)';
+    customTile.innerHTML = `
+        <i class="fas fa-sliders-h"></i>
+        <div class="tile-title">自定义</div>
+        <div class="tile-sub">调节滑块</div>
+    `;
+    customTile.addEventListener('click', () => {
+        const user = utils.getCurrentUser();
+        if (user) {
+            // 已登录，从数据库获取自定义设置
+            supabaseClient
+                .from('user_preferences')
+                .select('custom_settings')
+                .eq('user_id', user.id)
+                .maybeSingle()
+                .then(({ data, error }) => {
+                    let settings;
+                    if (!error && data && data.custom_settings) {
+                        // 如果 custom_settings 是字符串，需要解析
+                        settings = typeof data.custom_settings === 'string'
+                            ? JSON.parse(data.custom_settings)
+                            : data.custom_settings;
+                    } else {
+                        // 无自定义设置，使用默认灰色
+                        settings = {
+                            bgColor: '#f5f5f5',
+                            bgImageUrl: '',
+                            bgBlur: 0,
+                            headerOpacity: 1,
+                            mainOpacity: 1,
+                            commentsOpacity: 1,
+                            cardOpacity: 1
+                        };
+                    }
+                    // 构造一个包含 name 和前端字段的对象，传递给 applyStyle
+                    this.applyStyle({
+                        name: '自定义',
+                        ...settings
+                    });
+                });
+        } else {
+            // 未登录，从 localStorage 读取
+            const defaultCached = localStorage.getItem('userSettings_default');
+            let settings;
+            if (defaultCached) {
+                try {
+                    settings = JSON.parse(defaultCached);
+                } catch (e) {
+                    settings = {
+                        bgColor: '#f5f5f5',
+                        bgImageUrl: '',
+                        bgBlur: 0,
+                        headerOpacity: 1,
+                        mainOpacity: 1,
+                        commentsOpacity: 1,
+                        cardOpacity: 1
+                    };
+                }
+            } else {
+                settings = {
+                    bgColor: '#f5f5f5',
+                    bgImageUrl: '',
+                    bgBlur: 0,
+                    headerOpacity: 1,
+                    mainOpacity: 1,
+                    commentsOpacity: 1,
+                    cardOpacity: 1
+                };
+            }
+            this.applyStyle({
+                name: '自定义',
+                ...settings
+            });
+        }
+        document.getElementById('styleDropdown').style.display = 'none';
+    });
+    grid.appendChild(customTile);
+
+    // 添加预设风格磁贴（保持原样）
+    this.cachedStyles.forEach(style => {
+        const tile = document.createElement('div');
+        tile.className = 'metro-tile';
+        tile.style.backgroundColor = style.bg_color || '#2c3e50';
+        if (style.bg_image_url) {
+            tile.style.backgroundImage = `url('${style.bg_image_url}')`;
+            tile.style.backgroundSize = 'cover';
+        }
+        tile.innerHTML = `
+            <i class="fas fa-paint-brush"></i>
+            <div class="tile-title">${style.name}</div>
+            ${style.is_default ? '<div class="tile-sub">默认</div>' : ''}
+        `;
+        tile.addEventListener('click', () => {
+            this.applyStyle(style);
+            document.getElementById('styleDropdown').style.display = 'none';
+        });
+        grid.appendChild(tile);
+    });
+},
         };
+        
         
         window.app = app;
         document.addEventListener('DOMContentLoaded', () => app.init());
